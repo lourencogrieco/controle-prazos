@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+
+  <main>
+    <section class="form-section">
+      <h2>Novo Prazo / Tarefa</h2>
+
+      <form id="prazoForm">
+        <div class="grid">
+          <input type="text" id="cliente" placeholder="Nome do Cliente" required>
+          <input type="text" id="processo" placeholder="Número do Processo" required>
+
+          <select id="tipo" required>
+            <option value="">Tipo de Atividade</option>
+            <option>Prazo</option>
+            <option>Audiência</option>
+            <option>Diligência</option>
+            <option>Agendamento</option>
+            <option>Lembrete</option>
+          </select>
+
+          <input type="date" id="dataFatal" required>
+
+          <select id="responsavel" required>
+            <option value="">Responsável</option>
+            <option>Sócio</option>
+            <option>Controller</option>
+            <option>Advogado</option>
+            <option>Estagiário</option>
+          </select>
+
+          <select id="status">
+            <option>Pendente</option>
+            <option>Em andamento</option>
+            <option>Concluído</option>
+          </select>
+        </div>
+
+        <textarea id="descricao" placeholder="Descrição e diretrizes do prazo"></textarea>
+
+        <button type="submit">Salvar</button>
+      </form>
+    </section>
+
+    <section class="table-section">
+      <h2>Lista de Prazos</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Processo</th>
+            <th>Tipo</th>
+            <th>Prazo Fatal</th>
+            <th>Prazo Interno</th>
+            <th>Responsável</th>
+            <th>Status</th>
+            <th>Descrição</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaPrazos"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

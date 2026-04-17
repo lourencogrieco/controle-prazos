@@ -595,7 +595,6 @@ function renderPrazosAba() {
           : `<span class="no-int">—</span>`;
         return `<tr class="${rowClassPrazo(p.prazoFatal)}">
           <td><span class="table-link">${p.pastaNr}</span></td>
-          <td>${p.codigoSIA}</td>
           <td>${p.cliente}</td>
           <td style="font-family:'IBM Plex Mono',monospace;font-size:.72rem">${p.processo}</td>
           <td>${p.comarca}</td>
@@ -608,7 +607,7 @@ function renderPrazosAba() {
           <td><span class="status-pill ${statusClass(p.status)}">${p.status}</span></td>
         </tr>`;
       }).join('')
-    : `<tr><td colspan="12" class="tbl-empty">Nenhum prazo encontrado.</td></tr>`;
+    : `<tr><td colspan="11" class="tbl-empty">Nenhum prazo encontrado.</td></tr>`;
 }
 
 function irParaIntimacao(id) {
@@ -878,7 +877,7 @@ document.getElementById("btnLimparFiltros").addEventListener("click", () => {
 document.getElementById("btnExportarExcel").addEventListener("click", () => {
   const rows = [...document.querySelectorAll("#relTabelaBody tr")];
   if (!rows.length) return;
-  const headers = ["N° da pasta","Código SIA","Cliente","Área","Data","Andamento","Advogado","Tipo"];
+  const headers = ["N° da pasta","Código LHub","Cliente","Área","Data","Andamento","Advogado","Tipo"];
   const csv = [headers.join(";"), ...rows.map(tr =>
     [...tr.querySelectorAll("td")].map(td => `"${td.textContent.trim()}"`).join(";")
   )].join("\n");
@@ -1168,7 +1167,7 @@ const pastas = [
     parteContraria: "-",
     servico:      "Ação declaratória",
     area:         "Cível e resolução de conflitos",
-    tipoServico:  "Contencioso",
+    tipoServico:  "Contencioso Judicial",
     advogado:     "Lourenço Grieco",
     descricao:    "Ação declaratória referente a questões societárias.",
     dataDistribuicao: "15/01/2026",
@@ -1184,7 +1183,7 @@ const pastas = [
     parteContraria: "-",
     servico:      "Ação declaratória",
     area:         "Cível e resolução de conflitos",
-    tipoServico:  "Contencioso",
+    tipoServico:  "Contencioso Judicial",
     advogado:     "Lourenço Grieco",
     descricao:    "Ação declaratória relativa a contrato de locação de contêineres.",
     dataDistribuicao: "14/01/2026",
@@ -1200,7 +1199,7 @@ const pastas = [
     parteContraria: "-",
     servico:      "Ação declaratória",
     area:         "Cível e resolução de conflitos",
-    tipoServico:  "Contencioso",
+    tipoServico:  "Contencioso Judicial",
     advogado:     "Lourenço Grieco",
     descricao:    "Ação declaratória para reconhecimento de direitos societários.",
     dataDistribuicao: "13/01/2026",
@@ -1216,7 +1215,7 @@ const pastas = [
     parteContraria: "-",
     servico:      "Ação declaratória",
     area:         "Cível e resolução de conflitos",
-    tipoServico:  "Contencioso",
+    tipoServico:  "Contencioso Judicial",
     advogado:     "Lourenço Grieco",
     descricao:    "Ação declaratória de inexigibilidade de obrigação contratual.",
     dataDistribuicao: "12/01/2026",
@@ -1232,7 +1231,7 @@ const pastas = [
     parteContraria: "CARLOS EDUARDO BAESSO UBEDA",
     servico:      "Ação condenatória p/ indenização",
     area:         "Cível e resolução de conflitos",
-    tipoServico:  "Migração SIA",
+    tipoServico:  "Contencioso Judicial",
     advogado:     "Bruno Ferreira Soares Batista",
     descricao:    "Trata-se de ação em que o Autor pretende ver realizada desde logo prova pericial de engenharia agronômica para verificar e estimar as perdas que ele alega ter sofrido em razão da ineficácia do defensivo Serenade para controle do Cancro Cítrico.",
     dataDistribuicao: "23/09/2022",
@@ -1248,7 +1247,7 @@ const pastas = [
     parteContraria: "PLENA S/A CORRETORA DE SEGUROS",
     servico:      "Falência ou concordata",
     area:         "Empresarial",
-    tipoServico:  "Contencioso",
+    tipoServico:  "Contencioso Judicial",
     advogado:     "Lourenço Grieco",
     descricao:    "Ação de falência ou concordata referente a litígio empresarial.",
     dataDistribuicao: "10/03/2017",
@@ -1264,7 +1263,7 @@ const pastas = [
     parteContraria: "INDÚSTRIA PLÁSTICA RAMOS LTDA.",
     servico:      "Levantamento de crédito em concordata preventiva",
     area:         "Empresarial",
-    tipoServico:  "Contencioso",
+    tipoServico:  "Contencioso Judicial",
     advogado:     "Lourenço Grieco",
     descricao:    "Levantamento de crédito em processo de concordata preventiva da empresa devedora.",
     dataDistribuicao: "05/02/2026",
@@ -1306,8 +1305,9 @@ function renderPastaList() {
       <td>${p.codigoSIA}</td>
       <td class="pasta-client">${p.cliente}</td>
       <td>${p.parteContraria}</td>
+      <td><span class="tag tag--area">${p.tipoServico}</span></td>
       <td>${p.servico}</td>
-    </tr>`).join("") || `<tr><td colspan="6" class="tbl-empty">Nenhuma pasta encontrada.</td></tr>`;
+    </tr>`).join("") || `<tr><td colspan="7" class="tbl-empty">Nenhuma pasta encontrada.</td></tr>`;
 
   const fim = Math.min(inicio + pastaLinhas, total);
   document.getElementById("pastasPaginacaoInfo").textContent =

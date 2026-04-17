@@ -18,7 +18,7 @@
       <span class="brand-mark">NG</span>
       <div class="brand-text">
         <strong>Legal Hub</strong>
-        <span>Gestão Jurídica Integrada</span>
+        <span>Gestão Jurídica Inteligente</span>
       </div>
     </div>
 
@@ -27,9 +27,9 @@
       <button class="nav-tab" data-view="agenda">AGENDA</button>
       <button class="nav-tab" data-view="atividades">MINHAS ATIVIDADES</button>
       <button class="nav-tab" data-view="pastas">PASTAS</button>
-      <button class="nav-tab">RELATÓRIOS</button>
+      <button class="nav-tab" data-view="relatorios">RELATÓRIOS</button>
       <button class="nav-tab" data-view="pipeline">PIPELINE DE VENDAS</button>
-      <button class="nav-tab">FINANCEIRO</button>
+      <button class="nav-tab" data-view="financeiro">FINANCEIRO</button>
     </nav>
 
     <div class="hdr-user">
@@ -452,6 +452,277 @@
             <div class="empty-state">Nenhum declinado.</div>
           </div>
         </article>
+      </div>
+    </section>
+
+    <!-- ===== RELATÓRIOS ===== -->
+    <section id="view-relatorios" class="view">
+      <div class="page-bar">
+        <div class="page-bar-left">
+          <span class="kicker">Geração de relatórios</span>
+          <h1>Relatórios</h1>
+        </div>
+        <div class="page-bar-right">
+          <button class="btn-outline" id="btnLimparFiltros">↺ Limpar filtros</button>
+          <button class="btn-primary" id="btnGerarRelatorio">Gerar relatório</button>
+          <button class="btn-outline" id="btnExportarPdf" disabled>↓ Exportar PDF</button>
+          <button class="btn-outline" id="btnExportarExcel" disabled>↓ Excel</button>
+        </div>
+      </div>
+
+      <div class="rel-layout">
+
+        <!-- FILTROS -->
+        <aside class="rel-filters panel">
+          <p class="filter-section-title">Tipo de relatório</p>
+          <div class="radio-group">
+            <label class="radio-item">
+              <input type="radio" name="relTipo" value="pasta" checked> Por pasta
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="relTipo" value="cliente"> Por cliente
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="relTipo" value="processo"> Por número de processo
+            </label>
+          </div>
+
+          <hr class="filter-divider">
+
+          <p class="filter-section-title">Identificação</p>
+          <div id="filterIdentPasta" class="filter-ident">
+            <label class="field">
+              <span>N° da pasta</span>
+              <input type="text" id="relNumeroPasta" placeholder="Ex.: 57/2022-5975">
+            </label>
+          </div>
+          <div id="filterIdentCliente" class="filter-ident hidden">
+            <label class="field">
+              <span>Cliente</span>
+              <input type="text" id="relCliente" placeholder="Ex.: Bayer S.a.">
+            </label>
+          </div>
+          <div id="filterIdentProcesso" class="filter-ident hidden">
+            <label class="field">
+              <span>N° do processo</span>
+              <input type="text" id="relProcesso" placeholder="Ex.: 1000909-52.2022.8.26.0067">
+            </label>
+          </div>
+
+          <hr class="filter-divider">
+
+          <p class="filter-section-title">Período</p>
+          <label class="field">
+            <span>Data inicial</span>
+            <input type="date" id="relDataInicio">
+          </label>
+          <label class="field" style="margin-top:10px">
+            <span>Data final</span>
+            <input type="date" id="relDataFim">
+          </label>
+
+          <hr class="filter-divider">
+
+          <p class="filter-section-title">Filtros adicionais</p>
+          <label class="field">
+            <span>Área</span>
+            <select id="relArea">
+              <option value="">Todas</option>
+              <option>Cível e resolução de conflitos</option>
+              <option>Tributário</option>
+              <option>Trabalhista</option>
+              <option>Societário</option>
+              <option>Contencioso</option>
+              <option>Empresarial</option>
+            </select>
+          </label>
+          <label class="field" style="margin-top:10px">
+            <span>Responsável</span>
+            <select id="relResponsavel">
+              <option value="">Todos</option>
+              <option>Lourenço Grieco</option>
+              <option>Controller</option>
+              <option>Advogado</option>
+              <option>Estagiário</option>
+            </select>
+          </label>
+
+          <hr class="filter-divider">
+
+          <p class="filter-section-title">Andamentos</p>
+          <div class="check-stack">
+            <label class="check-label">
+              <input type="checkbox" id="relTodosAndamentos" checked> Todos os andamentos
+            </label>
+            <label class="check-label">
+              <input type="checkbox" id="relExcluirManuais"> Excluir andamentos manuais
+            </label>
+          </div>
+
+          <div class="andamento-select-wrap" id="andamentoSelectWrap">
+            <p class="filter-sublabel">Selecionar tipos de andamento:</p>
+            <div class="check-stack check-stack--sm">
+              <label class="check-label"><input type="checkbox" class="rel-and-tipo" value="Ação principal" checked> Ação principal</label>
+              <label class="check-label"><input type="checkbox" class="rel-and-tipo" value="Despacho" checked> Despacho</label>
+              <label class="check-label"><input type="checkbox" class="rel-and-tipo" value="Sentença" checked> Sentença</label>
+              <label class="check-label"><input type="checkbox" class="rel-and-tipo" value="Acórdão" checked> Acórdão</label>
+              <label class="check-label"><input type="checkbox" class="rel-and-tipo" value="Decisão interlocutória" checked> Decisão interlocutória</label>
+              <label class="check-label"><input type="checkbox" class="rel-and-tipo" value="Juntada de documento" checked> Juntada de documento</label>
+              <label class="check-label"><input type="checkbox" class="rel-and-tipo" value="Intimação" checked> Intimação</label>
+              <label class="check-label"><input type="checkbox" class="rel-and-tipo" value="Publicação" checked> Publicação</label>
+              <label class="check-label"><input type="checkbox" class="rel-and-tipo" value="Audiência" checked> Audiência</label>
+              <label class="check-label"><input type="checkbox" class="rel-and-tipo" value="Recurso" checked> Recurso</label>
+              <label class="check-label"><input type="checkbox" class="rel-and-tipo" value="Manual" class="andamento-manual"> Manual</label>
+            </div>
+          </div>
+        </aside>
+
+        <!-- PREVIEW -->
+        <div class="rel-preview">
+          <div class="panel rel-preview-panel" id="relPreviewPanel">
+            <div class="rel-empty-state" id="relEmptyState">
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" opacity=".3">
+                <rect x="8" y="4" width="26" height="40" rx="3" stroke="currentColor" stroke-width="2.5"/>
+                <path d="M16 16h16M16 24h12M16 32h8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M34 28l8 8m-3-8a5 5 0 11-10 0 5 5 0 0110 0z" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+              <p>Configure os filtros e clique em<br><strong>Gerar relatório</strong> para visualizar</p>
+            </div>
+
+            <div id="relResultado" class="hidden">
+              <div class="rel-resultado-head">
+                <div>
+                  <p class="kicker" id="relResultadoKicker">—</p>
+                  <h2 id="relResultadoTitulo">—</h2>
+                </div>
+                <div class="rel-resultado-stats">
+                  <div class="rel-stat">
+                    <strong id="relStatPastas">0</strong>
+                    <span>Pastas</span>
+                  </div>
+                  <div class="rel-stat">
+                    <strong id="relStatAndamentos">0</strong>
+                    <span>Andamentos</span>
+                  </div>
+                  <div class="rel-stat">
+                    <strong id="relStatPrazo">—</strong>
+                    <span>Período</span>
+                  </div>
+                </div>
+              </div>
+
+              <div id="relTabelaWrap" class="table-scroll">
+                <table id="relTabela">
+                  <thead>
+                    <tr>
+                      <th>N° da pasta</th>
+                      <th>Código SIA</th>
+                      <th>Cliente</th>
+                      <th>Área</th>
+                      <th>Data</th>
+                      <th>Andamento</th>
+                      <th>Advogado</th>
+                      <th>Tipo</th>
+                    </tr>
+                  </thead>
+                  <tbody id="relTabelaBody"></tbody>
+                </table>
+              </div>
+              <p class="tbl-count" id="relCount">—</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===== FINANCEIRO ===== -->
+    <section id="view-financeiro" class="view">
+      <div class="page-bar">
+        <div class="page-bar-left">
+          <span class="kicker">Sistema integrado</span>
+          <h1>Financeiro</h1>
+        </div>
+        <div class="page-bar-right">
+          <a class="btn-primary" href="../Aplicativos/Financeiro NG/index.html" target="_blank" id="btnAbrirFinanceiro">
+            ↗ Abrir Financeiro NG
+          </a>
+        </div>
+      </div>
+
+      <div class="fin-layout">
+        <div class="fin-info panel">
+          <div class="fin-info-header">
+            <div class="fin-badge">
+              <span class="brand-mark" style="width:42px;height:42px;font-size:.9rem">NG</span>
+            </div>
+            <div>
+              <h2>Financeiro NG</h2>
+              <p class="fin-desc">Sistema financeiro integrado com Supabase — cobranças, contas a pagar, despesas, clientes e relatórios.</p>
+            </div>
+          </div>
+          <div class="fin-modules">
+            <div class="fin-module">
+              <span class="fin-module-icon">💰</span>
+              <div>
+                <strong>Cobranças</strong>
+                <p>Lançamentos a receber, recorrência, baixa em lote</p>
+              </div>
+            </div>
+            <div class="fin-module">
+              <span class="fin-module-icon">📋</span>
+              <div>
+                <strong>Contas a Pagar</strong>
+                <p>Despesas fixas, recorrentes e avulsas</p>
+              </div>
+            </div>
+            <div class="fin-module">
+              <span class="fin-module-icon">🔄</span>
+              <div>
+                <strong>Despesas Reembolsáveis</strong>
+                <p>Nota de débito e recibo de despesa</p>
+              </div>
+            </div>
+            <div class="fin-module">
+              <span class="fin-module-icon">👥</span>
+              <div>
+                <strong>Clientes</strong>
+                <p>Cadastro com contratos e histórico financeiro</p>
+              </div>
+            </div>
+            <div class="fin-module">
+              <span class="fin-module-icon">📊</span>
+              <div>
+                <strong>Dashboard & Relatórios</strong>
+                <p>Gráficos, exportação e análise de fluxo de caixa</p>
+              </div>
+            </div>
+            <div class="fin-module">
+              <span class="fin-module-icon">🔒</span>
+              <div>
+                <strong>Multi-tenant com autenticação</strong>
+                <p>Perfis: Admin, Operador, Colaborador, Controller</p>
+              </div>
+            </div>
+          </div>
+          <div class="fin-actions">
+            <a class="btn-primary" href="../Aplicativos/Financeiro NG/index.html" target="_blank">
+              ↗ Abrir Financeiro NG em nova aba
+            </a>
+            <span class="fin-path">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1.5" y="1.5" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M4 6.5h5M6.5 4v5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+              ~/Aplicativos/Financeiro NG/
+            </span>
+          </div>
+        </div>
+
+        <iframe
+          id="finIframe"
+          src="../Aplicativos/Financeiro NG/index.html"
+          class="fin-iframe"
+          title="Financeiro NG"
+          allow="same-origin"
+        ></iframe>
       </div>
     </section>
 

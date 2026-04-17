@@ -1,67 +1,462 @@
 <!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NG | SIA Jurídico</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
 
-  <main>
-    <section class="form-section">
-      <h2>Novo Prazo / Tarefa</h2>
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="hdr-brand">
+      <span class="brand-mark">NG</span>
+      <div class="brand-text">
+        <strong>SIA Jurídico</strong>
+        <span>Sistema Integrado de Advocacia</span>
+      </div>
+    </div>
 
-      <form id="prazoForm">
-        <div class="grid">
-          <input type="text" id="cliente" placeholder="Nome do Cliente" required>
-          <input type="text" id="processo" placeholder="Número do Processo" required>
+    <nav class="hdr-nav" aria-label="Navegação principal">
+      <button class="nav-tab active" data-view="painel">PAINEL</button>
+      <button class="nav-tab" data-view="atividades">MINHAS ATIVIDADES</button>
+      <button class="nav-tab" data-view="pipeline">PIPELINE DE VENDAS</button>
+      <button class="nav-tab" data-view="credito">CONTROLE DE CRÉDITO</button>
+      <button class="nav-tab">FINANCEIRO</button>
+      <button class="nav-tab">RELATÓRIOS</button>
+    </nav>
 
-          <select id="tipo" required>
-            <option value="">Tipo de Atividade</option>
-            <option>Prazo</option>
-            <option>Audiência</option>
-            <option>Diligência</option>
-            <option>Agendamento</option>
-            <option>Lembrete</option>
-          </select>
+    <div class="hdr-user">
+      <div class="user-info">
+        <strong>LOURENÇO GRIECO</strong>
+        <span>SÓCIO</span>
+      </div>
+      <div class="hdr-actions">
+        <button class="hdr-btn" title="Início">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M2 6.5L8 2l6 4.5V14H10v-3.5H6V14H2V6.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button class="hdr-btn" title="Configurações">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button class="hdr-btn hdr-btn--notif" title="Notificações">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 1.5C5.5 1.5 3.5 3.5 3.5 6v4l-1.5 2h12l-1.5-2V6C12.5 3.5 10.5 1.5 8 1.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M6.5 12.5a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+          <span class="notif-dot"></span>
+        </button>
+        <button class="hdr-btn" title="Imprimir">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <rect x="3" y="5" width="10" height="7" rx="1" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M5 5V3h6v2M5 10h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
 
-          <input type="date" id="dataFatal" required>
+  <main class="app-main">
 
-          <select id="responsavel" required>
-            <option value="">Responsável</option>
-            <option>Sócio</option>
-            <option>Controller</option>
-            <option>Advogado</option>
-            <option>Estagiário</option>
-          </select>
+    <!-- ===== PAINEL ===== -->
+    <section id="view-painel" class="view is-active">
+      <div class="page-bar">
+        <div class="page-bar-left">
+          <span class="kicker">Visão geral</span>
+          <h1>Painel de Controle</h1>
+        </div>
+        <div class="page-bar-right">
+          <span class="sys-tag">Login: LOURENÇO.GRIECO &ensp;|&ensp; Perfil: SÓCIO</span>
+        </div>
+      </div>
 
-          <select id="status">
-            <option>Pendente</option>
-            <option>Em andamento</option>
-            <option>Concluído</option>
-          </select>
+      <div class="dashboard-grid">
+        <div class="dash-card">
+          <div class="dash-card-head">
+            <span class="dash-label">TAREFAS A FAZER</span>
+            <button class="dash-refresh" title="Atualizar">↻</button>
+          </div>
+          <a href="#" class="dash-stat">
+            <strong>1</strong>
+            <span>Inicialização(ões)</span>
+          </a>
+          <p class="dash-time" id="time1">Atualizado às --:--:--</p>
         </div>
 
-        <textarea id="descricao" placeholder="Descrição e diretrizes do prazo"></textarea>
+        <div class="dash-card">
+          <div class="dash-card-head">
+            <span class="dash-label">TAREFAS SOLICITADAS</span>
+            <button class="dash-refresh" title="Atualizar">↻</button>
+          </div>
+          <div class="dash-empty">Sem pendências</div>
+          <p class="dash-time">Atualizado às --:--:--</p>
+        </div>
 
-        <button type="submit">Salvar</button>
-      </form>
+        <div class="dash-card">
+          <div class="dash-card-head">
+            <span class="dash-label">SOLICITAÇÕES</span>
+            <button class="dash-refresh" title="Atualizar">↻</button>
+          </div>
+          <a href="#" class="dash-stat dash-stat--alert">
+            <strong>23</strong>
+            <span>Vencidas</span>
+          </a>
+          <p class="dash-time">Atualizado às --:--:--</p>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-card-head">
+            <span class="dash-label">TARIFAÇÕES</span>
+            <button class="dash-refresh" title="Atualizar">↻</button>
+          </div>
+          <div class="dash-empty">Sem pendências</div>
+          <p class="dash-time">Atualizado às --:--:--</p>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-card-head">
+            <span class="dash-label">PASTAS</span>
+            <button class="dash-refresh" title="Atualizar">↻</button>
+          </div>
+          <div class="dash-empty">Sem pendências</div>
+          <p class="dash-time">Atualizado às --:--:--</p>
+        </div>
+
+        <div class="dash-card dash-card--wide">
+          <div class="dash-card-head">
+            <span class="dash-label">ALERTAS</span>
+            <button class="dash-refresh" title="Atualizar">↻</button>
+          </div>
+          <a href="#" class="dash-stat">
+            <strong>48</strong>
+            <span>Pastas de 1ª Instância a 4 meses.</span>
+          </a>
+          <a href="#" class="dash-stat">
+            <strong>22</strong>
+            <span>Pastas de 2ª Instância a 12 meses.</span>
+          </a>
+          <p class="dash-time">Atualizado às --:--:--</p>
+        </div>
+      </div>
     </section>
 
-    <section class="table-section">
-      <h2>Lista de Prazos</h2>
+    <!-- ===== MINHAS ATIVIDADES ===== -->
+    <section id="view-atividades" class="view">
+      <div class="page-bar">
+        <div class="page-bar-left">
+          <span class="kicker">Minhas atividades</span>
+          <h1>Solicitações jurídicas</h1>
+        </div>
+        <div class="page-bar-right">
+          <label class="search-field">
+            <svg class="search-ico" width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M9.5 9.5l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <input type="text" id="buscaPainel" placeholder="Pesquisar por cliente, processo ou tipo">
+          </label>
+          <button class="btn-outline">Adicionar filtro ▾</button>
+          <label class="select-field">
+            <select id="filtroResponsavel">
+              <option value="">Todos os usuários</option>
+              <option>Sócio</option>
+              <option>Controller</option>
+              <option>Advogado</option>
+              <option>Estagiário</option>
+            </select>
+          </label>
+          <button class="btn-primary">+ Adicionar solicitação</button>
+        </div>
+      </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Cliente</th>
-            <th>Processo</th>
-            <th>Tipo</th>
-            <th>Prazo Fatal</th>
-            <th>Prazo Interno</th>
-            <th>Responsável</th>
-            <th>Status</th>
-            <th>Descrição</th>
-          </tr>
-        </thead>
-        <tbody id="tabelaPrazos"></tbody>
-      </table>
+      <div class="view-subbar">
+        <div class="subtabs">
+          <button class="subtab is-active">Solicitações</button>
+          <button class="subtab">Tarefas</button>
+          <button class="subtab">Intimações</button>
+        </div>
+        <div class="progress-group">
+          <span>Todos os andamentos</span>
+          <div class="progress-track"><span id="progressBar"></span></div>
+          <small id="progressLabel">0% completo</small>
+        </div>
+      </div>
+
+      <div class="metric-strip">
+        <div class="metric-chip">
+          <strong id="metricPendentes">00</strong>
+          <span>Pendentes</span>
+        </div>
+        <div class="metric-chip metric-chip--alert">
+          <strong id="metricUrgentes">00</strong>
+          <span>Urgentes</span>
+        </div>
+        <div class="metric-chip metric-chip--ok">
+          <strong id="metricConcluidos">00</strong>
+          <span>Concluídas</span>
+        </div>
+      </div>
+
+      <div class="board">
+        <article class="board-col">
+          <header class="board-col-head">
+            <span>Novas solicitações</span>
+            <span class="col-count" id="countNovas">0</span>
+          </header>
+          <div class="board-col-body" id="colunaPendentes"></div>
+        </article>
+        <article class="board-col">
+          <header class="board-col-head">
+            <span>Em andamento</span>
+            <span class="col-count" id="countAndamento">0</span>
+          </header>
+          <div class="board-col-body" id="colunaAndamento"></div>
+        </article>
+        <article class="board-col">
+          <header class="board-col-head">
+            <span>Concluído</span>
+            <span class="col-count" id="countConcluidos">0</span>
+          </header>
+          <div class="board-col-body" id="colunaConcluidos"></div>
+        </article>
+        <article class="board-col">
+          <header class="board-col-head">
+            <span>Cancelado</span>
+            <span class="col-count" id="countCancelados">0</span>
+          </header>
+          <div class="board-col-body" id="colunaCancelados">
+            <div class="empty-state">Nenhuma solicitação cancelada.</div>
+          </div>
+        </article>
+      </div>
+
+      <div class="bottom-grid">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <span class="kicker">Cadastro rápido</span>
+              <h2>Nova atividade jurídica</h2>
+            </div>
+            <span class="badge">Registro operacional</span>
+          </div>
+          <form id="prazoForm">
+            <div class="form-grid">
+              <label class="field">
+                <span>Cliente</span>
+                <input type="text" id="cliente" placeholder="Ex.: Construtora Horizonte Ltda." required>
+              </label>
+              <label class="field">
+                <span>Processo / Pasta</span>
+                <input type="text" id="processo" placeholder="0001234-56.2026.8.26.0100" required>
+              </label>
+              <label class="field">
+                <span>Tipo de atividade</span>
+                <select id="tipo" required>
+                  <option value="">Selecione</option>
+                  <option>Prazo processual</option>
+                  <option>Audiência</option>
+                  <option>Diligência</option>
+                  <option>Agendamento</option>
+                  <option>Lembrete interno</option>
+                  <option>Encerramento de pasta</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Prazo fatal</span>
+                <input type="date" id="dataFatal" required>
+              </label>
+              <label class="field">
+                <span>Responsável</span>
+                <select id="responsavel" required>
+                  <option value="">Selecione</option>
+                  <option>Sócio</option>
+                  <option>Controller</option>
+                  <option>Advogado</option>
+                  <option>Estagiário</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Status</span>
+                <select id="status">
+                  <option>Pendente</option>
+                  <option>Em andamento</option>
+                  <option>Concluído</option>
+                </select>
+              </label>
+            </div>
+            <label class="field" style="margin-top:14px;display:block">
+              <span>Descrição e diretrizes</span>
+              <textarea id="descricao" placeholder="Inclua orientações jurídicas, observações do processo e próximo passo da equipe."></textarea>
+            </label>
+            <div class="form-foot">
+              <p>O prazo interno é calculado automaticamente para apoiar o acompanhamento da equipe jurídica.</p>
+              <button type="submit" class="btn-primary">Salvar atividade</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <span class="kicker">Pastas e prazos</span>
+              <h2>Visão tabular</h2>
+            </div>
+            <span class="badge">Snapshot jurídico</span>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Processo</th>
+                  <th>Cliente</th>
+                  <th>Tipo</th>
+                  <th>Prazo fatal</th>
+                  <th>Responsável</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="tabelaPrazos"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
     </section>
+
+    <!-- ===== PIPELINE DE VENDAS ===== -->
+    <section id="view-pipeline" class="view">
+      <div class="page-bar">
+        <div class="page-bar-left">
+          <span class="kicker">CRM</span>
+          <h1>Pipeline — Controle de vendas</h1>
+        </div>
+        <div class="page-bar-right">
+          <label class="search-field">
+            <svg class="search-ico" width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M9.5 9.5l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <input type="text" id="buscaPipeline" placeholder="Pesquisar...">
+          </label>
+          <button class="btn-outline">Adicionar filtro ▾</button>
+          <label class="select-field">
+            <select><option>Todos os usuários</option></select>
+          </label>
+          <button class="btn-primary">+ Cadastrar oportunidade</button>
+          <button class="btn-outline">↓ Exportar relatório</button>
+        </div>
+      </div>
+
+      <div class="board">
+        <article class="board-col">
+          <header class="board-col-head">
+            <span>Oportunidades</span>
+            <span class="col-count" id="countOportunidades">0</span>
+          </header>
+          <div class="board-col-body" id="colunaOportunidades"></div>
+        </article>
+        <article class="board-col">
+          <header class="board-col-head">
+            <span>Aguardando validação da diretoria</span>
+            <span class="col-count" id="countValidacao">0</span>
+          </header>
+          <div class="board-col-body" id="colunaValidacao">
+            <div class="empty-state">Nenhum item aguardando.</div>
+          </div>
+        </article>
+        <article class="board-col">
+          <header class="board-col-head">
+            <span>Aguardando aceite do cliente</span>
+            <span class="col-count" id="countAceite">0</span>
+          </header>
+          <div class="board-col-body" id="colunaAceite"></div>
+        </article>
+        <article class="board-col">
+          <header class="board-col-head">
+            <span>Contrato assinado</span>
+            <span class="col-count" id="countAssinado">0</span>
+          </header>
+          <div class="board-col-body" id="colunaAssinado">
+            <div class="empty-state">Nenhum contrato assinado.</div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ===== CONTROLE DE CRÉDITO ===== -->
+    <section id="view-credito" class="view">
+      <div class="page-bar">
+        <div class="page-bar-left">
+          <span class="kicker">Financeiro</span>
+          <h1>Pipeline — Controle de crédito</h1>
+        </div>
+        <div class="page-bar-right">
+          <label class="search-field">
+            <svg class="search-ico" width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M9.5 9.5l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <input type="text" placeholder="Pesquisar...">
+          </label>
+          <button class="btn-outline">Adicionar filtro ▾</button>
+          <label class="select-field">
+            <select><option>Todos os usuários</option></select>
+          </label>
+          <button class="btn-primary">+ Cadastrar crédito</button>
+        </div>
+      </div>
+
+      <div class="board">
+        <article class="board-col">
+          <header class="board-col-head">
+            <span>Créditos recebidos</span>
+            <span class="col-count">0</span>
+          </header>
+          <div class="board-col-body">
+            <div class="empty-state">Nenhum crédito recebido.</div>
+          </div>
+        </article>
+        <article class="board-col">
+          <header class="board-col-head">
+            <span>Em análise</span>
+            <span class="col-count">0</span>
+          </header>
+          <div class="board-col-body">
+            <div class="empty-state">Nenhum em análise.</div>
+          </div>
+        </article>
+        <article class="board-col">
+          <header class="board-col-head">
+            <span>Suspensos</span>
+            <span class="col-count">0</span>
+          </header>
+          <div class="board-col-body">
+            <div class="empty-state">Nenhum suspenso.</div>
+          </div>
+        </article>
+        <article class="board-col">
+          <header class="board-col-head">
+            <span>Declinados</span>
+            <span class="col-count">0</span>
+          </header>
+          <div class="board-col-body">
+            <div class="empty-state">Nenhum declinado.</div>
+          </div>
+        </article>
+      </div>
+    </section>
+
   </main>
+</div>
 
-  <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>

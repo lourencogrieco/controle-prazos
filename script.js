@@ -359,6 +359,277 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
+// ─── AGENDA DATA ───────────────────────────────────────────────────────
+const TIPO_COR = {
+  "Prazo":     "prazo",
+  "Audiência": "audiencia",
+  "Reunião":   "reuniao",
+  "Diligência":"diligencia",
+  "Lembrete":  "lembrete",
+};
+
+const agendaEventos = [
+  { data: "2026-04-17", titulo: "Reunião de equipe — Planejamento semanal",  tipo: "Reunião",    hora: "09:00", responsavel: "Lourenço Grieco",    local: "Sala de reuniões" },
+  { data: "2026-04-18", titulo: "Prazo: Eurofins — Encerramento de pasta",   tipo: "Prazo",      hora: "",      responsavel: "Advogado",            local: "Interno" },
+  { data: "2026-04-19", titulo: "Prazo: Banco Prime Capital — Contestação",  tipo: "Prazo",      hora: "",      responsavel: "Controller",          local: "Tribunal" },
+  { data: "2026-04-21", titulo: "Lembrete: Família Almeida — Petição",       tipo: "Lembrete",   hora: "10:00", responsavel: "Advogado",            local: "Interno" },
+  { data: "2026-04-22", titulo: "Audiência — Banco Prime Capital",           tipo: "Audiência",  hora: "14:30", responsavel: "Controller",          local: "2ª Vara Cível — Fórum Central" },
+  { data: "2026-04-24", titulo: "Diligência: Grupo Orion Logística",         tipo: "Diligência", hora: "11:00", responsavel: "Estagiário",          local: "Cartório" },
+  { data: "2026-04-25", titulo: "Audiência — Hospital Santa Helena",         tipo: "Audiência",  hora: "09:30", responsavel: "Sócio",               local: "3ª Vara do Trabalho" },
+  { data: "2026-04-28", titulo: "Reunião com cliente — Grupo Orion",         tipo: "Reunião",    hora: "15:00", responsavel: "Lourenço Grieco",    local: "Escritório" },
+  { data: "2026-04-29", titulo: "Prazo: Santos Brasil — Resposta",           tipo: "Prazo",      hora: "",      responsavel: "Lourenço Grieco",    local: "Tribunal" },
+  { data: "2026-05-05", titulo: "Audiência — Bayer S.a.",                    tipo: "Audiência",  hora: "10:00", responsavel: "Bruno F. S. Batista", local: "Comarca de Borborema" },
+  { data: "2026-05-08", titulo: "Reunião de acompanhamento financeiro",      tipo: "Reunião",    hora: "08:30", responsavel: "Lourenço Grieco",    local: "Sala de reuniões" },
+  { data: "2026-05-12", titulo: "Prazo: Papelaria Tabajara — Manifestação",  tipo: "Prazo",      hora: "",      responsavel: "Lourenço Grieco",    local: "Tribunal" },
+  { data: "2026-05-15", titulo: "Diligência — Vera Maria Ritter",            tipo: "Diligência", hora: "13:00", responsavel: "Advogado",            local: "Cartório São Paulo" },
+  { data: "2026-05-20", titulo: "Audiência — Construtora Meridional",        tipo: "Audiência",  hora: "14:00", responsavel: "Lourenço Grieco",    local: "4ª Vara Trabalhista" },
+];
+
+let calAno   = 2026;
+let calMes   = 3;          // 0-indexed: 3 = abril
+let calDataSelecionada = null;
+
+const MESES_PT  = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const DIAS_PT   = ["domingo","segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado"];
+
+function eventosNoDia(iso) {
+  return agendaEventos.filter(e => e.data === iso);
+}
+
+function eventosPorTipoNoMes(ano, mes) {
+  const prefix = `${ano}-${String(mes + 1).padStart(2, "0")}`;
+  const tipos  = {};
+  agendaEventos.filter(e => e.data.startsWith(prefix)).forEach(e => {
+    tipos[e.tipo] = (tipos[e.tipo] || 0) + 1;
+  });
+  return tipos;
+}
+
+function renderCalendario() {
+  const titulo    = document.getElementById("calMonthYear");
+  const grid      = document.getElementById("calGrid");
+  titulo.textContent = `${MESES_PT[calMes]} ${calAno}`;
+
+  const hoje      = new Date();
+  const hojeIso   = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,"0")}-${String(hoje.getDate()).padStart(2,"0")}`;
+
+  const primeiroDia  = new Date(calAno, calMes, 1).getDay(); // 0=dom
+  const diasNoMes    = new Date(calAno, calMes + 1, 0).getDate();
+  const diasMesAnterior = new Date(calAno, calMes, 0).getDate();
+
+  const cells = [];
+
+  // Cells from previous month
+  for (let i = primeiroDia - 1; i >= 0; i--) {
+    const d = diasMesAnterior - i;
+    const m = calMes === 0 ? 12 : calMes;
+    const a = calMes === 0 ? calAno - 1 : calAno;
+    cells.push({ dia: d, mes: m, ano: a, other: true });
+  }
+
+  // Current month cells
+  for (let d = 1; d <= diasNoMes; d++) {
+    cells.push({ dia: d, mes: calMes + 1, ano: calAno, other: false });
+  }
+
+  // Next month cells to fill grid
+  const resto = 42 - cells.length;
+  for (let d = 1; d <= resto; d++) {
+    const m = calMes === 11 ? 1 : calMes + 2;
+    const a = calMes === 11 ? calAno + 1 : calAno;
+    cells.push({ dia: d, mes: m, ano: a, other: true });
+  }
+
+  grid.innerHTML = cells.map(c => {
+    const iso     = `${c.ano}-${String(c.mes).padStart(2,"0")}-${String(c.dia).padStart(2,"0")}`;
+    const evs     = eventosNoDia(iso);
+    const isHoje  = iso === hojeIso;
+    const isSel   = iso === calDataSelecionada;
+    const isUrgente = evs.some(e => e.tipo === "Prazo");
+
+    const classes = [
+      "cal-day",
+      c.other  ? "cal-day--other"    : "",
+      isHoje   ? "cal-day--today"    : "",
+      isSel    ? "cal-day--selected" : "",
+      isUrgente && !c.other ? "cal-day--has-urgent" : "",
+    ].filter(Boolean).join(" ");
+
+    const maxEv  = 3;
+    const visible = evs.slice(0, maxEv);
+    const extra  = evs.length - maxEv;
+
+    const evHtml = visible.map(e =>
+      `<span class="cal-ev cal-ev--${TIPO_COR[e.tipo] || "lembrete"}" title="${e.titulo}">${e.titulo}</span>`
+    ).join("") + (extra > 0 ? `<span class="cal-ev cal-ev--more">+${extra} mais</span>` : "");
+
+    return `<div class="${classes}" data-date="${iso}" role="button" tabindex="0">
+      <span class="cal-day-num">${c.dia}</span>
+      <div class="cal-events">${evHtml}</div>
+    </div>`;
+  }).join("");
+
+  // Click handlers
+  grid.querySelectorAll(".cal-day:not(.cal-day--other)").forEach(el => {
+    el.addEventListener("click", () => selecionarDia(el.dataset.date));
+    el.addEventListener("keydown", e => { if (e.key === "Enter") selecionarDia(el.dataset.date); });
+  });
+
+  renderResumoMes();
+  renderProximos();
+}
+
+function selecionarDia(iso) {
+  calDataSelecionada = iso;
+
+  // Re-render to update selection
+  renderCalendario();
+
+  const [a, m, d] = iso.split("-").map(Number);
+  const date      = new Date(a, m - 1, d);
+  const label     = `${DIAS_PT[date.getDay()]}, ${d} de ${MESES_PT[m - 1]}`;
+
+  document.getElementById("agendaDiaLabel").textContent  = `${d} de ${MESES_PT[m-1]}`;
+  document.getElementById("agendaDiaTitulo").textContent = label;
+
+  const evs   = eventosNoDia(iso);
+  const lista = document.getElementById("agendaDiaLista");
+
+  if (!evs.length) {
+    lista.innerHTML = `<p class="agenda-aside-empty">Nenhum evento neste dia.</p>`;
+    return;
+  }
+
+  lista.innerHTML = evs.map(e => `
+    <div class="ev-item">
+      <span class="ev-dot" style="background:${corDot(e.tipo)}"></span>
+      <div class="ev-info">
+        <p class="ev-titulo">${e.titulo}</p>
+        <p class="ev-meta">${e.hora ? e.hora + " · " : ""}${e.responsavel}${e.local ? " · " + e.local : ""}</p>
+      </div>
+    </div>`).join("");
+}
+
+function renderProximos() {
+  const hoje  = new Date();
+  const base  = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  const limite = new Date(base); limite.setDate(limite.getDate() + 7);
+
+  const proximos = agendaEventos
+    .filter(e => {
+      const d = new Date(e.data + "T00:00:00");
+      return d >= base && d <= limite;
+    })
+    .sort((a, b) => a.data.localeCompare(b.data));
+
+  const el = document.getElementById("agendaProximos");
+
+  if (!proximos.length) {
+    el.innerHTML = `<p class="agenda-aside-empty">Nenhum evento nos próximos 7 dias.</p>`;
+    return;
+  }
+
+  const hojeIso = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,"0")}-${String(hoje.getDate()).padStart(2,"0")}`;
+
+  el.innerHTML = proximos.map(e => {
+    const isHoje   = e.data === hojeIso;
+    const [,m,d]   = e.data.split("-").map(Number);
+    const label    = `${d}/${m}${e.hora ? " · " + e.hora : ""}`;
+    const badgeCls = isHoje ? "ev-date-badge--today" : (e.tipo === "Prazo" ? "ev-date-badge--urgent" : "");
+    return `
+      <div class="ev-item">
+        <span class="ev-dot" style="background:${corDot(e.tipo)}"></span>
+        <div class="ev-info">
+          <p class="ev-titulo">${e.titulo}</p>
+          <p class="ev-meta">${e.responsavel}</p>
+        </div>
+        <span class="ev-date-badge ${badgeCls}">${label}</span>
+      </div>`;
+  }).join("");
+}
+
+function renderResumoMes() {
+  const contagem = eventosPorTipoNoMes(calAno, calMes);
+  const total    = Object.values(contagem).reduce((a, b) => a + b, 0) || 1;
+  const ordem    = ["Prazo","Audiência","Reunião","Diligência","Lembrete"];
+  const cores    = { Prazo:"#e74d3c", "Audiência":"#1890d8", Reunião:"#1d8b60", Diligência:"#e07a17", Lembrete:"#aaa" };
+
+  document.getElementById("agendaResumo").innerHTML = ordem
+    .filter(t => contagem[t])
+    .map(t => {
+      const pct = Math.round((contagem[t] / total) * 100);
+      return `
+        <div class="bar-item">
+          <div class="bar-label">
+            <span>${t}</span>
+            <span>${contagem[t]} evento${contagem[t] > 1 ? "s" : ""}</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:${pct}%;background:${cores[t]}"></div>
+          </div>
+        </div>`;
+    }).join("") || `<p class="agenda-aside-empty">Nenhum evento este mês.</p>`;
+}
+
+function corDot(tipo) {
+  const m = { Prazo:"#e74d3c", "Audiência":"#1890d8", Reunião:"#1d8b60", Diligência:"#e07a17", Lembrete:"#aaa" };
+  return m[tipo] || "#aaa";
+}
+
+// Calendar navigation
+document.getElementById("calPrev").addEventListener("click", () => {
+  calMes--; if (calMes < 0) { calMes = 11; calAno--; }
+  renderCalendario();
+});
+
+document.getElementById("calNext").addEventListener("click", () => {
+  calMes++; if (calMes > 11) { calMes = 0; calAno++; }
+  renderCalendario();
+});
+
+document.getElementById("calHoje").addEventListener("click", () => {
+  const h = new Date();
+  calAno  = h.getFullYear();
+  calMes  = h.getMonth();
+  const iso = `${calAno}-${String(calMes+1).padStart(2,"0")}-${String(h.getDate()).padStart(2,"0")}`;
+  calDataSelecionada = iso;
+  renderCalendario();
+  selecionarDia(iso);
+});
+
+// Modal
+document.getElementById("btnNovoEvento").addEventListener("click", () => {
+  document.getElementById("modalEvento").classList.remove("hidden");
+  if (calDataSelecionada) document.getElementById("evData").value = calDataSelecionada;
+});
+
+["modalClose","modalCancelar"].forEach(id => {
+  document.getElementById(id).addEventListener("click", () => {
+    document.getElementById("modalEvento").classList.add("hidden");
+  });
+});
+
+document.getElementById("modalEvento").addEventListener("click", e => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.add("hidden");
+});
+
+document.getElementById("eventoForm").addEventListener("submit", e => {
+  e.preventDefault();
+  agendaEventos.push({
+    data:        document.getElementById("evData").value,
+    titulo:      document.getElementById("evTitulo").value.trim(),
+    tipo:        document.getElementById("evTipo").value,
+    hora:        document.getElementById("evHora").value,
+    responsavel: document.getElementById("evResponsavel").value,
+    local:       document.getElementById("evLocal").value.trim(),
+  });
+  agendaEventos.sort((a, b) => a.data.localeCompare(b.data));
+  document.getElementById("modalEvento").classList.add("hidden");
+  e.target.reset();
+  renderCalendario();
+  if (calDataSelecionada) selecionarDia(calDataSelecionada);
+});
+
 // ─── PASTA DATA ────────────────────────────────────────────────────────
 const pastas = [
   {
@@ -620,3 +891,9 @@ document.getElementById("buscaPasta").addEventListener("input", () => {
 renderAtividades();
 renderPipeline();
 renderPastaList();
+renderCalendario();
+
+// Select today on load
+const _h = new Date();
+const _iso = `${_h.getFullYear()}-${String(_h.getMonth()+1).padStart(2,"0")}-${String(_h.getDate()).padStart(2,"0")}`;
+selecionarDia(_iso);

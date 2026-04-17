@@ -27,6 +27,7 @@
       <button class="nav-tab" data-view="atividades">MINHAS ATIVIDADES</button>
       <button class="nav-tab" data-view="pipeline">PIPELINE DE VENDAS</button>
       <button class="nav-tab" data-view="credito">CONTROLE DE CRÉDITO</button>
+      <button class="nav-tab" data-view="agenda">AGENDA</button>
       <button class="nav-tab" data-view="pastas">PASTAS</button>
       <button class="nav-tab">FINANCEIRO</button>
       <button class="nav-tab">RELATÓRIOS</button>
@@ -452,6 +453,143 @@
             <div class="empty-state">Nenhum declinado.</div>
           </div>
         </article>
+      </div>
+    </section>
+
+    <!-- ===== AGENDA ===== -->
+    <section id="view-agenda" class="view">
+      <div class="page-bar">
+        <div class="page-bar-left">
+          <span class="kicker">Gestão de tempo</span>
+          <h1>Agenda</h1>
+        </div>
+        <div class="page-bar-right">
+          <button class="btn-outline" id="calHoje">Hoje</button>
+          <button class="btn-primary" id="btnNovoEvento">+ Novo evento</button>
+        </div>
+      </div>
+
+      <div class="agenda-layout">
+
+        <!-- CALENDAR PANEL -->
+        <div class="panel cal-panel">
+          <div class="cal-nav">
+            <button class="cal-nav-btn" id="calPrev">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <h2 id="calMonthYear" class="cal-title">—</h2>
+            <button class="cal-nav-btn" id="calNext">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="cal-weekdays" aria-hidden="true">
+            <span>Dom</span><span>Seg</span><span>Ter</span>
+            <span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+          </div>
+
+          <div class="cal-grid" id="calGrid"></div>
+
+          <!-- Legend -->
+          <div class="cal-legend">
+            <span class="leg-item"><span class="leg-dot leg--prazo"></span>Prazo</span>
+            <span class="leg-item"><span class="leg-dot leg--audiencia"></span>Audiência</span>
+            <span class="leg-item"><span class="leg-dot leg--reuniao"></span>Reunião</span>
+            <span class="leg-item"><span class="leg-dot leg--diligencia"></span>Diligência</span>
+            <span class="leg-item"><span class="leg-dot leg--lembrete"></span>Lembrete</span>
+          </div>
+        </div>
+
+        <!-- SIDEBAR -->
+        <aside class="agenda-aside">
+
+          <!-- Selected day -->
+          <div class="panel" id="agendaDiaCard">
+            <div class="agenda-aside-head">
+              <span class="kicker" id="agendaDiaLabel">Selecione um dia</span>
+              <h3 id="agendaDiaTitulo">—</h3>
+            </div>
+            <div id="agendaDiaLista">
+              <p class="agenda-aside-empty">Nenhum evento neste dia.</p>
+            </div>
+          </div>
+
+          <!-- Upcoming deadlines -->
+          <div class="panel">
+            <div class="agenda-aside-head">
+              <span class="kicker">Próximos 7 dias</span>
+              <h3>Prazos e eventos</h3>
+            </div>
+            <div id="agendaProximos"></div>
+          </div>
+
+          <!-- Monthly summary -->
+          <div class="panel">
+            <div class="agenda-aside-head">
+              <span class="kicker">Resumo do mês</span>
+              <h3>Distribuição por tipo</h3>
+            </div>
+            <div id="agendaResumo" class="agenda-bars"></div>
+          </div>
+
+        </aside>
+      </div>
+
+      <!-- NEW EVENT MODAL (hidden by default) -->
+      <div id="modalEvento" class="modal-overlay hidden" role="dialog" aria-modal="true">
+        <div class="modal">
+          <div class="modal-head">
+            <h3>Novo evento</h3>
+            <button class="modal-close" id="modalClose">✕</button>
+          </div>
+          <form id="eventoForm" class="modal-body">
+            <div class="form-grid">
+              <label class="field modal-full">
+                <span>Título</span>
+                <input type="text" id="evTitulo" placeholder="Ex.: Audiência — Bayer S.a." required>
+              </label>
+              <label class="field">
+                <span>Data</span>
+                <input type="date" id="evData" required>
+              </label>
+              <label class="field">
+                <span>Hora</span>
+                <input type="time" id="evHora">
+              </label>
+              <label class="field">
+                <span>Tipo</span>
+                <select id="evTipo">
+                  <option value="Prazo">Prazo processual</option>
+                  <option value="Audiência">Audiência</option>
+                  <option value="Reunião">Reunião</option>
+                  <option value="Diligência">Diligência</option>
+                  <option value="Lembrete">Lembrete interno</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Responsável</span>
+                <select id="evResponsavel">
+                  <option>Lourenço Grieco</option>
+                  <option>Controller</option>
+                  <option>Advogado</option>
+                  <option>Estagiário</option>
+                </select>
+              </label>
+              <label class="field modal-full">
+                <span>Local / Observações</span>
+                <input type="text" id="evLocal" placeholder="Ex.: 2ª Vara Cível — Fórum Central">
+              </label>
+            </div>
+            <div class="form-foot">
+              <button type="button" class="btn-outline" id="modalCancelar">Cancelar</button>
+              <button type="submit" class="btn-primary">Salvar evento</button>
+            </div>
+          </form>
+        </div>
       </div>
     </section>
 

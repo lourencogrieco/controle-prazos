@@ -1272,6 +1272,38 @@ const pastas = [
     processo:     "N° 0009001-44.2026.8.26.0100",
     comarca:      "SÃO PAULO",
   },
+  {
+    numero:       "07/2026-6001",
+    codigoSIA:    "-",
+    cliente:      "PREFEITURA MUNICIPAL DE CAMPINAS",
+    parteContraria: "Servidor público — Rodrigo A. Mendes",
+    servico:      "Processo Administrativo Disciplinar",
+    area:         "Administrativo",
+    tipoServico:  "Contencioso Administrativo",
+    advogado:     "Lourenço Grieco",
+    descricao:    "PAD instaurado para apuração de irregularidades funcionais praticadas por servidor efetivo do quadro municipal, com base em sindicância prévia conclusiva.",
+    dataDistribuicao: "10/03/2026",
+    valorCausa:   "—",
+    incluidoPor:  "Lourenço Grieco",
+    processo:     "PAD N° 07/2026 — Prefeitura de Campinas",
+    comarca:      "CAMPINAS",
+  },
+  {
+    numero:       "08/2026-6002",
+    codigoSIA:    "-",
+    cliente:      "GRUPO FARMA BRASIL S.A.",
+    parteContraria: "—",
+    servico:      "Parecer",
+    area:         "Empresarial",
+    tipoServico:  "Consultivo",
+    advogado:     "Lourenço Grieco",
+    descricao:    "Elaboração de parecer jurídico sobre a viabilidade de fusão societária com empresa do mesmo segmento, análise de passivos ocultos e riscos regulatórios perante a ANVISA.",
+    dataDistribuicao: "07/04/2026",
+    valorCausa:   "—",
+    incluidoPor:  "Lourenço Grieco",
+    processo:     "Consulta interna — Ref. Fusão 2026",
+    comarca:      "SÃO PAULO",
+  },
 ];
 
 // ─── PASTA LIST RENDER ─────────────────────────────────────────────────
@@ -1302,12 +1334,11 @@ function renderPastaList() {
     <tr data-pasta="${p.numero}">
       <td><input type="checkbox" onclick="event.stopPropagation()"></td>
       <td><span class="pasta-link">${p.numero}</span></td>
-      <td>${p.codigoSIA}</td>
       <td class="pasta-client">${p.cliente}</td>
       <td>${p.parteContraria}</td>
       <td><span class="tag tag--area">${p.tipoServico}</span></td>
       <td>${p.servico}</td>
-    </tr>`).join("") || `<tr><td colspan="7" class="tbl-empty">Nenhuma pasta encontrada.</td></tr>`;
+    </tr>`).join("") || `<tr><td colspan="6" class="tbl-empty">Nenhuma pasta encontrada.</td></tr>`;
 
   const fim = Math.min(inicio + pastaLinhas, total);
   document.getElementById("pastasPaginacaoInfo").textContent =

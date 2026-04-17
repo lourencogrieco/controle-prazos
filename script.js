@@ -359,6 +359,264 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
+// ─── PASTA DATA ────────────────────────────────────────────────────────
+const pastas = [
+  {
+    numero:       "14/2026-5981",
+    codigoSIA:    "-",
+    cliente:      "SANTOS BRASIL PARTICIPAÇÕES S.A.",
+    parteContraria: "-",
+    servico:      "Ação declaratória",
+    area:         "Cível e resolução de conflitos",
+    tipoServico:  "Contencioso",
+    advogado:     "Lourenço Grieco",
+    descricao:    "Ação declaratória referente a questões societárias.",
+    dataDistribuicao: "15/01/2026",
+    valorCausa:   "R$ 0,00",
+    incluidoPor:  "Lourenço Grieco",
+    processo:     "N° 0000001-00.2026.8.26.0001",
+    comarca:      "SANTOS",
+  },
+  {
+    numero:       "14/2026-5980",
+    codigoSIA:    "-",
+    cliente:      "Convicon Conteineres de Vila do Conde Ltda.",
+    parteContraria: "-",
+    servico:      "Ação declaratória",
+    area:         "Cível e resolução de conflitos",
+    tipoServico:  "Contencioso",
+    advogado:     "Lourenço Grieco",
+    descricao:    "Ação declaratória relativa a contrato de locação de contêineres.",
+    dataDistribuicao: "14/01/2026",
+    valorCausa:   "R$ 0,00",
+    incluidoPor:  "Lourenço Grieco",
+    processo:     "N° 0000002-00.2026.8.26.0001",
+    comarca:      "SANTOS",
+  },
+  {
+    numero:       "14/2026-5979",
+    codigoSIA:    "-",
+    cliente:      "Santos Brasil Participações S.a.",
+    parteContraria: "-",
+    servico:      "Ação declaratória",
+    area:         "Cível e resolução de conflitos",
+    tipoServico:  "Contencioso",
+    advogado:     "Lourenço Grieco",
+    descricao:    "Ação declaratória para reconhecimento de direitos societários.",
+    dataDistribuicao: "13/01/2026",
+    valorCausa:   "R$ 0,00",
+    incluidoPor:  "Lourenço Grieco",
+    processo:     "N° 0000003-00.2026.8.26.0001",
+    comarca:      "SANTOS",
+  },
+  {
+    numero:       "14/2026-5978",
+    codigoSIA:    "-",
+    cliente:      "Santos Brasil Logística S/a",
+    parteContraria: "-",
+    servico:      "Ação declaratória",
+    area:         "Cível e resolução de conflitos",
+    tipoServico:  "Contencioso",
+    advogado:     "Lourenço Grieco",
+    descricao:    "Ação declaratória de inexigibilidade de obrigação contratual.",
+    dataDistribuicao: "12/01/2026",
+    valorCausa:   "R$ 0,00",
+    incluidoPor:  "Lourenço Grieco",
+    processo:     "N° 0000004-00.2026.8.26.0001",
+    comarca:      "SANTOS",
+  },
+  {
+    numero:       "57/2022-5975",
+    codigoSIA:    "202/2022-34",
+    cliente:      "Bayer S.a.",
+    parteContraria: "CARLOS EDUARDO BAESSO UBEDA",
+    servico:      "Ação condenatória p/ indenização",
+    area:         "Cível e resolução de conflitos",
+    tipoServico:  "Migração SIA",
+    advogado:     "Bruno Ferreira Soares Batista",
+    descricao:    "Trata-se de ação em que o Autor pretende ver realizada desde logo prova pericial de engenharia agronômica para verificar e estimar as perdas que ele alega ter sofrido em razão da ineficácia do defensivo Serenade para controle do Cancro Cítrico.",
+    dataDistribuicao: "23/09/2022",
+    valorCausa:   "R$ 15.000,00",
+    incluidoPor:  "Jean Carlos de Lima Holanda",
+    processo:     "N° 1000909-52.2022.8.26.0067",
+    comarca:      "BORBOREMA",
+  },
+  {
+    numero:       "42/2017-5974",
+    codigoSIA:    "260/1992-1",
+    cliente:      "Vera Maria Ritter",
+    parteContraria: "PLENA S/A CORRETORA DE SEGUROS",
+    servico:      "Falência ou concordata",
+    area:         "Empresarial",
+    tipoServico:  "Contencioso",
+    advogado:     "Lourenço Grieco",
+    descricao:    "Ação de falência ou concordata referente a litígio empresarial.",
+    dataDistribuicao: "10/03/2017",
+    valorCausa:   "R$ 50.000,00",
+    incluidoPor:  "Jean Carlos de Lima Holanda",
+    processo:     "N° 0005678-12.2017.8.26.0100",
+    comarca:      "SÃO PAULO",
+  },
+  {
+    numero:       "2424/2026-5973",
+    codigoSIA:    "261/1999-1",
+    cliente:      "PAPELARIA TABAJARA LTDA.",
+    parteContraria: "INDÚSTRIA PLÁSTICA RAMOS LTDA.",
+    servico:      "Levantamento de crédito em concordata preventiva",
+    area:         "Empresarial",
+    tipoServico:  "Contencioso",
+    advogado:     "Lourenço Grieco",
+    descricao:    "Levantamento de crédito em processo de concordata preventiva da empresa devedora.",
+    dataDistribuicao: "05/02/2026",
+    valorCausa:   "R$ 120.000,00",
+    incluidoPor:  "Lourenço Grieco",
+    processo:     "N° 0009001-44.2026.8.26.0100",
+    comarca:      "SÃO PAULO",
+  },
+];
+
+// ─── PASTA LIST RENDER ─────────────────────────────────────────────────
+let pastaPagAtual = 1;
+let pastaLinhas   = 10;
+
+function pastasVisiveis() {
+  const busca = (document.getElementById("buscaPasta")?.value ?? "").trim().toLowerCase();
+  if (!busca) return pastas;
+  return pastas.filter(p =>
+    p.numero.toLowerCase().includes(busca) ||
+    p.cliente.toLowerCase().includes(busca) ||
+    p.servico.toLowerCase().includes(busca) ||
+    p.parteContraria.toLowerCase().includes(busca)
+  );
+}
+
+function renderPastaList() {
+  const lista   = pastasVisiveis();
+  const total   = lista.length;
+  const pages   = Math.max(1, Math.ceil(total / pastaLinhas));
+  pastaPagAtual = Math.min(pastaPagAtual, pages);
+
+  const inicio  = (pastaPagAtual - 1) * pastaLinhas;
+  const slice   = lista.slice(inicio, inicio + pastaLinhas);
+
+  document.getElementById("tabelaPastasBody").innerHTML = slice.map(p => `
+    <tr data-pasta="${p.numero}">
+      <td><input type="checkbox" onclick="event.stopPropagation()"></td>
+      <td><span class="pasta-link">${p.numero}</span></td>
+      <td>${p.codigoSIA}</td>
+      <td class="pasta-client">${p.cliente}</td>
+      <td>${p.parteContraria}</td>
+      <td>${p.servico}</td>
+    </tr>`).join("") || `<tr><td colspan="6" class="tbl-empty">Nenhuma pasta encontrada.</td></tr>`;
+
+  const fim = Math.min(inicio + pastaLinhas, total);
+  document.getElementById("pastasPaginacaoInfo").textContent =
+    `Exibindo ${total ? inicio + 1 : 0} - ${fim} de ${total} • Página`;
+
+  const pgSel = document.getElementById("pastaPagina");
+  pgSel.innerHTML = Array.from({ length: pages }, (_, i) =>
+    `<option value="${i+1}" ${i+1 === pastaPagAtual ? "selected" : ""}>${i+1}</option>`
+  ).join("");
+  document.getElementById("pastaTotalPaginas").textContent = `de ${pages}`;
+
+  document.getElementById("pastaPgAnterior").disabled = pastaPagAtual <= 1;
+  document.getElementById("pastaPgProxima").disabled  = pastaPagAtual >= pages;
+
+  // Row click → detail
+  document.querySelectorAll("#tabelaPastasBody tr[data-pasta]").forEach(tr => {
+    tr.addEventListener("click", () => abrirPasta(tr.dataset.pasta));
+  });
+}
+
+// ─── PASTA DETAIL ──────────────────────────────────────────────────────
+function abrirPasta(numero) {
+  const p = pastas.find(x => x.numero === numero);
+  if (!p) return;
+
+  // Show detail, hide list
+  document.getElementById("pastas-list").classList.add("hidden");
+  document.getElementById("pastas-detail").classList.remove("hidden");
+
+  // Breadcrumb
+  document.getElementById("pastaNumeroDetalhe").textContent = p.numero;
+
+  // Sidebar
+  document.getElementById("pastaAreaBadge").textContent = p.area;
+  document.getElementById("pCliente").textContent       = p.cliente;
+  document.getElementById("pCodigoSIA").textContent     = p.codigoSIA;
+  document.getElementById("pTipoServico").textContent   = p.tipoServico;
+  document.getElementById("pServico").textContent       = p.servico;
+  document.getElementById("pParteContraria").textContent = p.parteContraria;
+  document.getElementById("pAdvogado").textContent      = p.advogado;
+
+  // Dados do processo
+  document.getElementById("pDescricao").value         = p.descricao;
+  document.getElementById("pDataDistribuicao").value  = p.dataDistribuicao;
+  document.getElementById("pDataContrato").value      = "00/00/0000";
+  document.getElementById("pValorCausa").value        = p.valorCausa;
+  document.getElementById("pIncluidoPor").value       = p.incluidoPor;
+  document.getElementById("pAreaResp").innerHTML      = `<option>${p.area}</option>`;
+  document.getElementById("pAdvResp").innerHTML       = `<option>${p.advogado}</option>`;
+
+  // Andamentos
+  document.getElementById("instanciaNumero1").textContent = p.processo;
+  document.getElementById("instanciaComarca1").textContent = `Comarca: ${p.comarca}`;
+
+  // Reset to first tab
+  document.querySelectorAll(".pasta-tab").forEach(b => b.classList.remove("is-active"));
+  document.querySelectorAll(".pasta-pane").forEach(pn => pn.classList.remove("is-active"));
+  document.querySelector('.pasta-tab[data-ptab="andamentos"]').classList.add("is-active");
+  document.getElementById("ptab-andamentos").classList.add("is-active");
+}
+
+// ─── BACK TO LIST ──────────────────────────────────────────────────────
+document.getElementById("btnVoltarPastas").addEventListener("click", () => {
+  document.getElementById("pastas-detail").classList.add("hidden");
+  document.getElementById("pastas-list").classList.remove("hidden");
+});
+
+// ─── PASTA SUB-TABS ────────────────────────────────────────────────────
+document.querySelectorAll(".pasta-tab[data-ptab]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".pasta-tab").forEach(b => b.classList.remove("is-active"));
+    document.querySelectorAll(".pasta-pane").forEach(pn => pn.classList.remove("is-active"));
+    btn.classList.add("is-active");
+    document.getElementById(`ptab-${btn.dataset.ptab}`)?.classList.add("is-active");
+  });
+});
+
+// ─── SIDEBAR COLLAPSE ──────────────────────────────────────────────────
+document.getElementById("sidebarCollapseBtn").addEventListener("click", () => {
+  const sidebar = document.getElementById("pastaSidebar");
+  const btn     = document.getElementById("sidebarCollapseBtn");
+  sidebar.classList.toggle("is-collapsed");
+  btn.textContent = sidebar.classList.contains("is-collapsed") ? "›" : "‹";
+});
+
+// ─── PASTA PAGINATION ──────────────────────────────────────────────────
+document.getElementById("pastaPgAnterior").addEventListener("click", () => {
+  if (pastaPagAtual > 1) { pastaPagAtual--; renderPastaList(); }
+});
+
+document.getElementById("pastaPgProxima").addEventListener("click", () => {
+  pastaPagAtual++; renderPastaList();
+});
+
+document.getElementById("pastaPagina").addEventListener("change", e => {
+  pastaPagAtual = Number(e.target.value); renderPastaList();
+});
+
+document.getElementById("pastaLinhasPorPagina").addEventListener("change", e => {
+  pastaLinhas   = Number(e.target.value);
+  pastaPagAtual = 1;
+  renderPastaList();
+});
+
+document.getElementById("buscaPasta").addEventListener("input", () => {
+  pastaPagAtual = 1; renderPastaList();
+});
+
 // ─── INIT ──────────────────────────────────────────────────────────────
 renderAtividades();
 renderPipeline();
+renderPastaList();

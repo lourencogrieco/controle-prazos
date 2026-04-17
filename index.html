@@ -27,6 +27,7 @@
       <button class="nav-tab" data-view="atividades">MINHAS ATIVIDADES</button>
       <button class="nav-tab" data-view="pipeline">PIPELINE DE VENDAS</button>
       <button class="nav-tab" data-view="credito">CONTROLE DE CRÉDITO</button>
+      <button class="nav-tab" data-view="pastas">PASTAS</button>
       <button class="nav-tab">FINANCEIRO</button>
       <button class="nav-tab">RELATÓRIOS</button>
     </nav>
@@ -453,6 +454,418 @@
         </article>
       </div>
     </section>
+
+    <!-- ===== PASTAS ===== -->
+    <section id="view-pastas" class="view">
+
+      <!-- LIST STATE -->
+      <div id="pastas-list">
+        <div class="page-bar">
+          <div class="page-bar-left">
+            <span class="kicker">Gestão processual</span>
+            <h1>Pastas</h1>
+          </div>
+          <div class="page-bar-right">
+            <label class="search-field">
+              <svg class="search-ico" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M9.5 9.5l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              <input type="text" id="buscaPasta" placeholder="Pesquisar...">
+            </label>
+            <button class="btn-outline">Adicionar filtro ▾</button>
+            <button class="btn-outline">↓ Gerar Relatório</button>
+          </div>
+        </div>
+
+        <div class="panel" style="padding:0;overflow:hidden">
+          <div class="table-scroll">
+            <table class="pasta-table">
+              <thead>
+                <tr>
+                  <th style="width:36px"><input type="checkbox" id="checkAll"></th>
+                  <th>N° da pasta</th>
+                  <th>Código SIA</th>
+                  <th>Cliente</th>
+                  <th>Parte contrária</th>
+                  <th>Serviço</th>
+                </tr>
+              </thead>
+              <tbody id="tabelaPastasBody"></tbody>
+            </table>
+          </div>
+          <div class="tbl-pagination">
+            <div class="tbl-pg-left">
+              <span>Linhas por páginas:</span>
+              <label class="select-field">
+                <select id="pastaLinhasPorPagina">
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                </select>
+              </label>
+            </div>
+            <div class="tbl-pg-right">
+              <span id="pastasPaginacaoInfo">Exibindo 1 - 10 de 7 • Página</span>
+              <label class="select-field">
+                <select id="pastaPagina"><option value="1">1</option></select>
+              </label>
+              <span id="pastaTotalPaginas">de 1</span>
+              <button class="btn-pg" id="pastaPgAnterior" disabled>←</button>
+              <button class="btn-pg" id="pastaPgProxima">→</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DETAIL STATE -->
+      <div id="pastas-detail" class="hidden">
+        <div class="pasta-breadcrumb">
+          <button class="breadcrumb-link" id="btnVoltarPastas">Pastas</button>
+          <span class="breadcrumb-sep">›</span>
+          <strong id="pastaNumeroDetalhe">—</strong>
+        </div>
+
+        <div class="pasta-layout">
+          <!-- Sidebar -->
+          <aside class="pasta-sidebar" id="pastaSidebar">
+            <button class="pasta-area-badge" id="pastaAreaBadge">—</button>
+
+            <dl class="pasta-meta">
+              <dt>Cliente(s)</dt>
+              <dd id="pCliente">—</dd>
+
+              <dt>Código da pasta SIA</dt>
+              <dd id="pCodigoSIA">—</dd>
+
+              <dt>Tipo de serviço</dt>
+              <dd id="pTipoServico">—</dd>
+
+              <dt>Serviço</dt>
+              <dd id="pServico">—</dd>
+
+              <dt>Parte contrária</dt>
+              <dd id="pParteContraria">—</dd>
+
+              <dt>Advogado responsável</dt>
+              <dd id="pAdvogado">—</dd>
+            </dl>
+
+            <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Recolher">‹</button>
+          </aside>
+
+          <!-- Main -->
+          <div class="pasta-main">
+            <nav class="pasta-tabs" aria-label="Abas da pasta">
+              <button class="pasta-tab is-active" data-ptab="andamentos">Andamentos</button>
+              <button class="pasta-tab" data-ptab="dados">Dados do processo</button>
+              <button class="pasta-tab" data-ptab="timesheet">Timesheet</button>
+              <button class="pasta-tab" data-ptab="atendimento">Atendimento</button>
+              <button class="pasta-tab" data-ptab="solicitacoes">Solicitações</button>
+              <button class="pasta-tab" data-ptab="tarefas">Tarefas</button>
+              <button class="pasta-tab" data-ptab="documentos">Documentos</button>
+              <button class="pasta-tab" data-ptab="contrato">Contrato e adendo/aditamento</button>
+              <button class="pasta-tab" data-ptab="procuracao">Procuração/Substabelecimento</button>
+              <button class="pasta-tab-more" title="Mais abas">›</button>
+            </nav>
+
+            <!-- ANDAMENTOS -->
+            <div id="ptab-andamentos" class="pasta-pane is-active">
+              <div class="pane-toolbar">
+                <label class="search-field">
+                  <svg class="search-ico" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M9.5 9.5l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                  <input type="text" placeholder="Pesquisar">
+                </label>
+                <button class="btn-outline">Adicionar filtro ▾</button>
+                <button class="btn-icon" title="Histórico">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M8 4v4l3 1.5M2.5 8a5.5 5.5 0 1011 0 5.5 5.5 0 00-11 0z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                </button>
+                <button class="btn-primary">+ Nova instância</button>
+              </div>
+              <label class="check-label">
+                <input type="checkbox"> Mostrar instâncias inativas
+              </label>
+
+              <div class="instancia-section">
+                <div class="instancia-head">
+                  <strong class="instancia-label">1ª INSTÂNCIA</strong>
+                  <button class="instancia-collapse">Recolher todos ↑</button>
+                  <button class="btn-outline btn-sm">+ Novo incidente/recurso</button>
+                </div>
+
+                <div class="instancia-card" id="instanciaCard1">
+                  <button class="instancia-nav-btn">›</button>
+                  <div class="instancia-content">
+                    <div class="instancia-row">
+                      <span class="instancia-name">Ação principal</span>
+                      <div class="instancia-actions">
+                        <button class="ia-btn" title="Andamentos">
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M4 7h6M4 5h6M4 9h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                        </button>
+                        <button class="ia-btn" title="Transferir">
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </button>
+                        <button class="ia-btn" title="Editar">
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+                        </button>
+                        <button class="ia-btn" title="Anexar">
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M11 7.5l-4.5 4.5a3 3 0 01-4.24-4.24L7 3a2 2 0 012.83 2.83L5.5 10a1 1 0 01-1.41-1.41L8.5 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                        </button>
+                        <button class="ia-btn ia-btn--add" title="Adicionar">+</button>
+                        <button class="ia-btn ia-btn--del" title="Inativar">⊘</button>
+                      </div>
+                    </div>
+                    <p class="instancia-num" id="instanciaNumero1">N° 1000909-52.2022.8.26.0067</p>
+                    <p class="instancia-comarca" id="instanciaComarca1">Comarca: BORBOREMA</p>
+                    <div class="instancia-partes" title="Partes">
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="5" cy="4" r="2" stroke="currentColor" stroke-width="1.3"/><circle cx="9" cy="4" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M1 12c0-2.2 1.8-4 4-4s4 1.8 4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                    </div>
+
+                    <div class="andamento-table-wrap">
+                      <button class="link-btn andamento-toggle">Fechar tabela</button>
+                      <label class="check-label">
+                        <input type="checkbox"> Mostrar inativos
+                      </label>
+                      <table class="andamento-table">
+                        <thead>
+                          <tr>
+                            <th>Data</th>
+                            <th>Andamento</th>
+                            <th>Ações</th>
+                          </tr>
+                        </thead>
+                        <tbody id="andamentosBody1">
+                          <tr>
+                            <td>23/09/2022</td>
+                            <td>Ação principal</td>
+                            <td><button class="btn-more">•••</button></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <p class="tbl-count">Exibindo 1 - 1 de 1</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="instancia-section">
+                <div class="instancia-head">
+                  <strong class="instancia-label">2ª INSTÂNCIA</strong>
+                  <button class="instancia-collapse">Recolher todos ↑</button>
+                  <button class="btn-outline btn-sm">+ Novo incidente/recurso</button>
+                </div>
+                <div class="empty-state">Nenhum andamento de 2ª Instância.</div>
+              </div>
+            </div>
+
+            <!-- DADOS DO PROCESSO -->
+            <div id="ptab-dados" class="pasta-pane">
+              <div class="dados-grid">
+                <label class="field dados-full">
+                  <span>Descrição do objeto</span>
+                  <textarea id="pDescricao" rows="3" readonly></textarea>
+                </label>
+                <label class="field">
+                  <span>Data da distribuição <span class="req">*</span></span>
+                  <input type="text" id="pDataDistribuicao" readonly>
+                </label>
+                <label class="field">
+                  <span>Data do contrato originário</span>
+                  <input type="text" id="pDataContrato" value="00/00/0000" readonly>
+                </label>
+                <label class="field">
+                  <span>Valor da causa <span class="req">*</span></span>
+                  <input type="text" id="pValorCausa" readonly>
+                </label>
+                <label class="field">
+                  <span>Empresa</span>
+                  <select id="pEmpresa" disabled><option>Selecione uma empresa</option></select>
+                </label>
+                <label class="field">
+                  <span>Incluído por <span class="req">*</span></span>
+                  <input type="text" id="pIncluidoPor" readonly>
+                </label>
+                <label class="field">
+                  <span>Área responsável <span class="req">*</span></span>
+                  <select id="pAreaResp" disabled><option></option></select>
+                </label>
+                <label class="field">
+                  <span>Advogado responsável <span class="req">*</span></span>
+                  <select id="pAdvResp" disabled><option></option></select>
+                </label>
+                <label class="field">
+                  <span>Advogado corresponsável</span>
+                  <select disabled><option>Selecione uma opção</option></select>
+                </label>
+                <label class="field dados-full">
+                  <span>Áreas adicionais</span>
+                  <select disabled><option></option></select>
+                </label>
+              </div>
+              <div class="dados-foot">
+                <button class="btn-outline" id="pastaEditarBtn">✏ Editar</button>
+              </div>
+            </div>
+
+            <!-- TIMESHEET -->
+            <div id="ptab-timesheet" class="pasta-pane">
+              <div class="empty-state" style="min-height:280px">Nenhum timesheet cadastrado para esta pasta.</div>
+            </div>
+
+            <!-- ATENDIMENTO -->
+            <div id="ptab-atendimento" class="pasta-pane">
+              <div class="pane-toolbar">
+                <label class="search-field">
+                  <svg class="search-ico" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M9.5 9.5l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                  <input type="text" placeholder="Pesquisar">
+                </label>
+                <button class="btn-outline">Adicionar filtro ▾</button>
+                <button class="btn-primary">+ Cadastrar atendimento</button>
+                <button class="btn-outline">↓ Gerar Relatório</button>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Data/Hora</th>
+                      <th>Cliente</th>
+                      <th>Assunto</th>
+                      <th>Tipo</th>
+                      <th>Duração/Timesheet</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td colspan="5" class="tbl-empty">Nenhum atendimento encontrado</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="tbl-pagination">
+                <div class="tbl-pg-left"><span>Linhas por páginas:</span>
+                  <label class="select-field"><select><option>10</option></select></label>
+                </div>
+                <div class="tbl-pg-right">Exibindo 0 de 0</div>
+              </div>
+            </div>
+
+            <!-- SOLICITAÇÕES -->
+            <div id="ptab-solicitacoes" class="pasta-pane">
+              <div class="pane-toolbar">
+                <label class="search-field">
+                  <svg class="search-ico" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M9.5 9.5l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                  <input type="text" placeholder="Pesquisar">
+                </label>
+                <button class="btn-outline">Adicionar filtro ▾</button>
+                <label class="select-field"><select><option>Todos os usuários</option></select></label>
+                <button class="btn-primary">+ Adicionar solicitação</button>
+              </div>
+              <div class="board board--3col">
+                <article class="board-col">
+                  <header class="board-col-head"><span>Novas solicitações</span><span class="col-count">0</span></header>
+                  <div class="board-col-body"><div class="empty-state">Nenhuma nova solicitação.</div></div>
+                </article>
+                <article class="board-col">
+                  <header class="board-col-head"><span>Em andamento</span><span class="col-count">0</span></header>
+                  <div class="board-col-body"><div class="empty-state">Nenhuma em andamento.</div></div>
+                </article>
+                <article class="board-col">
+                  <header class="board-col-head"><span>Concluído</span><span class="col-count">0</span></header>
+                  <div class="board-col-body"><div class="empty-state">Nenhuma concluída.</div></div>
+                </article>
+              </div>
+            </div>
+
+            <!-- TAREFAS -->
+            <div id="ptab-tarefas" class="pasta-pane">
+              <div class="pane-toolbar">
+                <label class="search-field">
+                  <svg class="search-ico" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M9.5 9.5l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                  <input type="text" placeholder="Pesquisar">
+                </label>
+                <button class="btn-outline">Adicionar filtro ▾</button>
+              </div>
+              <div class="board board--3col">
+                <article class="board-col">
+                  <header class="board-col-head"><span>Novas solicitações</span><span class="col-count">0</span></header>
+                  <div class="board-col-body"><div class="empty-state">Nenhuma tarefa.</div></div>
+                </article>
+                <article class="board-col">
+                  <header class="board-col-head"><span>Em andamento</span><span class="col-count">0</span></header>
+                  <div class="board-col-body"><div class="empty-state">Nenhuma em andamento.</div></div>
+                </article>
+                <article class="board-col">
+                  <header class="board-col-head"><span>Próximo ao vencimento</span><span class="col-count">0</span></header>
+                  <div class="board-col-body"><div class="empty-state">Nenhuma tarefa próxima.</div></div>
+                </article>
+              </div>
+            </div>
+
+            <!-- DOCUMENTOS -->
+            <div id="ptab-documentos" class="pasta-pane">
+              <div class="pane-toolbar">
+                <label class="search-field">
+                  <svg class="search-ico" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M9.5 9.5l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                  <input type="text" placeholder="Pesquisar">
+                </label>
+                <button class="btn-primary">✏ Adicionar documento</button>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Nome</th>
+                      <th>Tipo</th>
+                      <th>Anexado por</th>
+                      <th>Cliente</th>
+                      <th>Tamanho</th>
+                      <th>Data</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td colspan="7" class="tbl-empty">Nenhum documento encontrado</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="tbl-pagination">
+                <div class="tbl-pg-left"><span>Linhas por páginas:</span>
+                  <label class="select-field"><select><option>10</option></select></label>
+                </div>
+                <div class="tbl-pg-right">Exibindo 0 de 0</div>
+              </div>
+            </div>
+
+            <!-- CONTRATO -->
+            <div id="ptab-contrato" class="pasta-pane">
+              <div class="empty-state" style="min-height:280px">Nenhum contrato ou adendo cadastrado.</div>
+            </div>
+
+            <!-- PROCURAÇÃO -->
+            <div id="ptab-procuracao" class="pasta-pane">
+              <div class="empty-state" style="min-height:280px">Nenhuma procuração ou substabelecimento cadastrado.</div>
+            </div>
+
+          </div><!-- /pasta-main -->
+        </div><!-- /pasta-layout -->
+      </div><!-- /pastas-detail -->
+
+    </section><!-- /view-pastas -->
 
   </main>
 </div>

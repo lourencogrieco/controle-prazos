@@ -179,11 +179,13 @@
         </div>
       </div>
 
+      <!-- SUBTABS -->
       <div class="view-subbar">
         <div class="subtabs">
-          <button class="subtab is-active">Solicitações</button>
-          <button class="subtab">Tarefas</button>
-          <button class="subtab">Intimações</button>
+          <button class="subtab is-active" data-subtab="todas">Todas as solicitações</button>
+          <button class="subtab" data-subtab="prazos">Prazos</button>
+          <button class="subtab" data-subtab="tarefas">Tarefas</button>
+          <button class="subtab" data-subtab="intimacoes">Intimações</button>
         </div>
         <div class="progress-group">
           <span>Todos os andamentos</span>
@@ -207,129 +209,308 @@
         </div>
       </div>
 
-      <div class="board">
-        <article class="board-col">
-          <header class="board-col-head">
-            <span>Novas solicitações</span>
-            <span class="col-count" id="countNovas">0</span>
-          </header>
-          <div class="board-col-body" id="colunaPendentes"></div>
-        </article>
-        <article class="board-col">
-          <header class="board-col-head">
-            <span>Em andamento</span>
-            <span class="col-count" id="countAndamento">0</span>
-          </header>
-          <div class="board-col-body" id="colunaAndamento"></div>
-        </article>
-        <article class="board-col">
-          <header class="board-col-head">
-            <span>Concluído</span>
-            <span class="col-count" id="countConcluidos">0</span>
-          </header>
-          <div class="board-col-body" id="colunaConcluidos"></div>
-        </article>
-        <article class="board-col">
-          <header class="board-col-head">
-            <span>Cancelado</span>
-            <span class="col-count" id="countCancelados">0</span>
-          </header>
-          <div class="board-col-body" id="colunaCancelados">
-            <div class="empty-state">Nenhuma solicitação cancelada.</div>
-          </div>
-        </article>
+      <!-- ── ABA: TODAS AS SOLICITAÇÕES ── -->
+      <div id="subtab-todas" class="subtab-panel">
+        <div class="board">
+          <article class="board-col">
+            <header class="board-col-head">
+              <span>Novas solicitações</span>
+              <span class="col-count" id="countNovas">0</span>
+            </header>
+            <div class="board-col-body" id="colunaPendentes"></div>
+          </article>
+          <article class="board-col">
+            <header class="board-col-head">
+              <span>Em andamento</span>
+              <span class="col-count" id="countAndamento">0</span>
+            </header>
+            <div class="board-col-body" id="colunaAndamento"></div>
+          </article>
+          <article class="board-col">
+            <header class="board-col-head">
+              <span>Concluído</span>
+              <span class="col-count" id="countConcluidos">0</span>
+            </header>
+            <div class="board-col-body" id="colunaConcluidos"></div>
+          </article>
+          <article class="board-col">
+            <header class="board-col-head">
+              <span>Cancelado</span>
+              <span class="col-count" id="countCancelados">0</span>
+            </header>
+            <div class="board-col-body" id="colunaCancelados">
+              <div class="empty-state">Nenhuma solicitação cancelada.</div>
+            </div>
+          </article>
+        </div>
+
+        <div class="bottom-grid">
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <span class="kicker">Cadastro rápido</span>
+                <h2>Nova atividade jurídica</h2>
+              </div>
+              <span class="badge">Registro operacional</span>
+            </div>
+            <form id="prazoForm">
+              <div class="form-grid">
+                <label class="field">
+                  <span>Cliente</span>
+                  <input type="text" id="cliente" placeholder="Ex.: Construtora Horizonte Ltda." required>
+                </label>
+                <label class="field">
+                  <span>Processo / Pasta</span>
+                  <input type="text" id="processo" placeholder="0001234-56.2026.8.26.0100" required>
+                </label>
+                <label class="field">
+                  <span>Tipo de atividade</span>
+                  <select id="tipo" required>
+                    <option value="">Selecione</option>
+                    <option>Prazo processual</option>
+                    <option>Audiência</option>
+                    <option>Diligência</option>
+                    <option>Agendamento</option>
+                    <option>Lembrete interno</option>
+                    <option>Encerramento de pasta</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Prazo fatal</span>
+                  <input type="date" id="dataFatal" required>
+                </label>
+                <label class="field">
+                  <span>Responsável</span>
+                  <select id="responsavel" required>
+                    <option value="">Selecione</option>
+                    <option>Sócio</option>
+                    <option>Controller</option>
+                    <option>Advogado</option>
+                    <option>Estagiário</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Status</span>
+                  <select id="status">
+                    <option>Pendente</option>
+                    <option>Em andamento</option>
+                    <option>Concluído</option>
+                  </select>
+                </label>
+              </div>
+              <label class="field" style="margin-top:14px;display:block">
+                <span>Descrição e diretrizes</span>
+                <textarea id="descricao" placeholder="Inclua orientações jurídicas, observações do processo e próximo passo da equipe."></textarea>
+              </label>
+              <div class="form-foot">
+                <p>O prazo interno é calculado automaticamente para apoiar o acompanhamento da equipe jurídica.</p>
+                <button type="submit" class="btn-primary">Salvar atividade</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <span class="kicker">Pastas e prazos</span>
+                <h2>Visão tabular</h2>
+              </div>
+              <span class="badge">Snapshot jurídico</span>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Processo</th>
+                    <th>Cliente</th>
+                    <th>Tipo</th>
+                    <th>Prazo fatal</th>
+                    <th>Responsável</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="tabelaPrazos"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
       </div>
 
-      <div class="bottom-grid">
-        <section class="panel">
-          <div class="panel-head">
-            <div>
-              <span class="kicker">Cadastro rápido</span>
-              <h2>Nova atividade jurídica</h2>
-            </div>
-            <span class="badge">Registro operacional</span>
-          </div>
-          <form id="prazoForm">
-            <div class="form-grid">
-              <label class="field">
-                <span>Cliente</span>
-                <input type="text" id="cliente" placeholder="Ex.: Construtora Horizonte Ltda." required>
-              </label>
-              <label class="field">
-                <span>Processo / Pasta</span>
-                <input type="text" id="processo" placeholder="0001234-56.2026.8.26.0100" required>
-              </label>
-              <label class="field">
-                <span>Tipo de atividade</span>
-                <select id="tipo" required>
-                  <option value="">Selecione</option>
-                  <option>Prazo processual</option>
-                  <option>Audiência</option>
-                  <option>Diligência</option>
-                  <option>Agendamento</option>
-                  <option>Lembrete interno</option>
-                  <option>Encerramento de pasta</option>
-                </select>
-              </label>
-              <label class="field">
-                <span>Prazo fatal</span>
-                <input type="date" id="dataFatal" required>
-              </label>
-              <label class="field">
-                <span>Responsável</span>
-                <select id="responsavel" required>
-                  <option value="">Selecione</option>
-                  <option>Sócio</option>
-                  <option>Controller</option>
-                  <option>Advogado</option>
-                  <option>Estagiário</option>
-                </select>
-              </label>
-              <label class="field">
-                <span>Status</span>
-                <select id="status">
-                  <option>Pendente</option>
-                  <option>Em andamento</option>
-                  <option>Concluído</option>
-                </select>
-              </label>
-            </div>
-            <label class="field" style="margin-top:14px;display:block">
-              <span>Descrição e diretrizes</span>
-              <textarea id="descricao" placeholder="Inclua orientações jurídicas, observações do processo e próximo passo da equipe."></textarea>
-            </label>
-            <div class="form-foot">
-              <p>O prazo interno é calculado automaticamente para apoiar o acompanhamento da equipe jurídica.</p>
-              <button type="submit" class="btn-primary">Salvar atividade</button>
-            </div>
-          </form>
-        </section>
+      <!-- ── ABA: PRAZOS ── -->
+      <div id="subtab-prazos" class="subtab-panel hidden">
+        <div class="pane-toolbar" style="margin-bottom:18px">
+          <label class="search-field">
+            <svg class="search-ico" width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M9.5 9.5l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <input type="text" id="buscaPrazosAba" placeholder="Pesquisar por pasta, processo ou cliente">
+          </label>
+          <label class="select-field">
+            <select id="filtroPrazosStatus">
+              <option value="">Todos os status</option>
+              <option>Pendente</option>
+              <option>Em andamento</option>
+              <option>Concluído</option>
+            </select>
+          </label>
+          <label class="select-field">
+            <select id="filtroPrazosResponsavel">
+              <option value="">Todos os responsáveis</option>
+              <option>Lourenço Grieco</option>
+              <option>Controller</option>
+              <option>Advogado</option>
+              <option>Estagiário</option>
+            </select>
+          </label>
+          <button class="btn-primary" id="btnNovoPrazo">+ Novo prazo</button>
+        </div>
 
-        <section class="panel">
-          <div class="panel-head">
-            <div>
-              <span class="kicker">Pastas e prazos</span>
-              <h2>Visão tabular</h2>
-            </div>
-            <span class="badge">Snapshot jurídico</span>
-          </div>
+        <div class="panel" style="padding:0;overflow:hidden">
           <div class="table-scroll">
-            <table>
+            <table class="prazos-table">
               <thead>
                 <tr>
-                  <th>Processo</th>
+                  <th>N° Pasta</th>
+                  <th>Código SIA</th>
                   <th>Cliente</th>
-                  <th>Tipo</th>
+                  <th>N° do Processo</th>
+                  <th>Comarca</th>
+                  <th>Tipo de prazo</th>
                   <th>Prazo fatal</th>
+                  <th>Dias restantes</th>
+                  <th>Descrição</th>
+                  <th>Intimação vinculada</th>
                   <th>Responsável</th>
                   <th>Status</th>
                 </tr>
               </thead>
-              <tbody id="tabelaPrazos"></tbody>
+              <tbody id="tabelaPrazosAba"></tbody>
             </table>
           </div>
-        </section>
+          <div class="tbl-pagination">
+            <div class="tbl-pg-left">
+              <span>Linhas por página:</span>
+              <label class="select-field"><select id="prazosLinhas"><option>10</option><option>25</option><option>50</option></select></label>
+            </div>
+            <div class="tbl-pg-right">
+              <span id="prazosInfo">Exibindo 0 registros</span>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <!-- ── ABA: TAREFAS ── -->
+      <div id="subtab-tarefas" class="subtab-panel hidden">
+        <div class="pane-toolbar" style="margin-bottom:18px">
+          <label class="search-field">
+            <svg class="search-ico" width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M9.5 9.5l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <input type="text" id="buscaTarefas" placeholder="Pesquisar tarefa">
+          </label>
+          <label class="select-field">
+            <select id="filtroTarefasTipo">
+              <option value="">Todos os tipos</option>
+              <option>Contato com cliente</option>
+              <option>Contato com órgão</option>
+              <option>Pesquisa jurídica</option>
+              <option>Elaboração de documento</option>
+              <option>Diligência interna</option>
+              <option>Reunião</option>
+              <option>Outro</option>
+            </select>
+          </label>
+          <label class="select-field">
+            <select id="filtroTarefasStatus">
+              <option value="">Todos os status</option>
+              <option>Pendente</option>
+              <option>Em andamento</option>
+              <option>Concluída</option>
+            </select>
+          </label>
+          <button class="btn-primary" id="btnNovaTarefa">+ Nova tarefa</button>
+        </div>
+
+        <div class="board board--3col">
+          <article class="board-col">
+            <header class="board-col-head">
+              <span>Pendente</span>
+              <span class="col-count" id="countTarefasPendentes">0</span>
+            </header>
+            <div class="board-col-body" id="colTarefasPendentes"></div>
+          </article>
+          <article class="board-col">
+            <header class="board-col-head">
+              <span>Em andamento</span>
+              <span class="col-count" id="countTarefasAndamento">0</span>
+            </header>
+            <div class="board-col-body" id="colTarefasAndamento"></div>
+          </article>
+          <article class="board-col">
+            <header class="board-col-head">
+              <span>Concluída</span>
+              <span class="col-count" id="countTarefasConcluidas">0</span>
+            </header>
+            <div class="board-col-body" id="colTarefasConcluidas"></div>
+          </article>
+        </div>
+      </div>
+
+      <!-- ── ABA: INTIMAÇÕES ── -->
+      <div id="subtab-intimacoes" class="subtab-panel hidden">
+        <div class="pane-toolbar" style="margin-bottom:18px">
+          <label class="search-field">
+            <svg class="search-ico" width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M9.5 9.5l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <input type="text" id="buscaIntimacoes" placeholder="Pesquisar por processo, pasta ou cliente">
+          </label>
+          <label class="select-field">
+            <select id="filtroIntimacoesStatus">
+              <option value="">Todos os status</option>
+              <option>Pendente</option>
+              <option>Em andamento</option>
+              <option>Cumprida</option>
+              <option>Vencida</option>
+            </select>
+          </label>
+          <button class="btn-primary">+ Registrar intimação</button>
+        </div>
+
+        <div class="panel" style="padding:0;overflow:hidden">
+          <div class="table-scroll">
+            <table class="intimacoes-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>N° Pasta</th>
+                  <th>Cliente</th>
+                  <th>N° do Processo</th>
+                  <th>Órgão / Vara</th>
+                  <th>Data publicação</th>
+                  <th>Prazo</th>
+                  <th>Dias restantes</th>
+                  <th>Descrição</th>
+                  <th>Prazo vinculado</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="tabelaIntimacoes"></tbody>
+            </table>
+          </div>
+          <div class="tbl-pagination">
+            <div class="tbl-pg-left">
+              <span>Linhas por página:</span>
+              <label class="select-field"><select><option>10</option><option>25</option></select></label>
+            </div>
+            <div class="tbl-pg-right"><span id="intimacoesInfo">Exibindo 0 registros</span></div>
+          </div>
+        </div>
+      </div>
+
     </section>
 
     <!-- ===== PIPELINE DE VENDAS ===== -->

@@ -1404,6 +1404,87 @@ tbody td {
 
 .btn-icon:hover { background: var(--ac-soft); color: var(--ac); border-color: var(--ac); }
 
+/* ─── SUBTAB PANELS ───────────────────────────────────────────── */
+.subtab-panel { display: block; }
+.subtab-panel.hidden { display: none; }
+
+/* ─── PRAZOS TABLE ────────────────────────────────────────────── */
+.prazos-table .dias-ok     { color: var(--green);  font-weight: 700; font-family: "IBM Plex Mono", monospace; }
+.prazos-table .dias-aviso  { color: var(--orange); font-weight: 700; font-family: "IBM Plex Mono", monospace; }
+.prazos-table .dias-urgente{ color: var(--red);    font-weight: 700; font-family: "IBM Plex Mono", monospace; }
+.prazos-table .dias-vencido{ color: var(--red);    font-weight: 700; font-family: "IBM Plex Mono", monospace; text-decoration: line-through; }
+.prazos-table tr.row-urgente td { background: #fff8f7; }
+.prazos-table tr.row-vencido td { background: #fff4f3; }
+.prazos-table .int-link { color: var(--ac); font-family: "IBM Plex Mono", monospace; font-size: .72rem; font-weight: 600; }
+.prazos-table .int-link:hover { text-decoration: underline; }
+.prazos-table .no-int { color: var(--mu); font-style: italic; font-size: .75rem; }
+.prazos-table td { font-size: .8rem; }
+
+/* ─── TAREFAS CARD ────────────────────────────────────────────── */
+.tarefa-card {
+  background: var(--s0);
+  border: 1px solid var(--br);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow .15s, transform .15s;
+  cursor: pointer;
+}
+
+.tarefa-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+
+.tarefa-card--alta    { border-left: 3px solid var(--red); }
+.tarefa-card--media   { border-left: 3px solid var(--orange); }
+.tarefa-card--normal  { border-left: 3px solid var(--green); }
+
+.tarefa-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+
+.tarefa-titulo {
+  font-weight: 700;
+  font-size: .85rem;
+  color: var(--tx-strong);
+  margin-bottom: 6px;
+  line-height: 1.35;
+}
+
+.tarefa-desc {
+  font-size: .76rem;
+  color: var(--mu);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.tarefa-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid var(--br);
+}
+
+.tarefa-resp {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .72rem;
+  color: var(--mu);
+}
+
+.tarefa-prazo {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .68rem;
+  color: var(--mu);
+}
+
+.tarefa-prazo--urgente { color: var(--red); font-weight: 600; }
+
+/* ─── INTIMAÇÕES TABLE ────────────────────────────────────────── */
+.intimacoes-table td { font-size: .8rem; }
+.intimacoes-table .int-id { font-family: "IBM Plex Mono", monospace; font-size: .7rem; color: var(--mu); }
+.intimacoes-table .int-prazo-link { color: var(--orange); font-weight: 600; font-size: .75rem; }
+.intimacoes-table tr.row-urgente td { background: #fff8f7; }
+.intimacoes-table tr.row-vencido td { background: #fff4f3; }
+
 /* ─── RELATÓRIOS ──────────────────────────────────────────────── */
 .rel-layout {
   display: grid;

@@ -359,6 +359,386 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
+// ─── PRAZOS DATA ───────────────────────────────────────────────────────
+const prazosProcessuais = [
+  {
+    pastaNr:    "57/2022-5975", codigoSIA: "202/2022-34",
+    cliente:    "Bayer S.a.",
+    processo:   "1000909-52.2022.8.26.0067",
+    comarca:    "Borborema",
+    tipoPrazo:  "Contestação",
+    prazoFatal: "2026-05-15",
+    descricao:  "Protocolar contestação com fundamentos revisados e todos os anexos obrigatórios.",
+    intimacaoId: "INT-2026-042",
+    responsavel: "Bruno F. S. Batista",
+    status:     "Pendente",
+  },
+  {
+    pastaNr:    "37/2025-2776", codigoSIA: "-",
+    cliente:    "Eurofins do Brasil Análises de Alimentos Ltda.",
+    processo:   "37/2025-2776",
+    comarca:    "São Paulo",
+    tipoPrazo:  "Encerramento de pasta",
+    prazoFatal: "2026-04-18",
+    descricao:  "Realizar encerramento da pasta com conferência documental e baixa do fluxo interno.",
+    intimacaoId: "INT-2026-039",
+    responsavel: "Advogado",
+    status:     "Pendente",
+  },
+  {
+    pastaNr:    "1002456/2026", codigoSIA: "-",
+    cliente:    "Banco Prime Capital",
+    processo:   "1002456-89.2026.8.26.0100",
+    comarca:    "São Paulo",
+    tipoPrazo:  "Prazo processual — Contestação",
+    prazoFatal: "2026-04-22",
+    descricao:  "Protocolar contestação, revisar fundamentos e validar anexos obrigatórios.",
+    intimacaoId: "INT-2026-040",
+    responsavel: "Controller",
+    status:     "Em andamento",
+  },
+  {
+    pastaNr:    "5001123/2026", codigoSIA: "-",
+    cliente:    "Hospital Santa Helena",
+    processo:   "5001123-21.2026.8.26.0001",
+    comarca:    "São Paulo",
+    tipoPrazo:  "Audiência",
+    prazoFatal: "2026-04-25",
+    descricao:  "Preparar roteiro de sustentação oral e revisar documentos da audiência trabalhista.",
+    intimacaoId: null,
+    responsavel: "Sócio",
+    status:     "Em andamento",
+  },
+  {
+    pastaNr:    "42/2017-5974", codigoSIA: "260/1992-1",
+    cliente:    "Vera Maria Ritter",
+    processo:   "0005678-12.2017.8.26.0100",
+    comarca:    "São Paulo",
+    tipoPrazo:  "Manifestação — recurso",
+    prazoFatal: "2026-05-20",
+    descricao:  "Apresentar contrarrazões ao recurso de apelação interposto pela parte contrária.",
+    intimacaoId: "INT-2026-043",
+    responsavel: "Lourenço Grieco",
+    status:     "Pendente",
+  },
+  {
+    pastaNr:    "2424/2026-5973", codigoSIA: "261/1999-1",
+    cliente:    "PAPELARIA TABAJARA LTDA.",
+    processo:   "0009001-44.2026.8.26.0100",
+    comarca:    "São Paulo",
+    tipoPrazo:  "Intimação — prazo 15 dias",
+    prazoFatal: "2026-05-12",
+    descricao:  "Cumprir determinação judicial de juntada de documentos contábeis.",
+    intimacaoId: "INT-2026-044",
+    responsavel: "Lourenço Grieco",
+    status:     "Pendente",
+  },
+];
+
+// ─── TAREFAS DATA ───────────────────────────────────────────────────────
+const tarefasData = [
+  {
+    id: "T001", titulo: "Contato com cliente — Bayer S.a.",
+    tipo: "Contato com cliente", prioridade: "Alta",
+    descricao: "Agendar reunião para alinhamento sobre estratégia de contestação e documentos faltantes.",
+    responsavel: "Lourenço Grieco", dataLimite: "2026-04-21", status: "Pendente",
+  },
+  {
+    id: "T002", titulo: "Pesquisa jurisprudencial — rescisão contratual",
+    tipo: "Pesquisa jurídica", prioridade: "Média",
+    descricao: "Levantar precedentes do STJ sobre rescisão unilateral de contratos de distribuição nos últimos 5 anos.",
+    responsavel: "Advogado", dataLimite: "2026-04-25", status: "Em andamento",
+  },
+  {
+    id: "T003", titulo: "Contato com Receita Federal — CNPJ Eurofins",
+    tipo: "Contato com órgão", prioridade: "Alta",
+    descricao: "Solicitar certidão negativa de débitos junto à RFB para encerramento do processo administrativo.",
+    responsavel: "Controller", dataLimite: "2026-04-22", status: "Pendente",
+  },
+  {
+    id: "T004", titulo: "Elaborar minuta de acordo — Grupo Orion",
+    tipo: "Elaboração de documento", prioridade: "Média",
+    descricao: "Redigir proposta de acordo extrajudicial conforme parâmetros discutidos em reunião de 10/04/2026.",
+    responsavel: "Lourenço Grieco", dataLimite: "2026-04-28", status: "Pendente",
+  },
+  {
+    id: "T005", titulo: "Protocolar procuração — Família Almeida",
+    tipo: "Diligência interna", prioridade: "Normal",
+    descricao: "Realizar protocolo da procuração assinada e arquivar cópia nos autos digitais da pasta.",
+    responsavel: "Estagiário", dataLimite: "2026-04-20", status: "Concluída",
+  },
+  {
+    id: "T006", titulo: "Reunião com perito — Bayer S.a.",
+    tipo: "Reunião", prioridade: "Alta",
+    descricao: "Reunir com perito agronômico contratado para discussão do laudo preliminar sobre o defensivo Serenade.",
+    responsavel: "Bruno F. S. Batista", dataLimite: "2026-04-29", status: "Pendente",
+  },
+  {
+    id: "T007", titulo: "Contato com JUCERJA — regularização societária",
+    tipo: "Contato com órgão", prioridade: "Normal",
+    descricao: "Verificar status do processo de alteração contratual e solicitar certidão de arquivamento.",
+    responsavel: "Controller", dataLimite: "2026-05-05", status: "Em andamento",
+  },
+];
+
+// ─── INTIMAÇÕES DATA ────────────────────────────────────────────────────
+const intimacoesData = [
+  {
+    id: "INT-2026-039", pastaNr: "37/2025-2776",
+    cliente:    "Eurofins do Brasil Análises de Alimentos Ltda.",
+    processo:   "37/2025-2776",
+    orgao:      "Vara Cível — São Paulo",
+    dataPublicacao: "2026-04-03",
+    prazoFatal: "2026-04-18",
+    descricao:  "Intimação para encerramento da pasta e baixa documental.",
+    prazoVinculado: "37/2025-2776",
+    status:     "Pendente",
+    diasUteis:  false,
+  },
+  {
+    id: "INT-2026-040", pastaNr: "1002456/2026",
+    cliente:    "Banco Prime Capital",
+    processo:   "1002456-89.2026.8.26.0100",
+    orgao:      "2ª Vara Cível — Fórum Central",
+    dataPublicacao: "2026-04-07",
+    prazoFatal: "2026-04-22",
+    descricao:  "Citação para apresentação de contestação no prazo de 15 dias úteis.",
+    prazoVinculado: "1002456/2026",
+    status:     "Em andamento",
+    diasUteis:  true,
+  },
+  {
+    id: "INT-2026-042", pastaNr: "57/2022-5975",
+    cliente:    "Bayer S.a.",
+    processo:   "1000909-52.2022.8.26.0067",
+    orgao:      "Comarca de Borborema",
+    dataPublicacao: "2026-04-14",
+    prazoFatal: "2026-05-15",
+    descricao:  "Intimação para apresentação de contestação — prazo de 30 dias úteis.",
+    prazoVinculado: "57/2022-5975",
+    status:     "Pendente",
+    diasUteis:  true,
+  },
+  {
+    id: "INT-2026-043", pastaNr: "42/2017-5974",
+    cliente:    "Vera Maria Ritter",
+    processo:   "0005678-12.2017.8.26.0100",
+    orgao:      "TJSP — Câmara Empresarial",
+    dataPublicacao: "2026-04-20",
+    prazoFatal: "2026-05-20",
+    descricao:  "Intimação para contrarrazões ao recurso de apelação — prazo de 30 dias.",
+    prazoVinculado: "42/2017-5974",
+    status:     "Pendente",
+    diasUteis:  true,
+  },
+  {
+    id: "INT-2026-044", pastaNr: "2424/2026-5973",
+    cliente:    "PAPELARIA TABAJARA LTDA.",
+    processo:   "0009001-44.2026.8.26.0100",
+    orgao:      "10ª Vara Cível — São Paulo",
+    dataPublicacao: "2026-04-25",
+    prazoFatal: "2026-05-12",
+    descricao:  "Juntada de documentos contábeis requisitados pelo juízo — prazo de 15 dias.",
+    prazoVinculado: "2424/2026-5973",
+    status:     "Pendente",
+    diasUteis:  false,
+  },
+];
+
+// ─── SUBTAB SWITCHING (atividades) ─────────────────────────────────────
+document.querySelectorAll('.subtab[data-subtab]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.subtab').forEach(b => b.classList.remove('is-active'));
+    document.querySelectorAll('.subtab-panel').forEach(p => p.classList.add('hidden'));
+    btn.classList.add('is-active');
+    document.getElementById(`subtab-${btn.dataset.subtab}`)?.classList.remove('hidden');
+    if (btn.dataset.subtab === 'prazos')     renderPrazosAba();
+    if (btn.dataset.subtab === 'tarefas')    renderTarefasAba();
+    if (btn.dataset.subtab === 'intimacoes') renderIntimacoesAba();
+  });
+});
+
+// ─── RENDER PRAZOS ABA ─────────────────────────────────────────────────
+function diasRestantesHtml(iso) {
+  const diff = daysUntil(iso);
+  if (diff < 0)  return `<span class="dias-vencido">Vencido (${Math.abs(diff)}d)</span>`;
+  if (diff === 0) return `<span class="dias-urgente">Hoje!</span>`;
+  if (diff <= 3)  return `<span class="dias-urgente">${diff}d</span>`;
+  if (diff <= 10) return `<span class="dias-aviso">${diff}d</span>`;
+  return `<span class="dias-ok">${diff}d</span>`;
+}
+
+function rowClassPrazo(iso) {
+  const d = daysUntil(iso);
+  if (d < 0)  return 'row-vencido';
+  if (d <= 3) return 'row-urgente';
+  return '';
+}
+
+function renderPrazosAba() {
+  const busca = (document.getElementById('buscaPrazosAba')?.value ?? '').toLowerCase();
+  const st    = document.getElementById('filtroPrazosStatus')?.value ?? '';
+  const resp  = document.getElementById('filtroPrazosResponsavel')?.value ?? '';
+
+  const lista = prazosProcessuais.filter(p => {
+    const m = !busca || p.pastaNr.toLowerCase().includes(busca) ||
+      p.processo.toLowerCase().includes(busca) || p.cliente.toLowerCase().includes(busca);
+    return m && (!st || p.status === st) && (!resp || p.responsavel === resp);
+  });
+
+  document.getElementById('prazosInfo').textContent = `${lista.length} registro${lista.length !== 1 ? 's' : ''}`;
+
+  document.getElementById('tabelaPrazosAba').innerHTML = lista.length
+    ? lista.map(p => {
+        const intHtml = p.intimacaoId
+          ? `<a href="#" class="int-link" onclick="irParaIntimacao('${p.intimacaoId}')">${p.intimacaoId}</a>`
+          : `<span class="no-int">—</span>`;
+        return `<tr class="${rowClassPrazo(p.prazoFatal)}">
+          <td><span class="table-link">${p.pastaNr}</span></td>
+          <td>${p.codigoSIA}</td>
+          <td>${p.cliente}</td>
+          <td style="font-family:'IBM Plex Mono',monospace;font-size:.72rem">${p.processo}</td>
+          <td>${p.comarca}</td>
+          <td><span class="tag tag--area">${p.tipoPrazo}</span></td>
+          <td>${formatDate(p.prazoFatal)}</td>
+          <td>${diasRestantesHtml(p.prazoFatal)}</td>
+          <td style="max-width:200px;font-size:.76rem">${p.descricao}</td>
+          <td>${intHtml}</td>
+          <td>${p.responsavel}</td>
+          <td><span class="status-pill ${statusClass(p.status)}">${p.status}</span></td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="12" class="tbl-empty">Nenhum prazo encontrado.</td></tr>`;
+}
+
+function irParaIntimacao(id) {
+  document.querySelectorAll('.subtab').forEach(b => b.classList.remove('is-active'));
+  document.querySelectorAll('.subtab-panel').forEach(p => p.classList.add('hidden'));
+  document.querySelector('.subtab[data-subtab="intimacoes"]').classList.add('is-active');
+  document.getElementById('subtab-intimacoes').classList.remove('hidden');
+  document.getElementById('buscaIntimacoes').value = id;
+  renderIntimacoesAba();
+}
+
+document.getElementById('buscaPrazosAba')?.addEventListener('input', renderPrazosAba);
+document.getElementById('filtroPrazosStatus')?.addEventListener('change', renderPrazosAba);
+document.getElementById('filtroPrazosResponsavel')?.addEventListener('change', renderPrazosAba);
+
+// ─── RENDER TAREFAS ABA ────────────────────────────────────────────────
+const TIPO_TAG_TAREFA = {
+  'Contato com cliente':    { cls:'tag--area',      label:'Cliente' },
+  'Contato com órgão':      { cls:'tag--type',      label:'Órgão' },
+  'Pesquisa jurídica':      { cls:'tag--encerramento', label:'Pesquisa' },
+  'Elaboração de documento':{ cls:'tag--area',      label:'Documento' },
+  'Diligência interna':     { cls:'tag--urgent',    label:'Diligência' },
+  'Reunião':                { cls:'tag--reuniao-t', label:'Reunião' },
+  'Outro':                  { cls:'tag--lembrete',  label:'Outro' },
+};
+
+function tarefaCard(t) {
+  const diff      = t.dataLimite ? daysUntil(t.dataLimite) : null;
+  const urgente   = diff !== null && diff <= 3;
+  const priorCls  = t.prioridade === 'Alta' ? 'tarefa-card--alta' : t.prioridade === 'Média' ? 'tarefa-card--media' : 'tarefa-card--normal';
+  const tagInfo   = TIPO_TAG_TAREFA[t.tipo] ?? { cls:'tag--lembrete', label: t.tipo };
+  const prazoTxt  = t.dataLimite ? formatDate(t.dataLimite) : '—';
+  const prazoCls  = urgente ? 'tarefa-prazo--urgente' : '';
+  const av        = initials(t.responsavel);
+
+  return `<article class="tarefa-card ${priorCls}">
+    <div class="tarefa-tags">
+      <span class="tag ${tagInfo.cls}">${tagInfo.label}</span>
+      ${t.prioridade === 'Alta' ? '<span class="tag tag--urgent">Alta</span>' : ''}
+    </div>
+    <p class="tarefa-titulo">${t.titulo}</p>
+    <p class="tarefa-desc">${t.descricao}</p>
+    <div class="tarefa-footer">
+      <div class="tarefa-resp">
+        <span class="avatar" style="width:24px;height:24px;font-size:.58rem">${av}</span>
+        ${t.responsavel}
+      </div>
+      <span class="tarefa-prazo ${prazoCls}">⏱ ${prazoTxt}</span>
+    </div>
+  </article>`;
+}
+
+function renderTarefasAba() {
+  const busca  = (document.getElementById('buscaTarefas')?.value ?? '').toLowerCase();
+  const tipo   = document.getElementById('filtroTarefasTipo')?.value ?? '';
+  const status = document.getElementById('filtroTarefasStatus')?.value ?? '';
+
+  const lista = tarefasData.filter(t => {
+    const m = !busca || t.titulo.toLowerCase().includes(busca) || t.descricao.toLowerCase().includes(busca);
+    return m && (!tipo || t.tipo === tipo) && (!status || t.status === status);
+  });
+
+  const pendentes  = lista.filter(t => t.status === 'Pendente');
+  const andamento  = lista.filter(t => t.status === 'Em andamento');
+  const concluidas = lista.filter(t => t.status === 'Concluída');
+
+  document.getElementById('colTarefasPendentes').innerHTML  = pendentes.length  ? pendentes.map(tarefaCard).join('')  : '<div class="empty-state">Nenhuma tarefa pendente.</div>';
+  document.getElementById('colTarefasAndamento').innerHTML  = andamento.length  ? andamento.map(tarefaCard).join('')  : '<div class="empty-state">Nenhuma em andamento.</div>';
+  document.getElementById('colTarefasConcluidas').innerHTML = concluidas.length ? concluidas.map(tarefaCard).join('') : '<div class="empty-state">Nenhuma concluída.</div>';
+
+  document.getElementById('countTarefasPendentes').textContent  = pendentes.length;
+  document.getElementById('countTarefasAndamento').textContent  = andamento.length;
+  document.getElementById('countTarefasConcluidas').textContent = concluidas.length;
+}
+
+document.getElementById('buscaTarefas')?.addEventListener('input', renderTarefasAba);
+document.getElementById('filtroTarefasTipo')?.addEventListener('change', renderTarefasAba);
+document.getElementById('filtroTarefasStatus')?.addEventListener('change', renderTarefasAba);
+
+// ─── RENDER INTIMAÇÕES ABA ─────────────────────────────────────────────
+function renderIntimacoesAba() {
+  const busca  = (document.getElementById('buscaIntimacoes')?.value ?? '').toLowerCase();
+  const status = document.getElementById('filtroIntimacoesStatus')?.value ?? '';
+
+  const lista = intimacoesData.filter(i => {
+    const m = !busca || i.id.toLowerCase().includes(busca) ||
+      i.processo.toLowerCase().includes(busca) ||
+      i.pastaNr.toLowerCase().includes(busca) ||
+      i.cliente.toLowerCase().includes(busca);
+    return m && (!status || i.status === status);
+  });
+
+  document.getElementById('intimacoesInfo').textContent = `${lista.length} registro${lista.length !== 1 ? 's' : ''}`;
+
+  document.getElementById('tabelaIntimacoes').innerHTML = lista.length
+    ? lista.map(i => {
+        const prazoLink = i.prazoVinculado
+          ? `<a href="#" class="int-prazo-link" onclick="irParaPrazo('${i.prazoVinculado}')">${i.prazoVinculado}</a>`
+          : '—';
+        const diasHtml  = diasRestantesHtml(i.prazoFatal);
+        const rowCls    = rowClassPrazo(i.prazoFatal);
+        return `<tr class="${rowCls}">
+          <td class="int-id">${i.id}</td>
+          <td><span class="table-link">${i.pastaNr}</span></td>
+          <td>${i.cliente}</td>
+          <td style="font-family:'IBM Plex Mono',monospace;font-size:.7rem">${i.processo}</td>
+          <td>${i.orgao}</td>
+          <td>${formatDate(i.dataPublicacao)}</td>
+          <td>${formatDate(i.prazoFatal)}${i.diasUteis ? ' <span style="color:var(--mu);font-size:.65rem">(d.u.)</span>' : ''}</td>
+          <td>${diasHtml}</td>
+          <td style="max-width:180px;font-size:.76rem">${i.descricao}</td>
+          <td>${prazoLink}</td>
+          <td><span class="status-pill ${statusClass(i.status === 'Cumprida' ? 'Concluído' : i.status === 'Vencida' ? 'Pendente' : i.status)}">${i.status}</span></td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="11" class="tbl-empty">Nenhuma intimação encontrada.</td></tr>`;
+}
+
+function irParaPrazo(pastaNr) {
+  document.querySelectorAll('.subtab').forEach(b => b.classList.remove('is-active'));
+  document.querySelectorAll('.subtab-panel').forEach(p => p.classList.add('hidden'));
+  document.querySelector('.subtab[data-subtab="prazos"]').classList.add('is-active');
+  document.getElementById('subtab-prazos').classList.remove('hidden');
+  document.getElementById('buscaPrazosAba').value = pastaNr;
+  renderPrazosAba();
+}
+
+document.getElementById('buscaIntimacoes')?.addEventListener('input', renderIntimacoesAba);
+document.getElementById('filtroIntimacoesStatus')?.addEventListener('change', renderIntimacoesAba);
+
 // ─── RELATÓRIOS ────────────────────────────────────────────────────────
 
 // Andamentos sample data derived from pastas array (filled at runtime)

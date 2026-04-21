@@ -11,12 +11,14 @@ const db = supabase.createClient(SUPA_URL, SUPA_KEY);
 // STATE
 // ──────────────────────────────────────────────────────────────────────
 const state = {
-  user:      null,
-  empresaId: null,
-  meuPerfil: null,
-  pastas:    [],
-  prazos:    [],
-  tarefas:   [],
+  user:        null,
+  empresaId:   null,
+  meuPerfil:   null,
+  pastas:      [],
+  prazos:      [],
+  tarefas:     [],
+  tiposPasta:  [],
+  clientes:    [],
 };
 
 // ──────────────────────────────────────────────────────────────────────
@@ -202,6 +204,22 @@ function dbParaPrazo(row) {
   };
 }
 
+function dbParaTipoPasta(row) {
+  return { id: row.id, codigo: row.codigo, nome: row.nome };
+}
+
+function dbParaCliente(row) {
+  return {
+    id:       row.id,
+    nome:     row.nome,
+    tipo:     row.tipo || 'PJ',
+    cpfCnpj:  row.cpf_cnpj || '',
+    email:    row.email || '',
+    telefone: row.telefone || '',
+    endereco: row.endereco || '',
+  };
+}
+
 function dbParaTarefa(row) {
   return {
     id:          row.id,
@@ -225,41 +243,107 @@ function dbParaTarefa(row) {
 // ──────────────────────────────────────────────────────────────────────
 async function carregarDados() {
   const eid = state.empresaId;
-  const [pr, pz, tf] = await Promise.all([
+  const [pr, pz, tf, tp, cl] = await Promise.all([
     db.from('pastas').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
     db.from('prazos_lhub').select('*').eq('empresa_id', eid).order('prazo'),
     db.from('tarefas_lhub').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
+    db.from('tipos_pasta').select('*').eq('empresa_id', eid).order('codigo'),
+    db.from('clientes_lhub').select('*').eq('empresa_id', eid).order('nome'),
   ]);
-  state.pastas  = (pr.data || []).map(dbParaPasta);
-  state.prazos  = (pz.data || []).map(dbParaPrazo);
-  state.tarefas = (tf.data || []).map(dbParaTarefa);
+  state.pastas     = (pr.data || []).map(dbParaPasta);
+  state.prazos     = (pz.data || []).map(dbParaPrazo);
+  state.tarefas    = (tf.data || []).map(dbParaTarefa);
+  state.tiposPasta = (tp.data || []).map(dbParaTipoPasta);
+  state.clientes   = (cl.data || []).map(dbParaCliente);
 
   renderPastaList();
   renderAtividades();
   renderPrazosAba();
   renderTarefasAba();
+  popularSelectsPastas();
 }
 
 // ──────────────────────────────────────────────────────────────────────
 // CRUD — PASTAS
 // ──────────────────────────────────────────────────────────────────────
+function gerarNumeroPasta(codigoTipo, ano) {
+  const prefix = `${codigoTipo}/${ano}-`;
+  const maxOrdem = state.pastas
+    .filter(p => p.numero.startsWith(prefix))
+    .reduce((max, p) => {
+      const ordem = parseInt(p.numero.slice(prefix.length)) || 0;
+      return Math.max(max, ordem);
+    }, 0);
+  return `${prefix}${maxOrdem + 1}`;
+}
+
+function atualizarPreviewNumero() {
+  const pastaId = document.getElementById('pastaId').value;
+  if (pastaId) return; // edição — não alterar número
+  const codigo = document.getElementById('pTipoPasta').value;
+  const ano    = document.getElementById('pAno').value;
+  const prev   = document.getElementById('pastaNumeroValor');
+  if (!codigo || !ano) { prev.textContent = '—'; return; }
+  prev.textContent = gerarNumeroPasta(codigo, ano);
+}
+
+function popularDropdownTipos() {
+  const sel = document.getElementById('pTipoPasta');
+  const atual = sel.value;
+  sel.innerHTML = '<option value="">Selecionar tipo…</option>' +
+    state.tiposPasta.map(t =>
+      `<option value="${t.codigo}" ${String(t.codigo) === String(atual) ? 'selected' : ''}>${t.codigo} — ${t.nome}</option>`
+    ).join('');
+  atualizarPreviewNumero();
+}
+
+function popularDropdownClientes() {
+  const sel = document.getElementById('pClienteSelect');
+  const atual = sel.value;
+  sel.innerHTML = '<option value="">— digitar manualmente —</option>' +
+    state.clientes.map(c =>
+      `<option value="${c.id}" data-nome="${c.nome}" ${c.id === atual ? 'selected' : ''}>${c.nome}</option>`
+    ).join('');
+}
+
+function popularSelectsPastas() {
+  const opts = '<option value="">— sem pasta vinculada —</option>' +
+    state.pastas.map(p => `<option value="${p.id}">${p.numero} — ${p.cliente}</option>`).join('');
+  ['prazoPastaSelect', 'tarefaPastaSelect'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = opts;
+  });
+}
+
 function abrirModalNovaPasta(numero) {
   const p = numero ? state.pastas.find(x => x.numero === numero) : null;
   document.getElementById('tituloPastaModal').textContent = p ? 'Editar Pasta' : 'Nova Pasta';
-  document.getElementById('pastaId').value        = p?.id || '';
-  document.getElementById('pNr').value            = p?.numero || '';
-  document.getElementById('pDataAb').value        = p?.dataDistribuicao
-    ? p.dataDistribuicao.split('/').reverse().join('-') : '';
-  document.getElementById('pCliente').value       = p?.cliente || '';
+  document.getElementById('pastaId').value = p?.id || '';
+  document.getElementById('pAno').value    = p
+    ? (p.dataDistribuicao ? p.dataDistribuicao.split('/')[2] : new Date().getFullYear())
+    : new Date().getFullYear();
+
+  popularDropdownTipos();
+  popularDropdownClientes();
+
+  if (p) {
+    document.getElementById('pTipoPasta').value      = p.codigoTipo || '';
+    document.getElementById('pastaNumeroValor').textContent = p.numero;
+  }
+
+  document.getElementById('pCliente').value        = p?.cliente || '';
+  document.getElementById('pClienteSelect').value  = p?.clienteId || '';
   document.getElementById('pParteContraria').value = (p?.parteContraria !== '-') ? (p?.parteContraria || '') : '';
-  document.getElementById('pCategoria').value     = p?.tipoServico || '';
-  document.getElementById('pTipoAcao').value      = p?.servico || '';
-  document.getElementById('pAdvogado').value      = p?.advogado || '';
-  document.getElementById('pComarca').value       = p?.comarca || '';
-  document.getElementById('pProcesso').value      = p?.processo || '';
-  document.getElementById('pValorCausa').value    = p?.valorCausa || '';
-  document.getElementById('pArea').value          = p?.area || '';
-  document.getElementById('pObs').value           = p?.descricao || '';
+  document.getElementById('pCategoria').value      = p?.tipoServico || '';
+  document.getElementById('pTipoAcao').value       = p?.servico || '';
+  document.getElementById('pAdvogado').value       = p?.advogado || '';
+  document.getElementById('pComarca').value        = p?.comarca || '';
+  document.getElementById('pProcesso').value       = p?.processo || '';
+  document.getElementById('pValorCausa').value     = p?.valorCausa || '';
+  document.getElementById('pArea').value           = p?.area || '';
+  document.getElementById('pObs').value            = p?.descricao || '';
+  document.getElementById('pDataAb').value         = p?.dataDistribuicao
+    ? p.dataDistribuicao.split('/').reverse().join('-') : '';
   document.getElementById('modalNovaPasta').classList.remove('hidden');
 }
 
@@ -275,16 +359,30 @@ document.getElementById('modalNovaPasta').addEventListener('click', e => {
   if (e.target === e.currentTarget) fecharModalNovaPasta();
 });
 
+document.getElementById('pTipoPasta').addEventListener('change', atualizarPreviewNumero);
+document.getElementById('pAno').addEventListener('input', atualizarPreviewNumero);
+
+document.getElementById('pClienteSelect').addEventListener('change', e => {
+  const opt = e.target.options[e.target.selectedIndex];
+  if (opt.dataset.nome) document.getElementById('pCliente').value = opt.dataset.nome;
+});
+
 document.getElementById('novaPastaForm').addEventListener('submit', async e => {
   e.preventDefault();
   const btn = document.getElementById('btnSalvarPasta');
   btn.disabled = true;
   btn.textContent = 'Salvando…';
 
-  const pastaId = document.getElementById('pastaId').value || uid();
+  const pastaId    = document.getElementById('pastaId').value;
+  const codigoTipo = document.getElementById('pTipoPasta').value;
+  const ano        = document.getElementById('pAno').value;
+  const numero     = pastaId
+    ? document.getElementById('pastaNumeroValor').textContent
+    : gerarNumeroPasta(codigoTipo, ano);
+
   const obj = pastaParaDb({
-    id:               pastaId,
-    numero:           document.getElementById('pNr').value.trim(),
+    id:               pastaId || uid(),
+    numero,
     codigoSIA:        '-',
     cliente:          document.getElementById('pCliente').value.trim(),
     parteContraria:   document.getElementById('pParteContraria').value.trim() || '-',
@@ -300,6 +398,8 @@ document.getElementById('novaPastaForm').addEventListener('submit', async e => {
     incluidoPor:      state.meuPerfil?.nome || '',
     status:           'ativo',
   });
+  obj.codigo_tipo = codigoTipo ? Number(codigoTipo) : null;
+  obj.cliente_id  = document.getElementById('pClienteSelect').value || null;
 
   const { error } = await db.from('pastas').upsert(obj);
   btn.disabled = false;
@@ -322,12 +422,11 @@ async function excluirPasta(id) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// CRUD — PRAZOS (formulário de cadastro rápido no Painel)
+// CRUD — PRAZOS (formulário rápido do Painel + modal completo)
 // ──────────────────────────────────────────────────────────────────────
 document.getElementById('prazoForm').addEventListener('submit', async e => {
   e.preventDefault();
   if (!state.empresaId) { toast('Faça login primeiro', 'error'); return; }
-
   const obj = {
     id:          uid(),
     empresa_id:  state.empresaId,
@@ -339,12 +438,286 @@ document.getElementById('prazoForm').addEventListener('submit', async e => {
     descricao:   document.getElementById('descricao').value.trim() || null,
     status:      document.getElementById('status').value === 'Concluído' ? 'concluido' : 'pendente',
   };
-
   const { error } = await db.from('prazos_lhub').insert(obj);
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
   e.target.reset();
   toast('Prazo cadastrado');
   await carregarDados();
+});
+
+// Modal completo de prazo
+function abrirModalNovoPrazo(id) {
+  const p = id ? state.prazos.find(x => x.id === id) : null;
+  document.getElementById('prazoId').value           = p?.id || '';
+  document.getElementById('prazoPastaSelect').value  = p?.pastaNr || '';
+  document.getElementById('prazoCliente').value      = p?.cliente || '';
+  document.getElementById('prazoTipo').value         = p?.tipoPrazo || '';
+  document.getElementById('prazoFatal').value        = p?.prazoFatal || '';
+  document.getElementById('prazoResponsavel').value  = p?.responsavel || '';
+  document.getElementById('prazoStatus').value       = p?.status === 'Concluído' ? 'concluido'
+    : p?.status === 'Em andamento' ? 'em_andamento' : 'pendente';
+  document.getElementById('prazoDescricao').value    = p?.descricao || '';
+  popularSelectsPastas();
+  document.getElementById('modalNovoPrazo').classList.remove('hidden');
+}
+
+function fecharModalNovoPrazo() {
+  document.getElementById('modalNovoPrazo').classList.add('hidden');
+  document.getElementById('novoPrazoForm').reset();
+}
+
+document.getElementById('btnNovoPrazo').addEventListener('click', () => abrirModalNovoPrazo(null));
+document.getElementById('fecharNovoPrazo').addEventListener('click', fecharModalNovoPrazo);
+document.getElementById('btnCancelarPrazo').addEventListener('click', fecharModalNovoPrazo);
+document.getElementById('modalNovoPrazo').addEventListener('click', e => {
+  if (e.target === e.currentTarget) fecharModalNovoPrazo();
+});
+
+document.getElementById('prazoPastaSelect').addEventListener('change', e => {
+  const pastaId = e.target.value;
+  const pasta   = state.pastas.find(p => p.id === pastaId);
+  if (pasta) document.getElementById('prazoCliente').value = pasta.cliente;
+});
+
+document.getElementById('novoPrazoForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('btnSalvarPrazo');
+  btn.disabled = true; btn.textContent = 'Salvando…';
+
+  const prazoId = document.getElementById('prazoId').value;
+  const obj = {
+    id:          prazoId || uid(),
+    empresa_id:  state.empresaId,
+    pasta_id:    document.getElementById('prazoPastaSelect').value || null,
+    cliente:     document.getElementById('prazoCliente').value.trim(),
+    tipo:        document.getElementById('prazoTipo').value,
+    prazo:       document.getElementById('prazoFatal').value,
+    responsavel: document.getElementById('prazoResponsavel').value.trim(),
+    status:      document.getElementById('prazoStatus').value,
+    descricao:   document.getElementById('prazoDescricao').value.trim() || null,
+  };
+
+  const { error } = await db.from('prazos_lhub').upsert(obj);
+  btn.disabled = false; btn.textContent = 'Salvar Prazo';
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  fecharModalNovoPrazo();
+  toast('Prazo salvo');
+  await carregarDados();
+});
+
+async function excluirPrazo(id) {
+  if (!confirm('Confirmar exclusão deste prazo?')) return;
+  const { error } = await db.from('prazos_lhub').delete().eq('id', id).eq('empresa_id', state.empresaId);
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  toast('Prazo excluído');
+  await carregarDados();
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// CRUD — TAREFAS (modal completo)
+// ──────────────────────────────────────────────────────────────────────
+function abrirModalNovaTarefa(id) {
+  const t = id ? state.tarefas.find(x => x.id === id) : null;
+  document.getElementById('tarefaId').value          = t?.id || '';
+  document.getElementById('tTitulo').value           = t?.titulo || '';
+  document.getElementById('tTipo').value             = t?.tipo || 'Outro';
+  document.getElementById('tPrioridade').value       = t?.prioridade?.toLowerCase() || 'normal';
+  document.getElementById('tarefaPastaSelect').value = '';
+  document.getElementById('tPrazo').value            = t?.dataLimite || '';
+  document.getElementById('tResponsavel').value      = t?.responsavel || '';
+  document.getElementById('tDescricao').value        = t?.descricao || '';
+  popularSelectsPastas();
+  document.getElementById('modalNovaTarefa').classList.remove('hidden');
+}
+
+function fecharModalNovaTarefa() {
+  document.getElementById('modalNovaTarefa').classList.add('hidden');
+  document.getElementById('novaTarefaForm').reset();
+}
+
+document.getElementById('btnNovaTarefa').addEventListener('click', () => abrirModalNovaTarefa(null));
+document.getElementById('fecharNovaTarefa').addEventListener('click', fecharModalNovaTarefa);
+document.getElementById('btnCancelarTarefa').addEventListener('click', fecharModalNovaTarefa);
+document.getElementById('modalNovaTarefa').addEventListener('click', e => {
+  if (e.target === e.currentTarget) fecharModalNovaTarefa();
+});
+
+document.getElementById('novaTarefaForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('btnSalvarTarefa');
+  btn.disabled = true; btn.textContent = 'Salvando…';
+
+  const tarefaId = document.getElementById('tarefaId').value;
+  const obj = {
+    id:          tarefaId || uid(),
+    empresa_id:  state.empresaId,
+    pasta_id:    document.getElementById('tarefaPastaSelect').value || null,
+    titulo:      document.getElementById('tTitulo').value.trim(),
+    tipo:        document.getElementById('tTipo').value,
+    prioridade:  document.getElementById('tPrioridade').value,
+    responsavel: document.getElementById('tResponsavel').value.trim(),
+    prazo:       document.getElementById('tPrazo').value || null,
+    descricao:   document.getElementById('tDescricao').value.trim() || null,
+    status:      tarefaId
+      ? (state.tarefas.find(t => t.id === tarefaId)?.status === 'Concluída' ? 'concluida'
+        : state.tarefas.find(t => t.id === tarefaId)?.status === 'Em andamento' ? 'em_andamento'
+        : 'pendente')
+      : 'pendente',
+  };
+
+  const { error } = await db.from('tarefas_lhub').upsert(obj);
+  btn.disabled = false; btn.textContent = 'Salvar Tarefa';
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  fecharModalNovaTarefa();
+  toast('Tarefa salva');
+  await carregarDados();
+});
+
+async function excluirTarefa(id) {
+  if (!confirm('Confirmar exclusão desta tarefa?')) return;
+  const { error } = await db.from('tarefas_lhub').delete().eq('id', id).eq('empresa_id', state.empresaId);
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  toast('Tarefa excluída');
+  await carregarDados();
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// CRUD — TIPOS DE PASTA
+// ──────────────────────────────────────────────────────────────────────
+function renderListaTipos() {
+  const el = document.getElementById('listaTiposPasta');
+  if (!state.tiposPasta.length) {
+    el.innerHTML = '<p style="color:var(--mu);font-size:var(--text-sm)">Nenhum tipo cadastrado.</p>';
+    return;
+  }
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse">
+    <thead><tr>
+      <th style="text-align:left;padding:4px 8px;font-size:.7rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Código</th>
+      <th style="text-align:left;padding:4px 8px;font-size:.7rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Nome</th>
+      <th style="width:36px;border-bottom:1px solid var(--br)"></th>
+    </tr></thead>
+    <tbody>${state.tiposPasta.map(t => `
+      <tr>
+        <td style="padding:6px 8px;font-weight:700;font-family:'IBM Plex Mono',monospace;font-size:.82rem">${t.codigo}</td>
+        <td style="padding:6px 8px;font-size:.875rem">${t.nome}</td>
+        <td style="padding:6px 8px">
+          <button onclick="excluirTipoPasta('${t.id}')" style="background:none;border:none;color:var(--mu);cursor:pointer;font-size:.9rem" title="Excluir">✕</button>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function abrirModalTiposPasta() {
+  renderListaTipos();
+  document.getElementById('modalTiposPasta').classList.remove('hidden');
+}
+
+function fecharModalTiposPasta() {
+  document.getElementById('modalTiposPasta').classList.add('hidden');
+  document.getElementById('novoTipoForm').reset();
+}
+
+document.getElementById('btnGerenciarTipos').addEventListener('click', abrirModalTiposPasta);
+document.getElementById('fecharTiposPasta').addEventListener('click', fecharModalTiposPasta);
+document.getElementById('modalTiposPasta').addEventListener('click', e => {
+  if (e.target === e.currentTarget) fecharModalTiposPasta();
+});
+
+document.getElementById('novoTipoForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const codigo = Number(document.getElementById('tipoCodigo').value);
+  const nome   = document.getElementById('tipoNome').value.trim();
+
+  if (state.tiposPasta.some(t => t.codigo === codigo)) {
+    toast(`Código ${codigo} já existe`, 'error'); return;
+  }
+
+  const obj = { id: uid(), empresa_id: state.empresaId, codigo, nome };
+  const { error } = await db.from('tipos_pasta').insert(obj);
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  toast('Tipo adicionado');
+  e.target.reset();
+
+  // Atualiza state e re-renderiza lista sem recarregar tudo
+  state.tiposPasta.push({ id: obj.id, codigo, nome });
+  state.tiposPasta.sort((a, b) => a.codigo - b.codigo);
+  renderListaTipos();
+  popularDropdownTipos();
+});
+
+async function excluirTipoPasta(id) {
+  if (!confirm('Excluir este tipo de pasta?')) return;
+  const { error } = await db.from('tipos_pasta').delete().eq('id', id).eq('empresa_id', state.empresaId);
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  state.tiposPasta = state.tiposPasta.filter(t => t.id !== id);
+  renderListaTipos();
+  popularDropdownTipos();
+  toast('Tipo excluído');
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// CRUD — CLIENTES
+// ──────────────────────────────────────────────────────────────────────
+function abrirModalNovoCliente(contexto) {
+  // contexto: 'pasta' (abre e volta p/ modal de pasta ao fechar)
+  document.getElementById('clienteId').value    = '';
+  document.getElementById('cNome').value         = '';
+  document.querySelector('input[name="cTipo"][value="PJ"]').checked = true;
+  document.getElementById('cCpfCnpj').value      = '';
+  document.getElementById('cTelefone').value     = '';
+  document.getElementById('cEmail').value        = '';
+  document.getElementById('cEndereco').value     = '';
+  document.getElementById('tituloClienteModal').textContent = 'Novo Cliente';
+  document.getElementById('_clienteContexto').value = contexto || '';
+  document.getElementById('modalNovoCliente').classList.remove('hidden');
+}
+
+function fecharModalNovoCliente() {
+  document.getElementById('modalNovoCliente').classList.add('hidden');
+  document.getElementById('novoClienteForm').reset();
+}
+
+document.getElementById('btnNovoClientePasta').addEventListener('click', () => abrirModalNovoCliente('pasta'));
+document.getElementById('fecharNovoCliente').addEventListener('click', fecharModalNovoCliente);
+document.getElementById('btnCancelarCliente').addEventListener('click', fecharModalNovoCliente);
+document.getElementById('modalNovoCliente').addEventListener('click', e => {
+  if (e.target === e.currentTarget) fecharModalNovoCliente();
+});
+
+document.getElementById('novoClienteForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('btnSalvarCliente');
+  btn.disabled = true; btn.textContent = 'Salvando…';
+
+  const obj = {
+    id:        uid(),
+    empresa_id: state.empresaId,
+    nome:       document.getElementById('cNome').value.trim().toUpperCase(),
+    tipo:       document.querySelector('input[name="cTipo"]:checked').value,
+    cpf_cnpj:   document.getElementById('cCpfCnpj').value.trim() || null,
+    telefone:   document.getElementById('cTelefone').value.trim() || null,
+    email:      document.getElementById('cEmail').value.trim() || null,
+    endereco:   document.getElementById('cEndereco').value.trim() || null,
+  };
+
+  const { error } = await db.from('clientes_lhub').insert(obj);
+  btn.disabled = false; btn.textContent = 'Salvar Cliente';
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+
+  state.clientes.push(dbParaCliente(obj));
+  state.clientes.sort((a, b) => a.nome.localeCompare(b.nome));
+  popularDropdownClientes();
+
+  const ctx = document.getElementById('_clienteContexto')?.value;
+  fecharModalNovoCliente();
+  toast('Cliente cadastrado');
+
+  if (ctx === 'pasta') {
+    // seleciona o novo cliente no dropdown da pasta
+    document.getElementById('pClienteSelect').value = obj.id;
+    document.getElementById('pCliente').value = obj.nome;
+  }
 });
 
 // ──────────────────────────────────────────────────────────────────────

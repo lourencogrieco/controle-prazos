@@ -2207,3 +2207,65 @@ tbody td {
 }
 .toast--show { opacity: 1; transform: translateY(0); }
 .toast--error { background: #c0392b; }
+
+/* ── MODAL SECTIONS ────────────────────────────────────────────────── */
+.modal-section-label {
+  font-size: .68rem;
+  font-family: 'IBM Plex Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--mu);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--br);
+}
+
+/* ── NÚMERO DA PASTA PREVIEW ───────────────────────────────────────── */
+.pasta-numero-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--ac-soft);
+  border: 1px solid var(--br);
+  border-radius: var(--r-sm);
+  padding: 10px 14px;
+  margin-top: 10px;
+}
+.pasta-numero-label {
+  font-size: .68rem;
+  font-family: 'IBM Plex Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--mu);
+  white-space: nowrap;
+}
+.pasta-numero-preview strong {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 1.1rem;
+  color: var(--navy);
+  letter-spacing: .5px;
+  flex: 1;
+}
+.pasta-numero-hint {
+  font-size: .72rem;
+  color: var(--mu);
+  white-space: nowrap;
+}
+
+/* ── BTN ICON SMALL ────────────────────────────────────────────────── */
+.btn-icon-sm {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-xs);
+  border: 1px solid var(--br);
+  background: var(--s1);
+  color: var(--navy);
+  font-size: 1rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.btn-icon-sm:hover { background: var(--ac-soft); }

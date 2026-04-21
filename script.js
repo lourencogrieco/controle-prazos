@@ -1303,12 +1303,12 @@ async function sincronizarPJeData() {
       let pagina = 1;
       let totalApi = Infinity;
       while ((pagina - 1) * 50 < totalApi) {
-        const url = `https://comunica.pje.jus.br/api/v1/comunicacao` +
+        const url = `/api/pje-proxy` +
           `?pagina=${pagina}&itensPorPagina=50` +
           `&texto=${encodeURIComponent(nome)}` +
-          `&dataDisponibilizacaoInicio=${de}` +
-          `&dataDisponibilizacaoFim=${ate || de}`;
-        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+          `&dataInicio=${de}` +
+          `&dataFim=${ate || de}`;
+        const res = await fetch(url);
         if (!res.ok) break;
         const json = await res.json();
         totalApi = json.count ?? 0;

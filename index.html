@@ -41,15 +41,16 @@
         <span>SÓCIO</span>
       </div>
       <div class="hdr-actions">
-        <button class="hdr-btn" title="Início">
+        <button class="hdr-btn" title="Início" onclick="navegarPara('painel')">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M2 6.5L8 2l6 4.5V14H10v-3.5H6V14H2V6.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
           </svg>
         </button>
         <button class="hdr-btn" title="Configurações" onclick="navegarPara('configuracoes')">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M8 10a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M8 1.5v1.2M8 13.3v1.2M1.5 8h1.2M13.3 8h1.2M3.4 3.4l.85.85M11.75 11.75l.85.85M3.4 12.6l.85-.85M11.75 4.25l.85-.85" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M6.2 2.3A6.5 6.5 0 002.3 6.2H1a7.5 7.5 0 015.2-4.9v1zM9.8 2.3v-1A7.5 7.5 0 0114.7 6.2H13.7A6.5 6.5 0 009.8 2.3zM6.2 13.7v1A7.5 7.5 0 011.3 9.8H2.3a6.5 6.5 0 003.9 3.9zM9.8 13.7a6.5 6.5 0 003.9-3.9h1a7.5 7.5 0 01-4.9 4.9v-1z" fill="none"/>
           </svg>
         </button>
         <button class="hdr-btn hdr-btn--notif" title="Notificações">
@@ -922,6 +923,39 @@
         <div class="modal-footer">
           <button class="btn-outline" onclick="fecharModalConvidarUsuario()">Cancelar</button>
           <button class="btn-primary" onclick="convidarUsuario()">Enviar convite</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal editar perfil -->
+    <div class="modal-overlay" id="modalEditarPerfil">
+      <div class="modal" style="max-width:360px">
+        <div class="modal-header">
+          <span class="modal-title">Alterar Perfil</span>
+          <button class="modal-close" onclick="document.getElementById('modalEditarPerfil').classList.remove('open')">✕</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="editPerfilUserId">
+          <div class="form-group">
+            <label class="form-label">Usuário</label>
+            <p id="editPerfilNome" style="font-weight:600;margin:0"></p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Novo perfil</label>
+            <select id="editPerfilSelect" class="form-select">
+              <option value="estagiario">Estagiário</option>
+              <option value="advogado">Advogado</option>
+              <option value="socio">Sócio</option>
+              <option value="socio_fundador">Sócio Fundador</option>
+              <option value="financeiro">Financeiro</option>
+              <option value="controller">Controller</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-outline" onclick="document.getElementById('modalEditarPerfil').classList.remove('open')">Cancelar</button>
+          <button class="btn-primary" onclick="salvarEdicaoPerfil()">Salvar</button>
         </div>
       </div>
     </div>

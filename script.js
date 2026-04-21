@@ -2045,7 +2045,7 @@ async function renderConfiguracoes() {
       <td style="color:var(--mu)">${u.email || '—'}</td>
       <td><span class="badge-perfil badge-perfil--${u.perfil}">${perfil}</span></td>
       <td style="color:var(--mu)">${area}</td>
-      <td><button class="btn-icon-sm" onclick="editarPerfil('${u.id}','${u.perfil}','${u.area_id||''}')">✎</button></td>
+      <td><button class="btn-icon-sm" onclick="editarPerfil('${u.id}','${u.perfil||''}','${(u.nome||'').replace(/'/g,'')}')">✎</button></td>
     </tr>`;
   }).join('');
 }
@@ -2092,16 +2092,21 @@ async function convidarUsuario() {
   renderConfiguracoes();
 }
 
-async function editarPerfil(userId, perfilAtual, areaAtual) {
-  const perfil = prompt(
-    'Novo perfil:\nestagiario | advogado | socio | socio_fundador | financeiro | controller | admin',
-    perfilAtual
-  );
-  if (!perfil) return;
+function editarPerfil(userId, perfilAtual, nome) {
+  document.getElementById('editPerfilUserId').value = userId;
+  document.getElementById('editPerfilNome').textContent = nome || userId;
+  document.getElementById('editPerfilSelect').value = perfilAtual || 'advogado';
+  document.getElementById('modalEditarPerfil').classList.add('open');
+}
+
+async function salvarEdicaoPerfil() {
+  const userId = document.getElementById('editPerfilUserId').value;
+  const perfil = document.getElementById('editPerfilSelect').value;
   const { error } = await db.from('usuarios_empresa')
     .update({ perfil })
     .eq('id', userId);
   if (error) { toast('Erro ao atualizar perfil.', 'error'); return; }
+  document.getElementById('modalEditarPerfil').classList.remove('open');
   toast('Perfil atualizado!');
   renderConfiguracoes();
 }

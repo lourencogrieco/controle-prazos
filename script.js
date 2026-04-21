@@ -1295,24 +1295,54 @@ async function sincronizarPJeData() {
   const btn = event?.target;
   if (btn) { btn.disabled = true; btn.textContent = 'Buscando…'; }
   try {
-    const res = await fetch(`https://gcucadlnxttlxckravui.supabase.co/functions/v1/sync-intimacoes`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${(await db.auth.getSession()).data.session?.access_token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ dataInicio: de, dataFim: ate || de }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (res.ok) {
-      toast('Intimações importadas!');
-      await carregarDados();
-      renderIntimacoesAba();
-    } else {
-      console.error('Erro Edge Function:', data);
-      toast('Erro ao buscar: ' + (data.error || data.msg || res.status), 'error');
+    const nomes = state.pjeConfig?.nomes ?? [];
+    if (!nomes.length) { toast('Nenhum advogado configurado no PJe.', 'error'); return; }
+
+    let total = 0;
+    for (const nome of nomes) {
+      let pagina = 1;
+      let totalApi = Infinity;
+      while ((pagina - 1) * 50 < totalApi) {
+        const url = `https://comunica.pje.jus.br/api/v1/comunicacao` +
+          `?pagina=${pagina}&itensPorPagina=50` +
+          `&texto=${encodeURIComponent(nome)}` +
+          `&dataDisponibilizacaoInicio=${de}` +
+          `&dataDisponibilizacaoFim=${ate || de}`;
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) break;
+        const json = await res.json();
+        totalApi = json.count ?? 0;
+        const items = json.items ?? [];
+        const rows = items.map(i => ({
+          id: String(i.id),
+          empresa_id: state.empresaId,
+          data_disponibilizacao: i.data_disponibilizacao,
+          sigla_tribunal: i.siglaTribunal,
+          tipo_comunicacao: i.tipoComunicacao,
+          nome_orgao: i.nomeOrgao,
+          texto: i.texto,
+          numero_processo: i.numero_processo,
+          numero_processo_mascara: i.numeroprocessocommascara,
+          link: i.link,
+          tipo_documento: i.tipoDocumento,
+          nome_classe: i.nomeClasse,
+          status: i.status,
+          meio_completo: i.meiocompleto,
+          hash: i.hash,
+        }));
+        if (rows.length) {
+          const { error } = await db.from('intimacoes_pje').upsert(rows, { onConflict: 'id', ignoreDuplicates: true });
+          if (error) console.error('Upsert intimacoes erro:', error);
+          else total += rows.length;
+        }
+        pagina++;
+        if (items.length < 50) break;
+      }
     }
-  } catch (e) { console.error('Erro fetch:', e); toast('Erro ao buscar.', 'error'); }
+    toast(`${total} intimação(ões) importada(s)!`);
+    await carregarDados();
+    renderIntimacoesAba();
+  } catch (e) { console.error('Erro ao buscar PJe:', e); toast('Erro: ' + e.message, 'error'); }
   finally { if (btn) { btn.disabled = false; btn.textContent = '↻ Buscar por data'; } }
 }
 

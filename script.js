@@ -1417,24 +1417,56 @@ async function sincronizarPJeData() {
 }
 
 async function sincronizarPJe() {
+  const hoje = new Date().toISOString().slice(0, 10);
+  // Preenche os campos de data com hoje e dispara a busca
+  const elDe  = document.getElementById('filtroIntimacoesDe');
+  const elAte = document.getElementById('filtroIntimacoesAte');
+  if (elDe)  elDe.value  = hoje;
+  if (elAte) elAte.value = hoje;
+
   const btn = document.getElementById('btnSyncPJe');
   if (btn) { btn.disabled = true; btn.textContent = 'Sincronizando…'; }
   try {
-    const res = await fetch(`https://gcucadlnxttlxckravui.supabase.co/functions/v1/sync-intimacoes`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${(await db.auth.getSession()).data.session?.access_token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-    if (res.ok) {
-      toast('Intimações sincronizadas com sucesso!');
-      await carregarDados();
-    } else {
-      toast('Erro ao sincronizar. Tente novamente.', 'error');
+    const nomes = state.pjeConfig?.nomes ?? [];
+    if (!nomes.length) { toast('Nenhum advogado configurado no PJe.', 'error'); return; }
+
+    let total = 0;
+    for (const nome of nomes) {
+      let pagina = 1;
+      let totalApi = Infinity;
+      while ((pagina - 1) * 50 < totalApi) {
+        const url = `/api/pje-proxy?pagina=${pagina}&itensPorPagina=50` +
+          `&texto=${encodeURIComponent(nome)}&dataInicio=${hoje}&dataFim=${hoje}`;
+        const res = await fetch(url);
+        if (!res.ok) break;
+        const json = await res.json();
+        totalApi = json.count ?? 0;
+        const items = json.items ?? [];
+        const rows = items.map(i => ({
+          id: String(i.id), empresa_id: state.empresaId,
+          data_disponibilizacao: i.data_disponibilizacao,
+          sigla_tribunal: i.siglaTribunal, tipo_comunicacao: i.tipoComunicacao,
+          nome_orgao: i.nomeOrgao, texto: i.texto,
+          numero_processo: i.numero_processo,
+          numero_processo_mascara: i.numeroprocessocommascara,
+          link: i.link, tipo_documento: i.tipoDocumento,
+          nome_classe: i.nomeClasse, status: i.status,
+          meio_completo: i.meiocompleto, hash: i.hash,
+        }));
+        if (rows.length) {
+          const { error } = await db.from('intimacoes_pje').upsert(rows, { onConflict: 'id', ignoreDuplicates: true });
+          if (!error) total += rows.length;
+        }
+        pagina++;
+        if (items.length < 50) break;
+      }
     }
+    toast(`${total} intimação(ões) de hoje importada(s)!`);
+    await carregarDados();
+    renderIntimacoesAba();
   } catch (e) {
-    toast('Erro ao sincronizar.', 'error');
+    console.error('Erro sincronizar PJe:', e);
+    toast('Erro ao sincronizar: ' + e.message, 'error');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '↻ Sincronizar PJe'; }
   }

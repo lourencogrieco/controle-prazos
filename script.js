@@ -108,7 +108,7 @@ const PERMISSOES = {
   advogado:       { painel:1, agenda:1, atividades:1, pastas:1, relatorios:1, pipeline:0, financeiro:0, configuracoes:0 },
   estagiario:     { painel:0, agenda:1, atividades:1, pastas:1, relatorios:0, pipeline:0, financeiro:0, configuracoes:0 },
   financeiro:     { painel:0, agenda:0, atividades:0, pastas:0, relatorios:0, pipeline:0, financeiro:1, configuracoes:0 },
-  controller:     { painel:1, agenda:0, atividades:0, pastas:0, relatorios:1, pipeline:0, financeiro:1, configuracoes:0 },
+  controller:     { painel:1, agenda:0, atividades:0, pastas:0, relatorios:1, pipeline:0, financeiro:0, configuracoes:0 },
 };
 
 function podeAcessar(view) {

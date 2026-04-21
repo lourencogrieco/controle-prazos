@@ -1777,16 +1777,16 @@ document.getElementById('calHoje').addEventListener('click', () => {
 });
 
 document.getElementById('btnNovoEvento').addEventListener('click', () => {
-  document.getElementById('modalEvento').classList.remove('hidden');
+  document.getElementById('modalEvento').classList.add('open');
   if (calDataSelecionada) document.getElementById('evData').value = calDataSelecionada;
 });
 ['modalClose','modalCancelar'].forEach(id => {
   document.getElementById(id).addEventListener('click', () => {
-    document.getElementById('modalEvento').classList.add('hidden');
+    document.getElementById('modalEvento').classList.remove('open');
   });
 });
 document.getElementById('modalEvento').addEventListener('click', e => {
-  if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
 });
 document.getElementById('eventoForm').addEventListener('submit', async e => {
   e.preventDefault();
@@ -1803,7 +1803,7 @@ document.getElementById('eventoForm').addEventListener('submit', async e => {
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
   agendaEventos.push({ ...novo, id: salvo.id });
   agendaEventos.sort((a, b) => a.data.localeCompare(b.data));
-  document.getElementById('modalEvento').classList.add('hidden');
+  document.getElementById('modalEvento').classList.remove('open');
   e.target.reset();
   renderCalendario();
   if (calDataSelecionada) selecionarDia(calDataSelecionada);

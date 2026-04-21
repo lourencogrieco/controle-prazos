@@ -2219,93 +2219,167 @@ tbody td {
   white-space: nowrap;
 }
 
-/* ── BTN ICON SMALL ────────────────────────────────────────────────── */
-.btn-icon-sm {
-  width: 34px;
-  height: 34px;
-  border-radius: var(--r-xs);
-  border: 1px solid var(--br);
-  background: var(--s1);
-  color: var(--navy);
-  font-size: 1rem;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: background .15s;
-}
-.btn-icon-sm:hover { background: var(--ac-soft); }
 
 /* ── CONFIGURAÇÕES ─────────────────────────────────────────────────── */
 .cfg-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.6fr 1fr;
   gap: 20px;
   padding: 20px 24px;
+  align-items: start;
 }
-@media (max-width: 900px) { .cfg-grid { grid-template-columns: 1fr; } }
+@media (max-width: 960px) { .cfg-grid { grid-template-columns: 1fr; } }
 
 .cfg-card {
   background: var(--s1);
   border: 1px solid var(--br);
-  border-radius: var(--r-sm);
+  border-radius: 6px;
   overflow: hidden;
 }
+
 .cfg-card-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--br);
+  background: var(--s2);
 }
+
 .cfg-card-title {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: .72rem;
-  letter-spacing: 1px;
+  font-size: .68rem;
+  letter-spacing: 1.2px;
   color: var(--mu);
+  text-transform: uppercase;
 }
-.cfg-field-group { padding: 16px; }
+
+/* Users table inside cfg-card — no outer padding, table bleeds to edges */
+#tblUsuarios {
+  width: 100%;
+  margin: 0;
+  border: none;
+}
+#tblUsuarios thead th {
+  background: transparent;
+  padding: 10px 18px;
+  font-size: .65rem;
+}
+#tblUsuarios tbody td {
+  padding: 10px 18px;
+  vertical-align: middle;
+}
+#tblUsuarios tbody tr:last-child td { border-bottom: none; }
+#tblUsuarios tbody tr:hover { background: rgba(255,255,255,.02); }
+
+/* Edit button in table */
+.btn-icon-sm {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--br);
+  background: transparent;
+  color: var(--mu);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: .85rem;
+  transition: background 150ms, color 150ms, border-color 150ms;
+}
+.btn-icon-sm:hover {
+  background: var(--ac-soft);
+  color: var(--ac);
+  border-color: var(--ac);
+}
+
+/* PJe config panel */
+.cfg-field-group {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .cfg-label {
   display: block;
-  font-size: .75rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .65rem;
+  letter-spacing: .8px;
+  text-transform: uppercase;
   color: var(--mu);
   margin-bottom: 6px;
 }
+
+.cfg-label small {
+  font-family: inherit;
+  font-size: .6rem;
+  opacity: .7;
+}
+
 .cfg-textarea {
   width: 100%;
   background: var(--bg);
   border: 1px solid var(--br);
-  border-radius: var(--r-xs);
-  color: var(--navy);
-  font-size: .85rem;
-  padding: 8px 10px;
+  border-radius: 3px;
+  color: var(--tx);
+  font-size: .82rem;
+  line-height: 1.6;
+  padding: 9px 11px;
   resize: vertical;
   box-sizing: border-box;
+  font-family: 'IBM Plex Mono', monospace;
+  transition: border-color 150ms;
 }
 .cfg-textarea:focus { outline: none; border-color: var(--ac); }
 
-/* Badges de perfil */
+.cfg-hint {
+  font-size: .72rem;
+  color: var(--mu);
+  line-height: 1.5;
+  padding: 10px 14px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--br);
+  border-radius: 3px;
+}
+.cfg-hint strong { color: var(--tx); font-weight: 600; }
+
+/* SQL block in cfg */
+.cfg-sql {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .72rem;
+  background: var(--bg);
+  border: 1px solid var(--br);
+  border-radius: 3px;
+  padding: 10px 12px;
+  color: var(--mu);
+  white-space: pre;
+  overflow-x: auto;
+  line-height: 1.6;
+}
+
+/* ── BADGES DE PERFIL ───────────────────────────────────────────────── */
 .badge-perfil {
   display: inline-block;
   padding: 2px 8px;
-  border-radius: 99px;
-  font-size: .7rem;
+  border-radius: 3px;
+  font-size: .65rem;
   font-family: 'IBM Plex Mono', monospace;
   text-transform: uppercase;
-  letter-spacing: .5px;
+  letter-spacing: .8px;
+  font-weight: 500;
 }
 .badge-perfil--admin,
-.badge-perfil--adm          { background: #1a1a3e; color: #a0aeff; }
-.badge-perfil--socio_fundador { background: #1a2e1a; color: #6fcf97; }
-.badge-perfil--socio        { background: #1e2a1e; color: #27ae60; }
-.badge-perfil--advogado     { background: #1a2433; color: #56b4e9; }
-.badge-perfil--estagiario   { background: #2a2a1a; color: #f2c94c; }
-.badge-perfil--financeiro   { background: #2a1a1a; color: #eb5757; }
-.badge-perfil--controller   { background: #1a2533; color: #9b51e0; }
+.badge-perfil--adm          { background: rgba(160,174,255,.12); color: #a0aeff; border: 1px solid rgba(160,174,255,.25); }
+.badge-perfil--socio_fundador { background: rgba(111,207,151,.12); color: #6fcf97; border: 1px solid rgba(111,207,151,.25); }
+.badge-perfil--socio        { background: rgba(39,174,96,.12);  color: #27ae60; border: 1px solid rgba(39,174,96,.25); }
+.badge-perfil--advogado     { background: rgba(86,180,233,.12); color: #56b4e9; border: 1px solid rgba(86,180,233,.25); }
+.badge-perfil--estagiario   { background: rgba(242,201,76,.12); color: #f2c94c; border: 1px solid rgba(242,201,76,.25); }
+.badge-perfil--financeiro   { background: rgba(235,87,87,.12);  color: #eb5757; border: 1px solid rgba(235,87,87,.25); }
+.badge-perfil--controller   { background: rgba(155,81,224,.12); color: #9b51e0; border: 1px solid rgba(155,81,224,.25); }
 
-/* Logout button */
+/* ── LOGOUT BUTTON ──────────────────────────────────────────────────── */
 .hdr-btn--logout:hover { color: #eb5757; }
 
-/* btn-sm */
-.btn-sm { padding: 5px 12px; font-size: .78rem; }
+/* ── BTN-SM ─────────────────────────────────────────────────────────── */
+.btn-sm { padding: 5px 12px; font-size: .75rem; }

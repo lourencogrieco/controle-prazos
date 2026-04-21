@@ -868,14 +868,49 @@
         </div>
 
         <!-- PJe Config -->
-        <div class="cfg-card">
-          <div class="cfg-card-head">
-            <span class="cfg-card-title">INTEGRAÇÃO PJe</span>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="cfg-card">
+            <div class="cfg-card-head">
+              <span class="cfg-card-title">INTEGRAÇÃO PJe</span>
+            </div>
+            <div class="cfg-field-group">
+              <div>
+                <label class="cfg-label">Nomes para busca <small>(um por linha)</small></label>
+                <textarea id="cfgPjeNomes" class="cfg-textarea" rows="5" placeholder="lourenço grieco neto&#10;outro advogado"></textarea>
+              </div>
+              <button class="btn-primary btn-sm" onclick="salvarPjeConfig()">Salvar configuração</button>
+            </div>
           </div>
-          <div class="cfg-field-group">
-            <label class="cfg-label">Nomes para busca no PJe <small>(um por linha)</small></label>
-            <textarea id="cfgPjeNomes" class="cfg-textarea" rows="4" placeholder="lourenço grieco neto&#10;outro advogado"></textarea>
-            <button class="btn-primary btn-sm" style="margin-top:8px" onclick="salvarPjeConfig()">Salvar</button>
+
+          <div class="cfg-card">
+            <div class="cfg-card-head">
+              <span class="cfg-card-title">SQL PENDENTE</span>
+            </div>
+            <div class="cfg-field-group" style="gap:8px">
+              <p class="cfg-hint">Execute no <strong>Supabase → SQL Editor</strong> para ativar todos os recursos:</p>
+              <pre class="cfg-sql">-- Colunas extras em usuarios_empresa
+ALTER TABLE usuarios_empresa
+  ADD COLUMN IF NOT EXISTS email   text,
+  ADD COLUMN IF NOT EXISTS area_id text;
+
+-- Permissão de update (RLS)
+CREATE POLICY IF NOT EXISTS "admin_update_perfil"
+  ON usuarios_empresa FOR UPDATE
+  USING (true) WITH CHECK (true);
+
+-- Tabela de eventos da agenda
+CREATE TABLE IF NOT EXISTS agenda_eventos (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  empresa_id  uuid NOT NULL,
+  data        date NOT NULL,
+  titulo      text NOT NULL,
+  tipo        text,
+  hora        time,
+  responsavel text,
+  local       text,
+  created_at  timestamptz DEFAULT now()
+);</pre>
+            </div>
           </div>
         </div>
 
@@ -933,6 +968,7 @@
         </div>
         <div class="modal-body">
           <input type="hidden" id="editPerfilUserId">
+          <input type="hidden" id="editPerfilLookupCol" value="id">
           <div class="form-group">
             <label class="form-label">Usuário</label>
             <p id="editPerfilNome" style="font-weight:600;margin:0"></p>

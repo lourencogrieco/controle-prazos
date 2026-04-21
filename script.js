@@ -323,7 +323,7 @@ function dbParaTarefa(row) {
 // ──────────────────────────────────────────────────────────────────────
 async function carregarDados() {
   const eid = state.empresaId;
-  const [pr, pz, tf, tp, cl, ar, it, cfg] = await Promise.all([
+  const [pr, pz, tf, tp, cl, ar, it, cfg, ev] = await Promise.all([
     db.from('pastas').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
     db.from('prazos_lhub').select('*').eq('empresa_id', eid).order('prazo'),
     db.from('tarefas_lhub').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
@@ -332,6 +332,7 @@ async function carregarDados() {
     db.from('areas_juridicas').select('*').eq('empresa_id', eid).order('ordem'),
     db.from('intimacoes_pje').select('*').eq('empresa_id', eid).order('data_disponibilizacao', { ascending: false }).limit(200),
     db.from('pje_config').select('*').eq('empresa_id', eid).maybeSingle(),
+    db.from('agenda_eventos').select('*').eq('empresa_id', eid).order('data'),
   ]);
   state.pastas     = (pr.data || []).map(dbParaPasta);
   state.prazos     = (pz.data || []).map(dbParaPrazo);
@@ -341,6 +342,12 @@ async function carregarDados() {
   state.areas      = (ar.data || []).map(dbParaArea);
   state.intimacoes = (it.data || []).map(dbParaIntimacao);
   state.pjeConfig  = cfg.data || null;
+  // Carrega eventos da agenda no array local
+  agendaEventos.length = 0;
+  (ev.data || []).forEach(e => agendaEventos.push({
+    id: e.id, data: e.data, titulo: e.titulo,
+    tipo: e.tipo, hora: e.hora || '', responsavel: e.responsavel || '', local: e.local || '',
+  }));
 
   renderDashboard();
   renderPastaList();
@@ -1781,21 +1788,26 @@ document.getElementById('btnNovoEvento').addEventListener('click', () => {
 document.getElementById('modalEvento').addEventListener('click', e => {
   if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
 });
-document.getElementById('eventoForm').addEventListener('submit', e => {
+document.getElementById('eventoForm').addEventListener('submit', async e => {
   e.preventDefault();
-  agendaEventos.push({
+  const novo = {
+    empresa_id:  state.empresaId,
     data:        document.getElementById('evData').value,
     titulo:      document.getElementById('evTitulo').value.trim(),
     tipo:        document.getElementById('evTipo').value,
-    hora:        document.getElementById('evHora').value,
+    hora:        document.getElementById('evHora').value || null,
     responsavel: document.getElementById('evResponsavel').value,
-    local:       document.getElementById('evLocal').value.trim(),
-  });
+    local:       document.getElementById('evLocal').value.trim() || null,
+  };
+  const { data: salvo, error } = await db.from('agenda_eventos').insert(novo).select().single();
+  if (error) { toast('Erro ao salvar evento.', 'error'); return; }
+  agendaEventos.push({ ...novo, id: salvo.id });
   agendaEventos.sort((a, b) => a.data.localeCompare(b.data));
   document.getElementById('modalEvento').classList.add('hidden');
   e.target.reset();
   renderCalendario();
   if (calDataSelecionada) selecionarDia(calDataSelecionada);
+  toast('Evento salvo!');
 });
 
 // ──────────────────────────────────────────────────────────────────────
@@ -2059,7 +2071,7 @@ async function renderConfiguracoes() {
   // Usuários
   const { data: usuarios } = await db
     .from('usuarios_empresa')
-    .select('id, nome, perfil')
+    .select('id, user_id, nome, perfil')
     .eq('empresa_id', state.empresaId)
     .order('nome');
 
@@ -2071,10 +2083,12 @@ async function renderConfiguracoes() {
   }
   tbody.innerHTML = usuarios.map(u => {
     const perfil = PERFIS_LABEL[u.perfil] || u.perfil || '—';
+    const lookupId = u.user_id || u.id || '';
+    const lookupCol = u.user_id ? 'user_id' : 'id';
     return `<tr>
       <td>${u.nome || '—'}</td>
       <td><span class="badge-perfil badge-perfil--${u.perfil}">${perfil}</span></td>
-      <td><button class="btn-icon-sm" onclick="editarPerfil('${u.id}','${u.perfil||''}','${(u.nome||'').replace(/'/g,'')}')">✎</button></td>
+      <td><button class="btn-icon-sm" onclick="editarPerfil('${lookupId}','${lookupCol}','${u.perfil||''}','${(u.nome||'').replace(/'/g,'')}')">✎</button></td>
     </tr>`;
   }).join('');
 }
@@ -2121,20 +2135,27 @@ async function convidarUsuario() {
   renderConfiguracoes();
 }
 
-function editarPerfil(userId, perfilAtual, nome) {
-  document.getElementById('editPerfilUserId').value = userId;
-  document.getElementById('editPerfilNome').textContent = nome || userId;
+function editarPerfil(lookupId, lookupCol, perfilAtual, nome) {
+  document.getElementById('editPerfilUserId').value = lookupId;
+  document.getElementById('editPerfilLookupCol').value = lookupCol;
+  document.getElementById('editPerfilNome').textContent = nome || lookupId;
   document.getElementById('editPerfilSelect').value = perfilAtual || 'advogado';
   document.getElementById('modalEditarPerfil').classList.add('open');
 }
 
 async function salvarEdicaoPerfil() {
-  const userId = document.getElementById('editPerfilUserId').value;
-  const perfil = document.getElementById('editPerfilSelect').value;
+  const lookupId  = document.getElementById('editPerfilUserId').value;
+  const lookupCol = document.getElementById('editPerfilLookupCol').value || 'id';
+  const perfil    = document.getElementById('editPerfilSelect').value;
+  if (!lookupId || lookupId === 'undefined') {
+    toast('ID do usuário inválido — recarregue a página.', 'error');
+    return;
+  }
   const { error } = await db.from('usuarios_empresa')
     .update({ perfil })
-    .eq('id', userId);
-  if (error) { toast('Erro ao atualizar perfil.', 'error'); return; }
+    .eq(lookupCol, lookupId)
+    .eq('empresa_id', state.empresaId);
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
   document.getElementById('modalEditarPerfil').classList.remove('open');
   toast('Perfil atualizado!');
   renderConfiguracoes();

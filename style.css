@@ -1779,10 +1779,16 @@ tbody td {
 .cal-day--today .cal-day-num {
   background: var(--ac);
   color: #fff;
+  font-weight: 700;
 }
 
 .cal-day--selected { background: var(--ac-soft) !important; }
 .cal-day--selected .cal-day-num { color: var(--ac); font-weight: 800; }
+
+.cal-day--today.cal-day--selected .cal-day-num {
+  background: var(--ac);
+  color: #fff;
+}
 
 .cal-day--has-urgent { border-left: 3px solid var(--red); }
 

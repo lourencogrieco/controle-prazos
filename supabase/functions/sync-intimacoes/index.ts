@@ -48,7 +48,7 @@ serve(async (req) => {
 
         while ((pagina - 1) * 50 < totalApi) {
           const url =
-            `https://comunica.pje.jus.br/api/v1/comunicacao` +
+            `https://comunicaapi.pje.jus.br/api/v1/comunicacao` +
             `?pagina=${pagina}&itensPorPagina=50` +
             `&texto=${encodeURIComponent(nome)}` +
             `&dataDisponibilizacaoInicio=${dataInicio}` +

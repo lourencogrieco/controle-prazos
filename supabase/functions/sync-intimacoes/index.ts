@@ -4,7 +4,17 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPA_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPA_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Authorization, Content-Type",
+};
+
 serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS });
+  }
+
   const db = createClient(SUPA_URL, SUPA_KEY);
   const hoje = new Date().toISOString().slice(0, 10);
   let dataInicio = hoje, dataFim = hoje;
@@ -20,7 +30,10 @@ serve(async (req) => {
     .eq("ativo", true);
 
   if (cfgErr || !configs?.length) {
-    return new Response(JSON.stringify({ ok: false, msg: "sem config" }), { status: 200 });
+    return new Response(JSON.stringify({ ok: false, msg: "sem config" }), {
+      status: 200,
+      headers: { ...CORS, "Content-Type": "application/json" },
+    });
   }
 
   let total_inseridas = 0;
@@ -92,6 +105,6 @@ serve(async (req) => {
 
   return new Response(
     JSON.stringify({ ok: true, total_inseridas }),
-    { headers: { "Content-Type": "application/json" } },
+    { headers: { ...CORS, "Content-Type": "application/json" } },
   );
 });

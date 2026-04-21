@@ -117,6 +117,14 @@ function mostrarLogin() {
   document.getElementById('loginOverlay').classList.remove('hidden');
 }
 
+async function fazerLogout() {
+  await db.auth.signOut();
+  state.user = null;
+  state.meuPerfil = null;
+  state.empresaId = null;
+  mostrarLogin();
+}
+
 function esconderLogin() {
   document.getElementById('loginOverlay').classList.add('hidden');
 }
@@ -1084,6 +1092,21 @@ document.querySelectorAll('.subtab[data-subtab]').forEach(btn => {
 });
 
 // ──────────────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────────────
+// NAVEGAÇÃO GERAL
+// ──────────────────────────────────────────────────────────────────────
+function navegarPara(view) {
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  const tab = document.querySelector(`.nav-tab[data-view="${view}"]`);
+  if (tab) tab.classList.add('active');
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('is-active'));
+  const el = document.getElementById(`view-${view}`);
+  if (el) el.classList.add('is-active');
+  if (view === 'configuracoes') renderConfiguracoes();
+  if (view === 'pipeline')      renderPipeline();
+  if (view === 'atividades')    renderAtividades();
+}
+
 // TOP NAV TABS
 // ──────────────────────────────────────────────────────────────────────
 document.querySelectorAll('.nav-tab[data-view]').forEach(btn => {
@@ -1938,3 +1961,111 @@ const _iso = `${_h.getFullYear()}-${String(_h.getMonth()+1).padStart(2,'0')}-${S
 selecionarDia(_iso);
 
 inicializar();
+
+// ──────────────────────────────────────────────────────────────────────
+// CONFIGURAÇÕES
+// ──────────────────────────────────────────────────────────────────────
+const PERFIS_LABEL = {
+  estagiario:     'Estagiário',
+  advogado:       'Advogado',
+  socio:          'Sócio',
+  socio_fundador: 'Sócio Fundador',
+  financeiro:     'Financeiro',
+  controller:     'Controller',
+  admin:          'Admin',
+  adm:            'Admin',
+};
+
+async function renderConfiguracoes() {
+  // Preenche áreas no select do modal
+  const selArea = document.getElementById('convArea');
+  if (selArea && state.areas?.length) {
+    selArea.innerHTML = '<option value="">— Todas as áreas —</option>' +
+      state.areas.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
+  }
+
+  // PJe nomes
+  const ta = document.getElementById('cfgPjeNomes');
+  if (ta && state.pjeConfig?.nomes) ta.value = state.pjeConfig.nomes.join('\n');
+
+  // Usuários
+  const { data: usuarios } = await db
+    .from('usuarios_empresa')
+    .select('id, nome, email, perfil, area_id')
+    .eq('empresa_id', state.empresaId)
+    .order('nome');
+
+  const tbody = document.getElementById('tbodyUsuarios');
+  if (!tbody) return;
+  if (!usuarios?.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--mu);padding:20px">Nenhum usuário</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = usuarios.map(u => {
+    const area = state.areas?.find(a => a.id === u.area_id)?.nome || '—';
+    const perfil = PERFIS_LABEL[u.perfil] || u.perfil || '—';
+    return `<tr>
+      <td>${u.nome || '—'}</td>
+      <td style="color:var(--mu)">${u.email || '—'}</td>
+      <td><span class="badge-perfil badge-perfil--${u.perfil}">${perfil}</span></td>
+      <td style="color:var(--mu)">${area}</td>
+      <td><button class="btn-icon-sm" onclick="editarPerfil('${u.id}','${u.perfil}','${u.area_id||''}')">✎</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function salvarPjeConfig() {
+  const ta = document.getElementById('cfgPjeNomes');
+  const nomes = ta.value.split('\n').map(n => n.trim()).filter(Boolean);
+  if (!nomes.length) { toast('Informe ao menos um nome.', 'error'); return; }
+  const { error } = await db.from('pje_config')
+    .update({ nomes })
+    .eq('empresa_id', state.empresaId);
+  if (error) { toast('Erro ao salvar.', 'error'); return; }
+  state.pjeConfig = { ...state.pjeConfig, nomes };
+  toast('Configuração PJe salva!');
+}
+
+function abrirModalConvidarUsuario() {
+  document.getElementById('modalConvidarUsuario').classList.add('open');
+}
+function fecharModalConvidarUsuario() {
+  document.getElementById('modalConvidarUsuario').classList.remove('open');
+  document.getElementById('convNome').value = '';
+  document.getElementById('convEmail').value = '';
+}
+
+async function convidarUsuario() {
+  const nome   = document.getElementById('convNome').value.trim();
+  const email  = document.getElementById('convEmail').value.trim();
+  const perfil = document.getElementById('convPerfil').value;
+  const areaId = document.getElementById('convArea').value || null;
+  if (!nome || !email) { toast('Preencha nome e e-mail.', 'error'); return; }
+
+  // Cria registro na usuarios_empresa (sem auth — admin vincula depois)
+  const { error } = await db.from('usuarios_empresa').insert({
+    empresa_id: state.empresaId,
+    nome,
+    email,
+    perfil,
+    area_id: areaId,
+  });
+  if (error) { toast('Erro ao convidar: ' + error.message, 'error'); return; }
+  toast(`${nome} adicionado! Peça para ele criar conta com o e-mail ${email}.`);
+  fecharModalConvidarUsuario();
+  renderConfiguracoes();
+}
+
+async function editarPerfil(userId, perfilAtual, areaAtual) {
+  const perfil = prompt(
+    'Novo perfil:\nestagiario | advogado | socio | socio_fundador | financeiro | controller | admin',
+    perfilAtual
+  );
+  if (!perfil) return;
+  const { error } = await db.from('usuarios_empresa')
+    .update({ perfil })
+    .eq('id', userId);
+  if (error) { toast('Erro ao atualizar perfil.', 'error'); return; }
+  toast('Perfil atualizado!');
+  renderConfiguracoes();
+}

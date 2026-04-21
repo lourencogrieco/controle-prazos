@@ -2227,3 +2227,76 @@ tbody td {
   transition: background .15s;
 }
 .btn-icon-sm:hover { background: var(--ac-soft); }
+
+/* ── CONFIGURAÇÕES ─────────────────────────────────────────────────── */
+.cfg-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 20px 24px;
+}
+@media (max-width: 900px) { .cfg-grid { grid-template-columns: 1fr; } }
+
+.cfg-card {
+  background: var(--s1);
+  border: 1px solid var(--br);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+.cfg-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--br);
+}
+.cfg-card-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .72rem;
+  letter-spacing: 1px;
+  color: var(--mu);
+}
+.cfg-field-group { padding: 16px; }
+.cfg-label {
+  display: block;
+  font-size: .75rem;
+  color: var(--mu);
+  margin-bottom: 6px;
+}
+.cfg-textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--br);
+  border-radius: var(--r-xs);
+  color: var(--navy);
+  font-size: .85rem;
+  padding: 8px 10px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+.cfg-textarea:focus { outline: none; border-color: var(--ac); }
+
+/* Badges de perfil */
+.badge-perfil {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: .7rem;
+  font-family: 'IBM Plex Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.badge-perfil--admin,
+.badge-perfil--adm          { background: #1a1a3e; color: #a0aeff; }
+.badge-perfil--socio_fundador { background: #1a2e1a; color: #6fcf97; }
+.badge-perfil--socio        { background: #1e2a1e; color: #27ae60; }
+.badge-perfil--advogado     { background: #1a2433; color: #56b4e9; }
+.badge-perfil--estagiario   { background: #2a2a1a; color: #f2c94c; }
+.badge-perfil--financeiro   { background: #2a1a1a; color: #eb5757; }
+.badge-perfil--controller   { background: #1a2533; color: #9b51e0; }
+
+/* Logout button */
+.hdr-btn--logout:hover { color: #eb5757; }
+
+/* btn-sm */
+.btn-sm { padding: 5px 12px; font-size: .78rem; }

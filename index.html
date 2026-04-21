@@ -46,7 +46,7 @@
             <path d="M2 6.5L8 2l6 4.5V14H10v-3.5H6V14H2V6.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
           </svg>
         </button>
-        <button class="hdr-btn" title="Configurações">
+        <button class="hdr-btn" title="Configurações" onclick="navegarPara('configuracoes')">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.5"/>
             <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -63,6 +63,13 @@
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <rect x="3" y="5" width="10" height="7" rx="1" stroke="currentColor" stroke-width="1.5"/>
             <path d="M5 5V3h6v2M5 10h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button class="hdr-btn hdr-btn--logout" title="Sair" onclick="fazerLogout()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M10.5 11L14 8l-3.5-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M14 8H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
         </button>
       </div>
@@ -828,6 +835,96 @@
         allow="same-origin"
       ></iframe>
     </section>
+
+    <!-- ===== CONFIGURAÇÕES ===== -->
+    <section id="view-configuracoes" class="view">
+      <div class="page-bar">
+        <div class="page-bar-left">
+          <span class="kicker">Sistema</span>
+          <h1 class="page-title">Configurações</h1>
+        </div>
+      </div>
+
+      <div class="cfg-grid">
+
+        <!-- Usuários -->
+        <div class="cfg-card">
+          <div class="cfg-card-head">
+            <span class="cfg-card-title">USUÁRIOS</span>
+            <button class="btn-primary btn-sm" onclick="abrirModalConvidarUsuario()">+ Convidar</button>
+          </div>
+          <table class="data-table" id="tblUsuarios">
+            <thead>
+              <tr>
+                <th>NOME</th>
+                <th>E-MAIL</th>
+                <th>PERFIL</th>
+                <th>ÁREA</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tbodyUsuarios">
+              <tr><td colspan="5" style="text-align:center;color:var(--mu);padding:20px">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- PJe Config -->
+        <div class="cfg-card">
+          <div class="cfg-card-head">
+            <span class="cfg-card-title">INTEGRAÇÃO PJe</span>
+          </div>
+          <div class="cfg-field-group">
+            <label class="cfg-label">Nomes para busca no PJe <small>(um por linha)</small></label>
+            <textarea id="cfgPjeNomes" class="cfg-textarea" rows="4" placeholder="lourenço grieco neto&#10;outro advogado"></textarea>
+            <button class="btn-primary btn-sm" style="margin-top:8px" onclick="salvarPjeConfig()">Salvar</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Modal convidar usuário -->
+    <div class="modal-overlay" id="modalConvidarUsuario">
+      <div class="modal" style="max-width:440px">
+        <div class="modal-header">
+          <span class="modal-title">Convidar Usuário</span>
+          <button class="modal-close" onclick="fecharModalConvidarUsuario()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Nome completo</label>
+            <input type="text" id="convNome" class="form-input" placeholder="Nome do usuário">
+          </div>
+          <div class="form-group">
+            <label class="form-label">E-mail</label>
+            <input type="email" id="convEmail" class="form-input" placeholder="email@exemplo.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Perfil</label>
+            <select id="convPerfil" class="form-select">
+              <option value="estagiario">Estagiário</option>
+              <option value="advogado">Advogado</option>
+              <option value="socio">Sócio</option>
+              <option value="socio_fundador">Sócio Fundador</option>
+              <option value="financeiro">Financeiro</option>
+              <option value="controller">Controller</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Área <small>(opcional)</small></label>
+            <select id="convArea" class="form-select">
+              <option value="">— Todas as áreas —</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-outline" onclick="fecharModalConvidarUsuario()">Cancelar</button>
+          <button class="btn-primary" onclick="convidarUsuario()">Enviar convite</button>
+        </div>
+      </div>
+    </div>
 
     <!-- ===== AGENDA ===== -->
     <section id="view-agenda" class="view">

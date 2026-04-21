@@ -1303,14 +1303,16 @@ async function sincronizarPJeData() {
       },
       body: JSON.stringify({ dataInicio: de, dataFim: ate || de }),
     });
+    const data = await res.json().catch(() => ({}));
     if (res.ok) {
       toast('Intimações importadas!');
       await carregarDados();
       renderIntimacoesAba();
     } else {
-      toast('Erro ao buscar.', 'error');
+      console.error('Erro Edge Function:', data);
+      toast('Erro ao buscar: ' + (data.error || data.msg || res.status), 'error');
     }
-  } catch { toast('Erro ao buscar.', 'error'); }
+  } catch (e) { console.error('Erro fetch:', e); toast('Erro ao buscar.', 'error'); }
   finally { if (btn) { btn.disabled = false; btn.textContent = '↻ Buscar por data'; } }
 }
 

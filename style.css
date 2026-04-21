@@ -234,6 +234,7 @@ a { text-decoration: none; color: inherit; }
 /* ─── VIEWS ───────────────────────────────────────────────────── */
 .view { display: none; }
 .view.is-active { display: block; }
+.view--financeiro.is-active { display: flex; }
 
 /* ─── PAGE BAR ────────────────────────────────────────────────── */
 .page-bar {
@@ -1632,97 +1633,22 @@ tbody td {
 .tag--manual { background: #eee; color: #666; }
 
 /* ─── FINANCEIRO ──────────────────────────────────────────────── */
-.fin-layout {
-  display: grid;
-  grid-template-columns: 380px minmax(0, 1fr);
-  gap: 20px;
-  align-items: start;
+.app-main:has(#view-financeiro.is-active) {
+  padding: 0;
+  max-width: 100%;
 }
 
-.fin-info { padding: 24px; }
-
-.fin-info-header {
+.view--financeiro {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
-  padding-bottom: 18px;
-  border-bottom: 1px solid var(--br);
-}
-
-.fin-badge { flex-shrink: 0; }
-
-.fin-info-header h2 {
-  font-family: "Manrope", sans-serif;
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: var(--tx-strong);
-}
-
-.fin-desc {
-  font-size: .78rem;
-  color: var(--mu);
-  margin-top: 4px;
-  line-height: 1.55;
-}
-
-.fin-modules {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 22px;
-}
-
-.fin-module {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px;
-  background: var(--bg);
-  border: 1px solid var(--br);
-  border-radius: var(--r-sm);
-  transition: border-color .12s, background .12s;
-}
-
-.fin-module:hover { border-color: var(--ac); background: var(--ac-soft); }
-
-.fin-module-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
-
-.fin-module strong {
-  display: block;
-  font-size: .82rem;
-  color: var(--tx-strong);
-  margin-bottom: 2px;
-}
-
-.fin-module p { font-size: .72rem; color: var(--mu); line-height: 1.4; }
-
-.fin-actions {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  padding-top: 16px;
-  border-top: 1px solid var(--br);
-}
-
-.fin-path {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: .68rem;
-  color: var(--mu);
+  flex-direction: column;
+  height: calc(100vh - 56px);
 }
 
 .fin-iframe {
   width: 100%;
-  height: calc(100vh - 180px);
-  min-height: 600px;
-  border: 1px solid var(--br);
-  border-radius: var(--r-lg);
-  background: var(--s0);
-  box-shadow: var(--shadow-sm);
+  flex: 1;
+  border: none;
+  background: #fff;
 }
 
 @media (max-width: 1100px) {

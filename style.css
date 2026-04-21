@@ -401,9 +401,9 @@ h2 {
 .dash-label {
   font-family: "IBM Plex Mono", monospace;
   font-size: var(--text-xs);
-  font-weight: 600;
-  letter-spacing: .1em;
-  color: var(--navy);
+  font-weight: 500;
+  letter-spacing: .08em;
+  color: var(--mu);
   text-transform: uppercase;
 }
 
@@ -673,11 +673,11 @@ h2 {
   text-transform: uppercase;
 }
 
-.tag--area   { background: var(--navy); color: #fff; }
-.tag--urgent { background: var(--orange); color: #fff; }
-.tag--type   { background: var(--gold); color: #fff; }
-.tag--refused { background: var(--red); color: #fff; }
-.tag--encerramento { background: #6b7d99; color: #fff; }
+.tag--area   { background: transparent; color: var(--navy); border: 1px solid var(--br-strong); }
+.tag--urgent { background: var(--orange-soft); color: var(--orange); border: 1px solid rgba(224,122,23,.2); }
+.tag--type   { background: var(--gold-soft); color: var(--gold); border: 1px solid rgba(168,153,102,.2); }
+.tag--refused { background: var(--red-soft); color: var(--red); border: 1px solid rgba(217,79,58,.2); }
+.tag--encerramento { background: var(--s1); color: #6b7d99; border: 1px solid var(--br-strong); }
 
 .req-number {
   font-family: "IBM Plex Mono", monospace;

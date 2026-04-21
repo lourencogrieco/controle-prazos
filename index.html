@@ -882,40 +882,6 @@
             </div>
           </div>
 
-          <div class="cfg-card">
-            <div class="cfg-card-head">
-              <span class="cfg-card-title">SQL PENDENTE</span>
-            </div>
-            <div class="cfg-field-group" style="gap:8px">
-              <p class="cfg-hint">Execute no <strong>Supabase → SQL Editor</strong> para ativar todos os recursos:</p>
-              <pre class="cfg-sql">-- Corrige perfis permitidos
-ALTER TABLE usuarios_empresa
-  DROP CONSTRAINT usuarios_empresa_perfil_check;
-ALTER TABLE usuarios_empresa
-  ADD CONSTRAINT usuarios_empresa_perfil_check
-  CHECK (perfil IN ('admin','adm','socio_fundador','socio',
-                    'advogado','estagiario','financeiro','controller'));
-
--- Função para atualizar perfil (bypassa RLS)
-CREATE OR REPLACE FUNCTION update_user_perfil(p_id uuid, p_perfil text)
-RETURNS void LANGUAGE sql SECURITY DEFINER AS $$
-  UPDATE usuarios_empresa SET perfil = p_perfil WHERE id = p_id;
-$$;
-
--- Tabela de eventos da agenda
-CREATE TABLE IF NOT EXISTS agenda_eventos (
-  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  empresa_id  uuid NOT NULL,
-  data        date NOT NULL,
-  titulo      text NOT NULL,
-  tipo        text,
-  hora        time,
-  responsavel text,
-  local       text,
-  created_at  timestamptz DEFAULT now()
-);</pre>
-            </div>
-          </div>
         </div>
 
       </div>

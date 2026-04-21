@@ -1979,11 +1979,14 @@ tbody td {
   inset: 0;
   background: rgba(10, 25, 45, .45);
   z-index: 500;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   padding: 20px;
   backdrop-filter: blur(3px);
+}
+.modal-overlay.open {
+  display: flex;
 }
 
 .modal {

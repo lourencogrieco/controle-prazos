@@ -2059,7 +2059,7 @@ async function renderConfiguracoes() {
   // Usuários
   const { data: usuarios } = await db
     .from('usuarios_empresa')
-    .select('id, nome, email, perfil, area_id')
+    .select('id, nome, perfil')
     .eq('empresa_id', state.empresaId)
     .order('nome');
 
@@ -2070,13 +2070,10 @@ async function renderConfiguracoes() {
     return;
   }
   tbody.innerHTML = usuarios.map(u => {
-    const area = state.areas?.find(a => a.id === u.area_id)?.nome || '—';
     const perfil = PERFIS_LABEL[u.perfil] || u.perfil || '—';
     return `<tr>
       <td>${u.nome || '—'}</td>
-      <td style="color:var(--mu)">${u.email || '—'}</td>
       <td><span class="badge-perfil badge-perfil--${u.perfil}">${perfil}</span></td>
-      <td style="color:var(--mu)">${area}</td>
       <td><button class="btn-icon-sm" onclick="editarPerfil('${u.id}','${u.perfil||''}','${(u.nome||'').replace(/'/g,'')}')">✎</button></td>
     </tr>`;
   }).join('');

@@ -20,7 +20,7 @@ export default async function handler(req) {
     });
   }
 
-  const url = `https://comunica.pje.jus.br/api/v1/comunicacao` +
+  const url = `https://comunicaapi.pje.jus.br/api/v1/comunicacao` +
     `?pagina=${pagina}&itensPorPagina=${itensPorPagina}` +
     `&texto=${encodeURIComponent(texto)}` +
     `&dataDisponibilizacaoInicio=${dataInicio}` +
@@ -31,8 +31,8 @@ export default async function handler(req) {
       headers: {
         'Accept': 'application/json, text/plain, */*',
         'Accept-Language': 'pt-BR,pt;q=0.9',
-        'Origin': 'https://comunica.pje.jus.br',
-        'Referer': 'https://comunica.pje.jus.br/',
+        'Origin': 'https://comunicaapi.pje.jus.br',
+        'Referer': 'https://comunicaapi.pje.jus.br/',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
       },
     });

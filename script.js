@@ -20,6 +20,8 @@ const state = {
   tiposPasta:  [],
   clientes:    [],
   areas:       [],
+  intimacoes:  [],
+  pjeConfig:   null,
 };
 
 // ──────────────────────────────────────────────────────────────────────
@@ -206,6 +208,23 @@ function dbParaPrazo(row) {
   };
 }
 
+function dbParaIntimacao(row) {
+  return {
+    id:               row.id,
+    dataPublicacao:   row.data_disponibilizacao,
+    tribunal:         row.sigla_tribunal || '',
+    tipoComunicacao:  row.tipo_comunicacao || 'Intimação',
+    orgao:            row.nome_orgao || '',
+    texto:            row.texto || '',
+    processo:         row.numero_processo_mascara || row.numero_processo || '',
+    link:             row.link || '',
+    tipoDocumento:    row.tipo_documento || '',
+    nomeClasse:       row.nome_classe || '',
+    status:           row.lida ? 'Lida' : 'Pendente',
+    meioCompleto:     row.meio_completo || '',
+  };
+}
+
 function dbParaArea(row) {
   return { id: row.id, nome: row.nome, ordem: row.ordem ?? 99 };
 }
@@ -249,13 +268,15 @@ function dbParaTarefa(row) {
 // ──────────────────────────────────────────────────────────────────────
 async function carregarDados() {
   const eid = state.empresaId;
-  const [pr, pz, tf, tp, cl, ar] = await Promise.all([
+  const [pr, pz, tf, tp, cl, ar, it, cfg] = await Promise.all([
     db.from('pastas').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
     db.from('prazos_lhub').select('*').eq('empresa_id', eid).order('prazo'),
     db.from('tarefas_lhub').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
     db.from('tipos_pasta').select('*').eq('empresa_id', eid).order('codigo'),
     db.from('clientes_lhub').select('*').eq('empresa_id', eid).order('nome'),
     db.from('areas_juridicas').select('*').eq('empresa_id', eid).order('ordem'),
+    db.from('intimacoes_pje').select('*').eq('empresa_id', eid).order('data_disponibilizacao', { ascending: false }).limit(200),
+    db.from('pje_config').select('*').eq('empresa_id', eid).maybeSingle(),
   ]);
   state.pastas     = (pr.data || []).map(dbParaPasta);
   state.prazos     = (pz.data || []).map(dbParaPrazo);
@@ -263,12 +284,15 @@ async function carregarDados() {
   state.tiposPasta = (tp.data || []).map(dbParaTipoPasta);
   state.clientes   = (cl.data || []).map(dbParaCliente);
   state.areas      = (ar.data || []).map(dbParaArea);
+  state.intimacoes = (it.data || []).map(dbParaIntimacao);
+  state.pjeConfig  = cfg.data || null;
 
   renderDashboard();
   renderPastaList();
   renderAtividades();
   renderPrazosAba();
   renderTarefasAba();
+  renderIntimacoesAba();
   popularSelectsPastas();
 }
 
@@ -1229,35 +1253,60 @@ function renderIntimacoesAba() {
   const busca  = (document.getElementById('buscaIntimacoes')?.value ?? '').toLowerCase();
   const status = document.getElementById('filtroIntimacoesStatus')?.value ?? '';
 
-  const lista = intimacoesData.filter(i => {
-    const m = !busca || i.id.toLowerCase().includes(busca) ||
+  const lista = state.intimacoes.filter(i => {
+    const m = !busca ||
       i.processo.toLowerCase().includes(busca) ||
-      i.pastaNr.toLowerCase().includes(busca) ||
-      i.cliente.toLowerCase().includes(busca);
+      i.orgao.toLowerCase().includes(busca) ||
+      i.tribunal.toLowerCase().includes(busca) ||
+      i.nomeClasse.toLowerCase().includes(busca) ||
+      i.tipoDocumento.toLowerCase().includes(busca);
     return m && (!status || i.status === status);
   });
 
-  document.getElementById('intimacoesInfo').textContent = `${lista.length} registro${lista.length !== 1 ? 's' : ''}`;
+  const cfg = state.pjeConfig;
+  const ultimaSync = cfg?.ultima_sync
+    ? `Última sync: ${new Date(cfg.ultima_sync).toLocaleString('pt-BR')}`
+    : 'Nenhuma sincronização realizada';
+
+  document.getElementById('intimacoesInfo').textContent =
+    `${lista.length} registro${lista.length !== 1 ? 's' : ''} · ${ultimaSync}`;
+
   document.getElementById('tabelaIntimacoes').innerHTML = lista.length
-    ? lista.map(i => {
-        const prazoLink = i.prazoVinculado
-          ? `<a href="#" class="int-prazo-link" onclick="irParaPrazo('${i.prazoVinculado}')">${i.prazoVinculado}</a>`
-          : '—';
-        return `<tr class="${rowClassPrazo(i.prazoFatal)}">
-          <td class="int-id">${i.id}</td>
-          <td><span class="table-link">${i.pastaNr}</span></td>
-          <td>${i.cliente}</td>
-          <td style="font-family:'IBM Plex Mono',monospace;font-size:.7rem">${i.processo}</td>
-          <td>${i.orgao}</td>
-          <td>${formatDate(i.dataPublicacao)}</td>
-          <td>${formatDate(i.prazoFatal)}${i.diasUteis ? ' <span style="color:var(--mu);font-size:.65rem">(d.u.)</span>' : ''}</td>
-          <td>${diasRestantesHtml(i.prazoFatal)}</td>
-          <td style="max-width:180px;font-size:.76rem">${i.descricao}</td>
-          <td>${prazoLink}</td>
-          <td><span class="status-pill ${statusClass(i.status === 'Cumprida' ? 'Concluído' : i.status)}">${i.status}</span></td>
-        </tr>`;
-      }).join('')
-    : `<tr><td colspan="11" class="tbl-empty">Nenhuma intimação encontrada.</td></tr>`;
+    ? lista.map(i => `<tr>
+        <td style="font-family:'IBM Plex Mono',monospace;font-size:.7rem;white-space:nowrap">${i.processo}</td>
+        <td><span class="badge-tribunal">${i.tribunal}</span></td>
+        <td style="font-size:.75rem;max-width:200px">${i.orgao}</td>
+        <td style="white-space:nowrap">${formatDate(i.dataPublicacao)}</td>
+        <td style="font-size:.75rem">${i.tipoDocumento || i.nomeClasse || '—'}</td>
+        <td style="font-size:.75rem">${i.nomeClasse || '—'}</td>
+        <td><span class="status-pill ${i.status === 'Lida' ? 'status-pill--done' : 'status-pill--warn'}">${i.status}</span></td>
+        <td>${i.link ? `<a href="${i.link}" target="_blank" class="int-link">Ver ↗</a>` : '—'}</td>
+      </tr>`).join('')
+    : `<tr><td colspan="8" class="tbl-empty">Nenhuma intimação encontrada. Configure os advogados na aba Configurações e aguarde a sincronização diária.</td></tr>`;
+}
+
+async function sincronizarPJe() {
+  const btn = document.getElementById('btnSyncPJe');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sincronizando…'; }
+  try {
+    const res = await fetch(`https://gcucadlnxttlxckravui.supabase.co/functions/v1/sync-intimacoes`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${(await db.auth.getSession()).data.session?.access_token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (res.ok) {
+      toast('Intimações sincronizadas com sucesso!');
+      await carregarDados();
+    } else {
+      toast('Erro ao sincronizar. Tente novamente.', 'error');
+    }
+  } catch (e) {
+    toast('Erro ao sincronizar.', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '↻ Sincronizar PJe'; }
+  }
 }
 
 function irParaPrazo(pastaNr) {

@@ -1632,6 +1632,29 @@ tbody td {
 
 .tag--manual { background: #eee; color: #666; }
 
+/* ─── INTIMAÇÕES PJe ─────────────────────────────────────────── */
+.badge-tribunal {
+  display: inline-block;
+  padding: 2px 7px;
+  background: var(--navy);
+  color: #fff;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .5px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.int-link {
+  color: var(--ac);
+  font-size: .78rem;
+  text-decoration: none;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.int-link:hover { text-decoration: underline; }
+
 /* ─── FINANCEIRO ──────────────────────────────────────────────── */
 .app-main:has(#view-financeiro.is-active) {
   padding: 0;

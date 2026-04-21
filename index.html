@@ -888,15 +888,19 @@
             </div>
             <div class="cfg-field-group" style="gap:8px">
               <p class="cfg-hint">Execute no <strong>Supabase → SQL Editor</strong> para ativar todos os recursos:</p>
-              <pre class="cfg-sql">-- Colunas extras em usuarios_empresa
+              <pre class="cfg-sql">-- Corrige perfis permitidos
 ALTER TABLE usuarios_empresa
-  ADD COLUMN IF NOT EXISTS email   text,
-  ADD COLUMN IF NOT EXISTS area_id text;
+  DROP CONSTRAINT usuarios_empresa_perfil_check;
+ALTER TABLE usuarios_empresa
+  ADD CONSTRAINT usuarios_empresa_perfil_check
+  CHECK (perfil IN ('admin','adm','socio_fundador','socio',
+                    'advogado','estagiario','financeiro','controller'));
 
--- Permissão de update (RLS)
-CREATE POLICY IF NOT EXISTS "admin_update_perfil"
-  ON usuarios_empresa FOR UPDATE
-  USING (true) WITH CHECK (true);
+-- Função para atualizar perfil (bypassa RLS)
+CREATE OR REPLACE FUNCTION update_user_perfil(p_id uuid, p_perfil text)
+RETURNS void LANGUAGE sql SECURITY DEFINER AS $$
+  UPDATE usuarios_empresa SET perfil = p_perfil WHERE id = p_id;
+$$;
 
 -- Tabela de eventos da agenda
 CREATE TABLE IF NOT EXISTS agenda_eventos (

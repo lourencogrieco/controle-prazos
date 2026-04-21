@@ -1066,6 +1066,7 @@
             </label>
             <button class="btn-outline">Adicionar filtro ▾</button>
             <button class="btn-outline">↓ Gerar Relatório</button>
+            <button class="btn-primary" id="btnNovaPasta">+ Nova Pasta</button>
           </div>
         </div>
 
@@ -1500,6 +1501,120 @@
   </div>
 </div>
 
+<!-- ===== LOGIN OVERLAY ===== -->
+<div id="loginOverlay" class="login-overlay">
+  <div class="login-box">
+    <div class="login-brand">
+      <span class="brand-mark" style="width:44px;height:44px;font-size:1rem">NG</span>
+      <div class="brand-text" style="color:#fff">
+        <strong>Legal Hub</strong>
+        <span style="opacity:.6">Gestão Jurídica Inteligente</span>
+      </div>
+    </div>
+    <div id="loginError" class="login-error hidden">E-mail ou senha incorretos.</div>
+    <form id="loginForm">
+      <div class="field">
+        <span class="field-label">E-mail</span>
+        <input type="email" id="loginEmail" placeholder="seu@email.com" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <span class="field-label">Senha</span>
+        <input type="password" id="loginSenha" placeholder="••••••••" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn-primary" id="btnEntrar" style="width:100%;margin-top:8px">Entrar</button>
+    </form>
+  </div>
+</div>
+
+<!-- ===== MODAL NOVA / EDITAR PASTA ===== -->
+<div id="modalNovaPasta" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-head">
+      <h3 id="tituloPastaModal">Nova Pasta</h3>
+      <button class="modal-close" id="fecharNovaPasta">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="novaPastaForm">
+        <input type="hidden" id="pastaId">
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:14px">
+          <div class="field">
+            <span class="field-label">N° da Pasta *</span>
+            <input type="text" id="pNr" placeholder="00/2026-0000" required>
+          </div>
+          <div class="field">
+            <span class="field-label">Data de abertura</span>
+            <input type="date" id="pDataAb">
+          </div>
+        </div>
+        <div class="field">
+          <span class="field-label">Cliente *</span>
+          <input type="text" id="pCliente" placeholder="Nome do cliente" required>
+        </div>
+        <div class="field">
+          <span class="field-label">Parte contrária</span>
+          <input type="text" id="pParteContraria" placeholder="—">
+        </div>
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:14px">
+          <div class="field">
+            <span class="field-label">Categoria *</span>
+            <select id="pCategoria" required>
+              <option value="">Selecionar…</option>
+              <option value="Contencioso Judicial">Contencioso Judicial</option>
+              <option value="Contencioso Administrativo">Contencioso Administrativo</option>
+              <option value="Consultivo">Consultivo</option>
+            </select>
+          </div>
+          <div class="field">
+            <span class="field-label">Tipo de ação / Serviço</span>
+            <input type="text" id="pTipoAcao" placeholder="Ex: Ação Declaratória, Parecer">
+          </div>
+        </div>
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:14px">
+          <div class="field">
+            <span class="field-label">Advogado responsável</span>
+            <input type="text" id="pAdvogado">
+          </div>
+          <div class="field">
+            <span class="field-label">Comarca</span>
+            <input type="text" id="pComarca" placeholder="São Paulo">
+          </div>
+        </div>
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:14px">
+          <div class="field">
+            <span class="field-label">Número do processo</span>
+            <input type="text" id="pProcesso">
+          </div>
+          <div class="field">
+            <span class="field-label">Valor da causa</span>
+            <input type="text" id="pValorCausa" placeholder="R$ 0,00">
+          </div>
+        </div>
+        <div class="field">
+          <span class="field-label">Área jurídica</span>
+          <select id="pArea">
+            <option value="">Selecionar…</option>
+            <option value="Cível e resolução de conflitos">Cível e resolução de conflitos</option>
+            <option value="Trabalhista">Trabalhista</option>
+            <option value="Tributário">Tributário</option>
+            <option value="Empresarial">Empresarial</option>
+            <option value="Administrativo">Administrativo</option>
+            <option value="Societário">Societário</option>
+          </select>
+        </div>
+        <div class="field">
+          <span class="field-label">Observações</span>
+          <textarea id="pObs" rows="3" placeholder="Descrição do processo…" style="resize:vertical"></textarea>
+        </div>
+        <div class="form-foot" style="margin-top:20px">
+          <button type="button" class="btn-outline" id="btnCancelarPasta">Cancelar</button>
+          <button type="submit" class="btn-primary" id="btnSalvarPasta">Salvar Pasta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="script.js"></script>
 </body>
 </html>

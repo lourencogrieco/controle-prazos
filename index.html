@@ -479,7 +479,12 @@
               <option>Lida</option>
             </select>
           </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--mu)">
+            De <input type="date" id="filtroIntimacoesDe" class="input-sm">
+            até <input type="date" id="filtroIntimacoesAte" class="input-sm">
+          </label>
           <button class="btn-outline" id="btnSyncPJe" onclick="sincronizarPJe()">↻ Sincronizar PJe</button>
+          <button class="btn-outline" onclick="sincronizarPJeData()">↻ Buscar por data</button>
         </div>
 
         <div class="panel" style="padding:0;overflow:hidden">

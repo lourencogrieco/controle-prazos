@@ -4,9 +4,15 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPA_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPA_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-serve(async () => {
+serve(async (req) => {
   const db = createClient(SUPA_URL, SUPA_KEY);
   const hoje = new Date().toISOString().slice(0, 10);
+  let dataInicio = hoje, dataFim = hoje;
+  try {
+    const body = await req.json();
+    if (body.dataInicio) dataInicio = body.dataInicio;
+    if (body.dataFim)    dataFim    = body.dataFim;
+  } catch { /* sem body, usa hoje */ }
 
   const { data: configs, error: cfgErr } = await db
     .from("pje_config")
@@ -31,8 +37,8 @@ serve(async () => {
           `https://comunica.pje.jus.br/api/v1/comunicacao` +
           `?pagina=${pagina}&itensPorPagina=50` +
           `&texto=${encodeURIComponent(nome)}` +
-          `&dataDisponibilizacaoInicio=${hoje}` +
-          `&dataDisponibilizacaoFim=${hoje}`;
+          `&dataDisponibilizacaoInicio=${dataInicio}` +
+          `&dataDisponibilizacaoFim=${dataFim}`;
 
         const res = await fetch(url, {
           headers: {

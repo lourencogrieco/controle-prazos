@@ -1252,6 +1252,8 @@ document.getElementById('filtroTarefasStatus')?.addEventListener('change', rende
 function renderIntimacoesAba() {
   const busca  = (document.getElementById('buscaIntimacoes')?.value ?? '').toLowerCase();
   const status = document.getElementById('filtroIntimacoesStatus')?.value ?? '';
+  const de     = document.getElementById('filtroIntimacoesDe')?.value ?? '';
+  const ate    = document.getElementById('filtroIntimacoesAte')?.value ?? '';
 
   const lista = state.intimacoes.filter(i => {
     const m = !busca ||
@@ -1260,7 +1262,8 @@ function renderIntimacoesAba() {
       i.tribunal.toLowerCase().includes(busca) ||
       i.nomeClasse.toLowerCase().includes(busca) ||
       i.tipoDocumento.toLowerCase().includes(busca);
-    return m && (!status || i.status === status);
+    const dataOk = (!de || i.dataPublicacao >= de) && (!ate || i.dataPublicacao <= ate);
+    return m && (!status || i.status === status) && dataOk;
   });
 
   const cfg = state.pjeConfig;
@@ -1283,6 +1286,32 @@ function renderIntimacoesAba() {
         <td>${i.link ? `<a href="${i.link}" target="_blank" class="int-link">Ver ↗</a>` : '—'}</td>
       </tr>`).join('')
     : `<tr><td colspan="8" class="tbl-empty">Nenhuma intimação encontrada. Configure os advogados na aba Configurações e aguarde a sincronização diária.</td></tr>`;
+}
+
+async function sincronizarPJeData() {
+  const de  = document.getElementById('filtroIntimacoesDe')?.value;
+  const ate = document.getElementById('filtroIntimacoesAte')?.value;
+  if (!de) { toast('Selecione ao menos a data inicial.', 'error'); return; }
+  const btn = event?.target;
+  if (btn) { btn.disabled = true; btn.textContent = 'Buscando…'; }
+  try {
+    const res = await fetch(`https://gcucadlnxttlxckravui.supabase.co/functions/v1/sync-intimacoes`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${(await db.auth.getSession()).data.session?.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ dataInicio: de, dataFim: ate || de }),
+    });
+    if (res.ok) {
+      toast('Intimações importadas!');
+      await carregarDados();
+      renderIntimacoesAba();
+    } else {
+      toast('Erro ao buscar.', 'error');
+    }
+  } catch { toast('Erro ao buscar.', 'error'); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = '↻ Buscar por data'; } }
 }
 
 async function sincronizarPJe() {
@@ -1320,6 +1349,8 @@ function irParaPrazo(pastaNr) {
 
 document.getElementById('buscaIntimacoes')?.addEventListener('input', renderIntimacoesAba);
 document.getElementById('filtroIntimacoesStatus')?.addEventListener('change', renderIntimacoesAba);
+document.getElementById('filtroIntimacoesDe')?.addEventListener('change', renderIntimacoesAba);
+document.getElementById('filtroIntimacoesAte')?.addEventListener('change', renderIntimacoesAba);
 
 // ──────────────────────────────────────────────────────────────────────
 // RELATÓRIOS

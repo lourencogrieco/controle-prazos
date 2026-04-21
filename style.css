@@ -1633,6 +1633,16 @@ tbody td {
 .tag--manual { background: #eee; color: #666; }
 
 /* ─── INTIMAÇÕES PJe ─────────────────────────────────────────── */
+.input-sm {
+  background: var(--bg);
+  border: 1px solid var(--br);
+  border-radius: var(--r-xs);
+  padding: 5px 8px;
+  font-size: .78rem;
+  color: var(--tx);
+  height: 32px;
+}
+
 .badge-tribunal {
   display: inline-block;
   padding: 2px 7px;

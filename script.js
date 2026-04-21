@@ -1336,7 +1336,7 @@ function renderPastaList() {
       <td><span class="pasta-link">${p.numero}</span></td>
       <td class="pasta-client">${p.cliente}</td>
       <td>${p.parteContraria}</td>
-      <td><span class="tag tag--area">${p.tipoServico}</span></td>
+      <td>${p.tipoServico}</td>
       <td>${p.servico}</td>
     </tr>`).join("") || `<tr><td colspan="6" class="tbl-empty">Nenhuma pasta encontrada.</td></tr>`;
 

@@ -901,6 +901,8 @@ tbody td {
   padding: 11px 12px;
   border-bottom: 1px solid var(--br);
   font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--tx-strong);
   vertical-align: middle;
   line-height: 1.45;
 }
@@ -985,7 +987,7 @@ tbody td {
 
 .pasta-table .pasta-link:hover { text-decoration: underline; }
 
-.pasta-table .pasta-client { color: var(--tx-strong); font-weight: 500; }
+.pasta-table .pasta-client { color: var(--tx-strong); font-weight: 600; }
 
 .tbl-pagination, .tbl-pg-left, .tbl-pg-right {
   display: flex;

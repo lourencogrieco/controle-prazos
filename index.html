@@ -15,7 +15,9 @@
   <!-- HEADER -->
   <header class="app-header">
     <div class="hdr-brand">
-      <span class="brand-mark">NG</span>
+      <div class="brand-logo-wrap">
+        <img src="logo.svg" id="brandLogo" class="brand-logo-img" alt="NG" onerror="this.style.display='none'">
+      </div>
       <div class="brand-text">
         <strong>Legal Hub</strong>
         <span>Gestão Jurídica Inteligente</span>
@@ -1453,6 +1455,48 @@
     </section><!-- /view-pastas -->
 
   </main>
+</div>
+
+<!-- ===== MODAL PERSONALIZAÇÃO ===== -->
+<div id="modalConfig" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <h3>Personalização</h3>
+      <button class="modal-close" id="cfgClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="cfg-section-title">Identidade visual</p>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+        <div class="color-field">
+          <span>Cor primária</span>
+          <input type="color" id="cfgColorPrimary" value="#08505D">
+          <div class="cfg-preview" id="prevPrimary" style="background:#08505D"></div>
+        </div>
+        <div class="color-field">
+          <span>Cor de destaque</span>
+          <input type="color" id="cfgColorAccent" value="#BCC2C5">
+          <div class="cfg-preview" id="prevAccent" style="background:#BCC2C5"></div>
+        </div>
+      </div>
+
+      <hr class="cfg-divider">
+
+      <p class="cfg-section-title">Logomarca</p>
+      <label class="field">
+        <span>URL da imagem (PNG, SVG ou JPG)</span>
+        <input type="url" id="cfgLogoUrl" placeholder="https://... ou caminho relativo (ex: logo.png)">
+      </label>
+      <div id="cfgLogoPreviewWrap" style="margin-top:12px;height:56px;background:var(--navy);border-radius:var(--r-sm);display:flex;align-items:center;padding:0 16px;gap:12px">
+        <img id="cfgLogoPreview" src="logo.svg" style="height:28px;width:auto;filter:brightness(0) invert(1);opacity:.9" onerror="this.style.display='none'">
+        <span style="color:rgba(255,255,255,.5);font-size:.72rem;font-family:'IBM Plex Mono',monospace">Prévia do header</span>
+      </div>
+
+      <div class="form-foot" style="margin-top:20px">
+        <button class="btn-outline" id="cfgReset">↺ Restaurar padrão</button>
+        <button class="btn-primary" id="cfgSalvar">Salvar</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script src="script.js"></script>

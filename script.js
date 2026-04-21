@@ -1447,6 +1447,107 @@ document.getElementById("buscaPasta").addEventListener("input", () => {
   pastaPagAtual = 1; renderPastaList();
 });
 
+// ─── PERSONALIZAÇÃO / TEMA ─────────────────────────────────────────────
+const TEMA_KEY = 'lhub_tema';
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return { r, g, b };
+}
+
+function lighten(hex, pct) {
+  const { r, g, b } = hexToRgb(hex);
+  const f = pct / 100;
+  return `rgb(${Math.round(r + (255-r)*f)},${Math.round(g + (255-g)*f)},${Math.round(b + (255-b)*f)})`;
+}
+
+function aplicarTema(tema) {
+  const root = document.documentElement;
+  if (tema.primary) {
+    root.style.setProperty('--navy',     tema.primary);
+    root.style.setProperty('--navy-mid', tema.primary);
+    root.style.setProperty('--ac',       tema.primary);
+    root.style.setProperty('--ac-soft',  lighten(tema.primary, 88));
+    root.style.setProperty('--tx-strong', lighten(tema.primary, 10) === '#fff' ? '#101010' : '#101010');
+  }
+  if (tema.accent) {
+    root.style.setProperty('--gold',      tema.accent);
+    root.style.setProperty('--gold-soft', lighten(tema.accent, 82));
+  }
+  if (tema.logoUrl) {
+    const img = document.getElementById('brandLogo');
+    if (img) { img.src = tema.logoUrl; img.style.display = ''; }
+  }
+}
+
+// Carregar tema salvo ao iniciar
+const _temaSalvo = JSON.parse(localStorage.getItem(TEMA_KEY) || 'null');
+if (_temaSalvo) aplicarTema(_temaSalvo);
+
+// Abrir modal de configurações via botão engrenagem
+document.querySelector('.hdr-btn[title="Configurações"]').addEventListener('click', () => {
+  const t = JSON.parse(localStorage.getItem(TEMA_KEY) || '{}');
+  const primary = t.primary || '#08505D';
+  const accent  = t.accent  || '#BCC2C5';
+  document.getElementById('cfgColorPrimary').value = primary;
+  document.getElementById('cfgColorAccent').value  = accent;
+  document.getElementById('cfgLogoUrl').value       = t.logoUrl || '';
+  document.getElementById('prevPrimary').style.background = primary;
+  document.getElementById('prevAccent').style.background  = accent;
+  if (t.logoUrl) document.getElementById('cfgLogoPreview').src = t.logoUrl;
+  document.getElementById('modalConfig').classList.remove('hidden');
+});
+
+document.getElementById('cfgClose').addEventListener('click', () => {
+  document.getElementById('modalConfig').classList.add('hidden');
+});
+
+document.getElementById('cfgColorPrimary').addEventListener('input', e => {
+  document.getElementById('prevPrimary').style.background = e.target.value;
+  document.getElementById('cfgLogoPreviewWrap').style.background = e.target.value;
+});
+
+document.getElementById('cfgColorAccent').addEventListener('input', e => {
+  document.getElementById('prevAccent').style.background = e.target.value;
+});
+
+document.getElementById('cfgLogoUrl').addEventListener('input', e => {
+  const img = document.getElementById('cfgLogoPreview');
+  img.src = e.target.value || 'logo.png';
+  img.style.display = '';
+});
+
+document.getElementById('cfgSalvar').addEventListener('click', () => {
+  const tema = {
+    primary:  document.getElementById('cfgColorPrimary').value,
+    accent:   document.getElementById('cfgColorAccent').value,
+    logoUrl:  document.getElementById('cfgLogoUrl').value.trim() || null,
+  };
+  localStorage.setItem(TEMA_KEY, JSON.stringify(tema));
+  aplicarTema(tema);
+  document.getElementById('modalConfig').classList.add('hidden');
+  toast('Configurações salvas');
+});
+
+document.getElementById('cfgReset').addEventListener('click', () => {
+  localStorage.removeItem(TEMA_KEY);
+  const root = document.documentElement;
+  ['--navy','--navy-mid','--ac','--ac-soft','--gold','--gold-soft'].forEach(v => root.style.removeProperty(v));
+  document.getElementById('cfgColorPrimary').value = '#08505D';
+  document.getElementById('cfgColorAccent').value  = '#BCC2C5';
+  document.getElementById('cfgLogoUrl').value       = '';
+  document.getElementById('prevPrimary').style.background = '#08505D';
+  document.getElementById('prevAccent').style.background  = '#BCC2C5';
+  const img = document.getElementById('brandLogo');
+  if (img) { img.src = 'logo.svg'; img.style.display = ''; }
+  document.getElementById('cfgLogoPreviewWrap').style.background = '#08505D';
+  document.getElementById('cfgLogoPreview').src = 'logo.svg';
+  document.getElementById('modalConfig').classList.add('hidden');
+  toast('Tema restaurado para o padrão');
+});
+
 // ─── INIT ──────────────────────────────────────────────────────────────
 renderAtividades();
 renderPipeline();

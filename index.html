@@ -86,69 +86,71 @@
       <div class="dashboard-grid">
         <div class="dash-card">
           <div class="dash-card-head">
-            <span class="dash-label">TAREFAS A FAZER</span>
-            <button class="dash-refresh" title="Atualizar">↻</button>
+            <span class="dash-label">TAREFAS PENDENTES</span>
+            <button class="dash-refresh" onclick="carregarDados()" title="Atualizar">↻</button>
           </div>
-          <a href="#" class="dash-stat">
-            <strong>1</strong>
-            <span>Inicialização(ões)</span>
+          <a href="#" class="dash-stat" onclick="document.querySelector('[data-view=atividades]').click();document.querySelector('[data-subtab=tarefas]').click()">
+            <strong id="dashTarefasPendentes">—</strong>
+            <span id="dashTarefasLabel">Tarefa(s) a fazer</span>
           </a>
           <p class="dash-time" id="time1">Atualizado às --:--:--</p>
         </div>
 
         <div class="dash-card">
           <div class="dash-card-head">
-            <span class="dash-label">TAREFAS SOLICITADAS</span>
-            <button class="dash-refresh" title="Atualizar">↻</button>
+            <span class="dash-label">PRAZOS ESTA SEMANA</span>
+            <button class="dash-refresh" onclick="carregarDados()" title="Atualizar">↻</button>
           </div>
-          <div class="dash-empty">Sem pendências</div>
-          <p class="dash-time">Atualizado às --:--:--</p>
-        </div>
-
-        <div class="dash-card">
-          <div class="dash-card-head">
-            <span class="dash-label">SOLICITAÇÕES</span>
-            <button class="dash-refresh" title="Atualizar">↻</button>
-          </div>
-          <a href="#" class="dash-stat dash-stat--alert">
-            <strong>23</strong>
-            <span>Vencidas</span>
+          <a href="#" class="dash-stat" onclick="document.querySelector('[data-view=atividades]').click();document.querySelector('[data-subtab=prazos]').click()">
+            <strong id="dashPrazosSemana">—</strong>
+            <span>Vencendo em 7 dias</span>
           </a>
-          <p class="dash-time">Atualizado às --:--:--</p>
+          <p class="dash-time" id="time2">Atualizado às --:--:--</p>
         </div>
 
         <div class="dash-card">
           <div class="dash-card-head">
-            <span class="dash-label">TARIFAÇÕES</span>
-            <button class="dash-refresh" title="Atualizar">↻</button>
+            <span class="dash-label">PRAZOS VENCIDOS</span>
+            <button class="dash-refresh" onclick="carregarDados()" title="Atualizar">↻</button>
           </div>
-          <div class="dash-empty">Sem pendências</div>
-          <p class="dash-time">Atualizado às --:--:--</p>
+          <a href="#" class="dash-stat dash-stat--alert" onclick="document.querySelector('[data-view=atividades]').click();document.querySelector('[data-subtab=prazos]').click()">
+            <strong id="dashPrazosVencidos">—</strong>
+            <span>Vencidos e pendentes</span>
+          </a>
+          <p class="dash-time" id="time3">Atualizado às --:--:--</p>
         </div>
 
         <div class="dash-card">
           <div class="dash-card-head">
-            <span class="dash-label">PASTAS</span>
-            <button class="dash-refresh" title="Atualizar">↻</button>
+            <span class="dash-label">PASTAS ATIVAS</span>
+            <button class="dash-refresh" onclick="carregarDados()" title="Atualizar">↻</button>
           </div>
-          <div class="dash-empty">Sem pendências</div>
-          <p class="dash-time">Atualizado às --:--:--</p>
+          <a href="#" class="dash-stat" onclick="document.querySelector('[data-view=pastas]').click()">
+            <strong id="dashPastasAtivas">—</strong>
+            <span>Processos em andamento</span>
+          </a>
+          <p class="dash-time" id="time4">Atualizado às --:--:--</p>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-card-head">
+            <span class="dash-label">CLIENTES</span>
+            <button class="dash-refresh" onclick="carregarDados()" title="Atualizar">↻</button>
+          </div>
+          <a href="#" class="dash-stat">
+            <strong id="dashClientes">—</strong>
+            <span>Clientes cadastrados</span>
+          </a>
+          <p class="dash-time" id="time5">Atualizado às --:--:--</p>
         </div>
 
         <div class="dash-card dash-card--wide">
           <div class="dash-card-head">
-            <span class="dash-label">ALERTAS</span>
-            <button class="dash-refresh" title="Atualizar">↻</button>
+            <span class="dash-label">PRÓXIMOS PRAZOS</span>
+            <button class="dash-refresh" onclick="carregarDados()" title="Atualizar">↻</button>
           </div>
-          <a href="#" class="dash-stat">
-            <strong>48</strong>
-            <span>Pastas de 1ª Instância a 4 meses.</span>
-          </a>
-          <a href="#" class="dash-stat">
-            <strong>22</strong>
-            <span>Pastas de 2ª Instância a 12 meses.</span>
-          </a>
-          <p class="dash-time">Atualizado às --:--:--</p>
+          <div id="dashProximosPrazos" style="display:flex;flex-direction:column;gap:6px"></div>
+          <p class="dash-time" id="time6">Atualizado às --:--:--</p>
         </div>
       </div>
     </section>
@@ -1539,11 +1541,20 @@
 
         <!-- NUMERAÇÃO AUTOMÁTICA -->
         <div class="modal-section-label">Identificação</div>
+        <div class="field">
+          <span class="field-label">Área jurídica *</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="pAreaPasta" required style="flex:1">
+              <option value="">Selecionar área…</option>
+            </select>
+            <button type="button" class="btn-icon-sm" id="btnGerenciarAreas" title="Gerenciar áreas">⚙</button>
+          </div>
+        </div>
         <div class="form-grid" style="grid-template-columns:1fr auto 80px;gap:10px;align-items:end">
           <div class="field" style="margin:0">
             <span class="field-label">Tipo de pasta *</span>
             <select id="pTipoPasta" required>
-              <option value="">Selecionar tipo…</option>
+              <option value="">Selecione a área primeiro…</option>
             </select>
           </div>
           <button type="button" class="btn-icon-sm" id="btnGerenciarTipos" title="Gerenciar tipos de pasta">⚙</button>
@@ -1623,18 +1634,6 @@
             <span class="field-label">Advogado responsável</span>
             <input type="text" id="pAdvogado">
           </div>
-          <div class="field">
-            <span class="field-label">Área jurídica</span>
-            <select id="pArea">
-              <option value="">Selecionar…</option>
-              <option value="Cível e resolução de conflitos">Cível e resolução de conflitos</option>
-              <option value="Trabalhista">Trabalhista</option>
-              <option value="Tributário">Tributário</option>
-              <option value="Empresarial">Empresarial</option>
-              <option value="Administrativo">Administrativo</option>
-              <option value="Societário">Societário</option>
-            </select>
-          </div>
         </div>
         <div class="field">
           <span class="field-label">Observações</span>
@@ -1643,6 +1642,33 @@
         <div class="form-foot" style="margin-top:20px">
           <button type="button" class="btn-outline" id="btnCancelarPasta">Cancelar</button>
           <button type="submit" class="btn-primary" id="btnSalvarPasta">Salvar Pasta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL GERENCIAR ÁREAS JURÍDICAS ===== -->
+<div id="modalAreas" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-head">
+      <h3>Áreas Jurídicas</h3>
+      <button class="modal-close" id="fecharAreas">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:var(--text-sm);color:var(--mu);margin-bottom:14px">
+        As áreas organizam as pastas. Cada área tem seus próprios tipos e códigos independentes.
+      </p>
+      <div id="listaAreas" style="margin-bottom:20px"></div>
+      <hr class="cfg-divider">
+      <p class="modal-section-label" style="margin-top:16px">Adicionar nova área</p>
+      <form id="novaAreaForm">
+        <div class="field">
+          <span class="field-label">Nome da área *</span>
+          <input type="text" id="areaNome" placeholder="Ex: Ambiental, Previdenciário…" required>
+        </div>
+        <div class="form-foot" style="margin-top:14px">
+          <button type="submit" class="btn-primary">Adicionar</button>
         </div>
       </form>
     </div>
@@ -1665,6 +1691,12 @@
       <hr class="cfg-divider">
       <p class="modal-section-label" style="margin-top:16px">Adicionar novo tipo</p>
       <form id="novoTipoForm">
+        <div class="field">
+          <span class="field-label">Área *</span>
+          <select id="tipoArea" required>
+            <option value="">Selecionar área…</option>
+          </select>
+        </div>
         <div class="form-grid" style="grid-template-columns:80px 1fr;gap:10px;align-items:end">
           <div class="field" style="margin:0">
             <span class="field-label">Código *</span>
@@ -1761,14 +1793,21 @@
             <span class="field-label">Tipo de prazo *</span>
             <select id="prazoTipo" required>
               <option value="">Selecionar…</option>
-              <option value="Contestação">Contestação</option>
-              <option value="Recurso">Recurso</option>
-              <option value="Petição">Petição</option>
+              <option value="Agravo de Instrumento">Agravo de Instrumento</option>
+              <option value="Agravo em Recurso Especial">Agravo em Recurso Especial</option>
+              <option value="Agravo em Recurso Extraordinário">Agravo em Recurso Extraordinário</option>
+              <option value="Agravo Interno">Agravo Interno</option>
               <option value="Audiência">Audiência</option>
-              <option value="Manifestação">Manifestação</option>
-              <option value="Contrarrazões">Contrarrazões</option>
-              <option value="Encerramento de pasta">Encerramento de pasta</option>
+              <option value="Contestação">Contestação</option>
               <option value="Diligência">Diligência</option>
+              <option value="Embargos de Declaração">Embargos de Declaração</option>
+              <option value="Encerramento de pasta">Encerramento de pasta</option>
+              <option value="Inicial">Inicial</option>
+              <option value="Manifestação">Manifestação</option>
+              <option value="Recurso de Apelação">Recurso de Apelação</option>
+              <option value="Recurso Especial">Recurso Especial</option>
+              <option value="Recurso Extraordinário">Recurso Extraordinário</option>
+              <option value="Réplica">Réplica</option>
               <option value="Outro">Outro</option>
             </select>
           </div>

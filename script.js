@@ -19,6 +19,7 @@ const state = {
   tarefas:     [],
   tiposPasta:  [],
   clientes:    [],
+  areas:       [],
 };
 
 // ──────────────────────────────────────────────────────────────────────
@@ -145,6 +146,7 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
 function dbParaPasta(row) {
   return {
     id:               row.id,
+    areaId:           row.area_id || null,
     numero:           row.numero,
     codigoSIA:        row.codigo_lhub || '-',
     cliente:          row.cliente,
@@ -204,8 +206,12 @@ function dbParaPrazo(row) {
   };
 }
 
+function dbParaArea(row) {
+  return { id: row.id, nome: row.nome, ordem: row.ordem ?? 99 };
+}
+
 function dbParaTipoPasta(row) {
-  return { id: row.id, codigo: row.codigo, nome: row.nome };
+  return { id: row.id, codigo: row.codigo, nome: row.nome, areaId: row.area_id };
 }
 
 function dbParaCliente(row) {
@@ -243,19 +249,22 @@ function dbParaTarefa(row) {
 // ──────────────────────────────────────────────────────────────────────
 async function carregarDados() {
   const eid = state.empresaId;
-  const [pr, pz, tf, tp, cl] = await Promise.all([
+  const [pr, pz, tf, tp, cl, ar] = await Promise.all([
     db.from('pastas').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
     db.from('prazos_lhub').select('*').eq('empresa_id', eid).order('prazo'),
     db.from('tarefas_lhub').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
     db.from('tipos_pasta').select('*').eq('empresa_id', eid).order('codigo'),
     db.from('clientes_lhub').select('*').eq('empresa_id', eid).order('nome'),
+    db.from('areas_juridicas').select('*').eq('empresa_id', eid).order('ordem'),
   ]);
   state.pastas     = (pr.data || []).map(dbParaPasta);
   state.prazos     = (pz.data || []).map(dbParaPrazo);
   state.tarefas    = (tf.data || []).map(dbParaTarefa);
   state.tiposPasta = (tp.data || []).map(dbParaTipoPasta);
   state.clientes   = (cl.data || []).map(dbParaCliente);
+  state.areas      = (ar.data || []).map(dbParaArea);
 
+  renderDashboard();
   renderPastaList();
   renderAtividades();
   renderPrazosAba();
@@ -264,12 +273,61 @@ async function carregarDados() {
 }
 
 // ──────────────────────────────────────────────────────────────────────
+// DASHBOARD
+// ──────────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const agora = new Date();
+  const em7dias = new Date(agora); em7dias.setDate(em7dias.getDate() + 7);
+
+  const tarefasPendentes = state.tarefas.filter(t => t.status === 'Pendente').length;
+  const prazosSemana     = state.prazos.filter(p => {
+    if (p.status === 'Concluído') return false;
+    const d = daysUntil(p.prazoFatal);
+    return d >= 0 && d <= 7;
+  }).length;
+  const prazosVencidos   = state.prazos.filter(p =>
+    p.status !== 'Concluído' && daysUntil(p.prazoFatal) < 0
+  ).length;
+  const pastasAtivas     = state.pastas.filter(p => p.status === 'ativo').length;
+
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('dashTarefasPendentes', tarefasPendentes);
+  set('dashTarefasLabel',     `Tarefa${tarefasPendentes !== 1 ? 's' : ''} a fazer`);
+  set('dashPrazosSemana',     prazosSemana);
+  set('dashPrazosVencidos',   prazosVencidos);
+  set('dashPastasAtivas',     pastasAtivas);
+  set('dashClientes',         state.clientes.length);
+
+  // Próximos prazos (até 5)
+  const proximos = state.prazos
+    .filter(p => p.status !== 'Concluído' && daysUntil(p.prazoFatal) >= 0)
+    .sort((a, b) => a.prazoFatal.localeCompare(b.prazoFatal))
+    .slice(0, 5);
+
+  const cont = document.getElementById('dashProximosPrazos');
+  if (cont) {
+    cont.innerHTML = proximos.length
+      ? proximos.map(p => {
+          const diff = daysUntil(p.prazoFatal);
+          const cls  = diff <= 3 ? 'color:#c0392b;font-weight:700' : diff <= 7 ? 'color:#e07a17;font-weight:600' : '';
+          return `<div style="display:flex;align-items:center;gap:10px;font-size:var(--text-sm)">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:.7rem;${cls}">${formatDate(p.prazoFatal)}</span>
+            <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.cliente || p.pastaNr}</span>
+            <span style="color:var(--mu);font-size:.72rem">${p.tipoPrazo}</span>
+            <span style="${cls}">${diff === 0 ? 'Hoje' : diff + 'd'}</span>
+          </div>`;
+        }).join('')
+      : '<div style="color:var(--mu);font-size:var(--text-sm)">Nenhum prazo próximo.</div>';
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // CRUD — PASTAS
 // ──────────────────────────────────────────────────────────────────────
-function gerarNumeroPasta(codigoTipo, ano) {
+function gerarNumeroPasta(codigoTipo, areaId, ano) {
   const prefix = `${codigoTipo}/${ano}-`;
   const maxOrdem = state.pastas
-    .filter(p => p.numero.startsWith(prefix))
+    .filter(p => p.numero.startsWith(prefix) && p.areaId === areaId)
     .reduce((max, p) => {
       const ordem = parseInt(p.numero.slice(prefix.length)) || 0;
       return Math.max(max, ordem);
@@ -279,20 +337,35 @@ function gerarNumeroPasta(codigoTipo, ano) {
 
 function atualizarPreviewNumero() {
   const pastaId = document.getElementById('pastaId').value;
-  if (pastaId) return; // edição — não alterar número
+  if (pastaId) return;
+  const areaId = document.getElementById('pAreaPasta').value;
   const codigo = document.getElementById('pTipoPasta').value;
   const ano    = document.getElementById('pAno').value;
   const prev   = document.getElementById('pastaNumeroValor');
-  if (!codigo || !ano) { prev.textContent = '—'; return; }
-  prev.textContent = gerarNumeroPasta(codigo, ano);
+  if (!codigo || !ano || !areaId) { prev.textContent = '—'; return; }
+  prev.textContent = gerarNumeroPasta(codigo, areaId, ano);
+}
+
+function popularDropdownAreas() {
+  const sel = document.getElementById('pAreaPasta');
+  if (!sel) return;
+  const atual = sel.value;
+  sel.innerHTML = '<option value="">Selecionar área…</option>' +
+    state.areas.map(a =>
+      `<option value="${a.id}" ${a.id === atual ? 'selected' : ''}>${a.nome}</option>`
+    ).join('');
 }
 
 function popularDropdownTipos() {
-  const sel = document.getElementById('pTipoPasta');
-  const atual = sel.value;
-  sel.innerHTML = '<option value="">Selecionar tipo…</option>' +
-    state.tiposPasta.map(t =>
-      `<option value="${t.codigo}" ${String(t.codigo) === String(atual) ? 'selected' : ''}>${t.codigo} — ${t.nome}</option>`
+  const areaId = document.getElementById('pAreaPasta')?.value || '';
+  const sel    = document.getElementById('pTipoPasta');
+  if (!sel) return;
+  const tiposFiltrados = areaId
+    ? state.tiposPasta.filter(t => t.areaId === areaId)
+    : state.tiposPasta;
+  sel.innerHTML = (areaId ? '<option value="">Selecionar tipo…</option>' : '<option value="">Selecione a área primeiro…</option>') +
+    tiposFiltrados.map(t =>
+      `<option value="${t.codigo}">${t.codigo} — ${t.nome}</option>`
     ).join('');
   atualizarPreviewNumero();
 }
@@ -319,16 +392,18 @@ function abrirModalNovaPasta(numero) {
   const p = numero ? state.pastas.find(x => x.numero === numero) : null;
   document.getElementById('tituloPastaModal').textContent = p ? 'Editar Pasta' : 'Nova Pasta';
   document.getElementById('pastaId').value = p?.id || '';
-  document.getElementById('pAno').value    = p
-    ? (p.dataDistribuicao ? p.dataDistribuicao.split('/')[2] : new Date().getFullYear())
-    : new Date().getFullYear();
+  document.getElementById('pAno').value    = new Date().getFullYear();
 
-  popularDropdownTipos();
+  popularDropdownAreas();
   popularDropdownClientes();
 
   if (p) {
-    document.getElementById('pTipoPasta').value      = p.codigoTipo || '';
+    document.getElementById('pAreaPasta').value = p.areaId || '';
+    popularDropdownTipos();
+    document.getElementById('pTipoPasta').value = p.codigoTipo || '';
     document.getElementById('pastaNumeroValor').textContent = p.numero;
+  } else {
+    popularDropdownTipos();
   }
 
   document.getElementById('pCliente').value        = p?.cliente || '';
@@ -340,7 +415,6 @@ function abrirModalNovaPasta(numero) {
   document.getElementById('pComarca').value        = p?.comarca || '';
   document.getElementById('pProcesso').value       = p?.processo || '';
   document.getElementById('pValorCausa').value     = p?.valorCausa || '';
-  document.getElementById('pArea').value           = p?.area || '';
   document.getElementById('pObs').value            = p?.descricao || '';
   document.getElementById('pDataAb').value         = p?.dataDistribuicao
     ? p.dataDistribuicao.split('/').reverse().join('-') : '';
@@ -359,6 +433,10 @@ document.getElementById('modalNovaPasta').addEventListener('click', e => {
   if (e.target === e.currentTarget) fecharModalNovaPasta();
 });
 
+document.getElementById('pAreaPasta').addEventListener('change', () => {
+  popularDropdownTipos();
+  atualizarPreviewNumero();
+});
 document.getElementById('pTipoPasta').addEventListener('change', atualizarPreviewNumero);
 document.getElementById('pAno').addEventListener('input', atualizarPreviewNumero);
 
@@ -374,11 +452,13 @@ document.getElementById('novaPastaForm').addEventListener('submit', async e => {
   btn.textContent = 'Salvando…';
 
   const pastaId    = document.getElementById('pastaId').value;
+  const areaId     = document.getElementById('pAreaPasta').value;
   const codigoTipo = document.getElementById('pTipoPasta').value;
   const ano        = document.getElementById('pAno').value;
+  const areaNome   = state.areas.find(a => a.id === areaId)?.nome || '';
   const numero     = pastaId
     ? document.getElementById('pastaNumeroValor').textContent
-    : gerarNumeroPasta(codigoTipo, ano);
+    : gerarNumeroPasta(codigoTipo, areaId, ano);
 
   const obj = pastaParaDb({
     id:               pastaId || uid(),
@@ -392,13 +472,14 @@ document.getElementById('novaPastaForm').addEventListener('submit', async e => {
     comarca:          document.getElementById('pComarca').value.trim(),
     processo:         document.getElementById('pProcesso').value.trim(),
     valorCausa:       document.getElementById('pValorCausa').value.trim() || 'R$ 0,00',
-    area:             document.getElementById('pArea').value,
+    area:             areaNome,
     descricao:        document.getElementById('pObs').value.trim(),
     dataDistribuicao: document.getElementById('pDataAb').value || null,
     incluidoPor:      state.meuPerfil?.nome || '',
     status:           'ativo',
   });
   obj.codigo_tipo = codigoTipo ? Number(codigoTipo) : null;
+  obj.area_id     = areaId || null;
   obj.cliente_id  = document.getElementById('pClienteSelect').value || null;
 
   const { error } = await db.from('pastas').upsert(obj);
@@ -582,22 +663,100 @@ async function excluirTarefa(id) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
+// CRUD — ÁREAS JURÍDICAS
+// ──────────────────────────────────────────────────────────────────────
+function renderListaAreas() {
+  const el = document.getElementById('listaAreas');
+  if (!state.areas.length) {
+    el.innerHTML = '<p style="color:var(--mu);font-size:var(--text-sm)">Nenhuma área cadastrada.</p>';
+    return;
+  }
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse">
+    <tbody>${state.areas.map(a => `
+      <tr>
+        <td style="padding:6px 8px;font-size:.875rem;font-weight:600">${a.nome}</td>
+        <td style="padding:6px 4px;text-align:right">
+          <button onclick="excluirArea('${a.id}')" style="background:none;border:none;color:var(--mu);cursor:pointer;font-size:.9rem" title="Excluir">✕</button>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function abrirModalAreas() {
+  renderListaAreas();
+  document.getElementById('modalAreas').classList.remove('hidden');
+}
+
+function fecharModalAreas() {
+  document.getElementById('modalAreas').classList.add('hidden');
+  document.getElementById('novaAreaForm').reset();
+}
+
+document.getElementById('btnGerenciarAreas').addEventListener('click', abrirModalAreas);
+document.getElementById('fecharAreas').addEventListener('click', fecharModalAreas);
+document.getElementById('modalAreas').addEventListener('click', e => {
+  if (e.target === e.currentTarget) fecharModalAreas();
+});
+
+document.getElementById('novaAreaForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const nome = document.getElementById('areaNome').value.trim();
+  if (state.areas.some(a => a.nome.toLowerCase() === nome.toLowerCase())) {
+    toast('Área já existe', 'error'); return;
+  }
+  const obj = { id: uid(), empresa_id: state.empresaId, nome, ordem: state.areas.length + 1 };
+  const { error } = await db.from('areas_juridicas').insert(obj);
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  toast('Área adicionada');
+  e.target.reset();
+  state.areas.push(dbParaArea(obj));
+  renderListaAreas();
+  popularDropdownAreas();
+  // Atualiza select de área no modal de tipos
+  const tipoAreaSel = document.getElementById('tipoArea');
+  if (tipoAreaSel) popularSelectAreaTipos();
+});
+
+async function excluirArea(id) {
+  const usada = state.tiposPasta.some(t => t.areaId === id);
+  if (usada) { toast('Remova os tipos desta área antes de excluí-la', 'error'); return; }
+  if (!confirm('Excluir esta área?')) return;
+  const { error } = await db.from('areas_juridicas').delete().eq('id', id).eq('empresa_id', state.empresaId);
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  state.areas = state.areas.filter(a => a.id !== id);
+  renderListaAreas();
+  popularDropdownAreas();
+  toast('Área excluída');
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // CRUD — TIPOS DE PASTA
 // ──────────────────────────────────────────────────────────────────────
+function popularSelectAreaTipos() {
+  const sel = document.getElementById('tipoArea');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Selecionar área…</option>' +
+    state.areas.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
+}
+
 function renderListaTipos() {
   const el = document.getElementById('listaTiposPasta');
   if (!state.tiposPasta.length) {
     el.innerHTML = '<p style="color:var(--mu);font-size:var(--text-sm)">Nenhum tipo cadastrado.</p>';
     return;
   }
+  const areaNome = id => state.areas.find(a => a.id === id)?.nome || '—';
   el.innerHTML = `<table style="width:100%;border-collapse:collapse">
     <thead><tr>
-      <th style="text-align:left;padding:4px 8px;font-size:.7rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Código</th>
+      <th style="text-align:left;padding:4px 8px;font-size:.7rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Área</th>
+      <th style="text-align:left;padding:4px 8px;font-size:.7rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Cód.</th>
       <th style="text-align:left;padding:4px 8px;font-size:.7rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Nome</th>
       <th style="width:36px;border-bottom:1px solid var(--br)"></th>
     </tr></thead>
     <tbody>${state.tiposPasta.map(t => `
       <tr>
+        <td style="padding:6px 8px;font-size:.78rem;color:var(--mu)">${areaNome(t.areaId)}</td>
         <td style="padding:6px 8px;font-weight:700;font-family:'IBM Plex Mono',monospace;font-size:.82rem">${t.codigo}</td>
         <td style="padding:6px 8px;font-size:.875rem">${t.nome}</td>
         <td style="padding:6px 8px">
@@ -609,6 +768,7 @@ function renderListaTipos() {
 }
 
 function abrirModalTiposPasta() {
+  popularSelectAreaTipos();
   renderListaTipos();
   document.getElementById('modalTiposPasta').classList.remove('hidden');
 }
@@ -626,24 +786,22 @@ document.getElementById('modalTiposPasta').addEventListener('click', e => {
 
 document.getElementById('novoTipoForm').addEventListener('submit', async e => {
   e.preventDefault();
+  const areaId = document.getElementById('tipoArea').value;
   const codigo = Number(document.getElementById('tipoCodigo').value);
   const nome   = document.getElementById('tipoNome').value.trim();
 
-  if (state.tiposPasta.some(t => t.codigo === codigo)) {
-    toast(`Código ${codigo} já existe`, 'error'); return;
+  if (state.tiposPasta.some(t => t.areaId === areaId && t.codigo === codigo)) {
+    toast(`Código ${codigo} já existe nesta área`, 'error'); return;
   }
 
-  const obj = { id: uid(), empresa_id: state.empresaId, codigo, nome };
+  const obj = { id: uid(), empresa_id: state.empresaId, codigo, nome, area_id: areaId };
   const { error } = await db.from('tipos_pasta').insert(obj);
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
   toast('Tipo adicionado');
   e.target.reset();
-
-  // Atualiza state e re-renderiza lista sem recarregar tudo
-  state.tiposPasta.push({ id: obj.id, codigo, nome });
+  state.tiposPasta.push({ id: obj.id, codigo, nome, areaId });
   state.tiposPasta.sort((a, b) => a.codigo - b.codigo);
   renderListaTipos();
-  popularDropdownTipos();
 });
 
 async function excluirTipoPasta(id) {
@@ -723,35 +881,11 @@ document.getElementById('novoClienteForm').addEventListener('submit', async e =>
 // ──────────────────────────────────────────────────────────────────────
 // DATA — hardcoded (demo data para pipeline, intimações, andamentos, agenda)
 // ──────────────────────────────────────────────────────────────────────
-const oportunidades = [
-  { numero:"272-2026", lead:"Vivar Sanchez Medicina Cardiológica Ltda.", tipo:"Consultivo", tese:"Consultoria Tributária", area:"Tributário", status:"Recusado", motivoRecusa:"subir honorários para 20k", responsavel:"CB", responsavelNome:"Cinthia Benvenuto de Carvalho Ferreira", data:"2026-01-28" },
-  { numero:"60-2025", lead:"Sts – Sociedade De Terceirização De Serviços Ltda.", tipo:"Consultivo", tese:"Consultoria Tributária", area:"Tributário", status:"Aguardando aceite", motivoRecusa:"subir honorários", responsavel:"CB AC", responsavelNome:"Ana Claudia de Andrade Argenta", data:"2025-01-24", envio:"automático" },
-  { numero:"67-2025", lead:"Clinica De Olhos Octavio Moura Brasil Ltda.", tipo:"Consultivo", tese:"Consultoria Tributária", area:"Tributário", status:"Aguardando aceite", responsavel:"CB", responsavelNome:"Cinthia Benvenuto de Carvalho Ferreira", data:"2025-02-10" },
-  { numero:"85-2025", lead:"Farma Plus Distribuidora de Medicamentos Ltda.", tipo:"Consultivo", tese:"Consultoria Tributária", area:"Tributário", status:"Aguardando aceite", motivoRecusa:"revisão de proposta", responsavel:"CB", responsavelNome:"Cinthia Benvenuto de Carvalho Ferreira", data:"2025-03-05" },
-  { numero:"124-2025", lead:"Construtora Meridional S.A.", tipo:"Contencioso", tese:"Defesa Trabalhista", area:"Trabalhista", status:"Aguardando aceite", responsavel:"LG", responsavelNome:"Lourenço Grieco", data:"2025-04-12" },
-];
+const oportunidades = [];
 
-const intimacoesData = [
-  { id:"INT-2026-039", pastaNr:"37/2025-2776", cliente:"Eurofins do Brasil Análises de Alimentos Ltda.", processo:"37/2025-2776", orgao:"Vara Cível — São Paulo", dataPublicacao:"2026-04-03", prazoFatal:"2026-04-18", descricao:"Intimação para encerramento da pasta e baixa documental.", prazoVinculado:"37/2025-2776", status:"Pendente", diasUteis:false },
-  { id:"INT-2026-040", pastaNr:"1002456/2026", cliente:"Banco Prime Capital", processo:"1002456-89.2026.8.26.0100", orgao:"2ª Vara Cível — Fórum Central", dataPublicacao:"2026-04-07", prazoFatal:"2026-04-22", descricao:"Citação para apresentação de contestação no prazo de 15 dias úteis.", prazoVinculado:"1002456/2026", status:"Em andamento", diasUteis:true },
-  { id:"INT-2026-042", pastaNr:"57/2022-5975", cliente:"Bayer S.a.", processo:"1000909-52.2022.8.26.0067", orgao:"Comarca de Borborema", dataPublicacao:"2026-04-14", prazoFatal:"2026-05-15", descricao:"Intimação para apresentação de contestação — prazo de 30 dias úteis.", prazoVinculado:"57/2022-5975", status:"Pendente", diasUteis:true },
-  { id:"INT-2026-043", pastaNr:"42/2017-5974", cliente:"Vera Maria Ritter", processo:"0005678-12.2017.8.26.0100", orgao:"TJSP — Câmara Empresarial", dataPublicacao:"2026-04-20", prazoFatal:"2026-05-20", descricao:"Intimação para contrarrazões ao recurso de apelação — prazo de 30 dias.", prazoVinculado:"42/2017-5974", status:"Pendente", diasUteis:true },
-  { id:"INT-2026-044", pastaNr:"2424/2026-5973", cliente:"PAPELARIA TABAJARA LTDA.", processo:"0009001-44.2026.8.26.0100", orgao:"10ª Vara Cível — São Paulo", dataPublicacao:"2026-04-25", prazoFatal:"2026-05-12", descricao:"Juntada de documentos contábeis requisitados pelo juízo — prazo de 15 dias.", prazoVinculado:"2424/2026-5973", status:"Pendente", diasUteis:false },
-];
+const intimacoesData = [];
 
-const andamentosBase = [
-  { pastaNr:"57/2022-5975", codigoSIA:"202/2022-34", cliente:"Bayer S.a.", area:"Cível e resolução de conflitos", data:"2022-09-23", andamento:"Ação principal", advogado:"Bruno F. S. Batista", tipo:"Ação principal", manual:false },
-  { pastaNr:"57/2022-5975", codigoSIA:"202/2022-34", cliente:"Bayer S.a.", area:"Cível e resolução de conflitos", data:"2023-03-14", andamento:"Despacho — citação réu", advogado:"Bruno F. S. Batista", tipo:"Despacho", manual:false },
-  { pastaNr:"57/2022-5975", codigoSIA:"202/2022-34", cliente:"Bayer S.a.", area:"Cível e resolução de conflitos", data:"2023-07-20", andamento:"Juntada de contestação", advogado:"Bruno F. S. Batista", tipo:"Juntada de documento", manual:false },
-  { pastaNr:"57/2022-5975", codigoSIA:"202/2022-34", cliente:"Bayer S.a.", area:"Cível e resolução de conflitos", data:"2024-02-08", andamento:"Nota interna — revisão", advogado:"Bruno F. S. Batista", tipo:"Manual", manual:true },
-  { pastaNr:"42/2017-5974", codigoSIA:"260/1992-1", cliente:"Vera Maria Ritter", area:"Empresarial", data:"2017-03-10", andamento:"Distribuição da ação", advogado:"Lourenço Grieco", tipo:"Ação principal", manual:false },
-  { pastaNr:"42/2017-5974", codigoSIA:"260/1992-1", cliente:"Vera Maria Ritter", area:"Empresarial", data:"2018-06-22", andamento:"Sentença de 1ª instância", advogado:"Lourenço Grieco", tipo:"Sentença", manual:false },
-  { pastaNr:"42/2017-5974", codigoSIA:"260/1992-1", cliente:"Vera Maria Ritter", area:"Empresarial", data:"2019-04-15", andamento:"Acórdão — provimento parcial", advogado:"Lourenço Grieco", tipo:"Acórdão", manual:false },
-  { pastaNr:"14/2026-5981", codigoSIA:"-", cliente:"SANTOS BRASIL PARTICIPAÇÕES S.A.", area:"Cível e resolução de conflitos", data:"2026-01-15", andamento:"Distribuição da ação", advogado:"Lourenço Grieco", tipo:"Ação principal", manual:false },
-  { pastaNr:"2424/2026-5973", codigoSIA:"261/1999-1", cliente:"PAPELARIA TABAJARA LTDA.", area:"Empresarial", data:"2026-02-05", andamento:"Distribuição da ação", advogado:"Lourenço Grieco", tipo:"Ação principal", manual:false },
-  { pastaNr:"2424/2026-5973", codigoSIA:"261/1999-1", cliente:"PAPELARIA TABAJARA LTDA.", area:"Empresarial", data:"2026-03-10", andamento:"Despacho — citação", advogado:"Lourenço Grieco", tipo:"Despacho", manual:false },
-  { pastaNr:"2424/2026-5973", codigoSIA:"261/1999-1", cliente:"PAPELARIA TABAJARA LTDA.", area:"Empresarial", data:"2026-04-01", andamento:"Intimação — prazo 15 dias", advogado:"Lourenço Grieco", tipo:"Intimação", manual:false },
-];
+const andamentosBase = [];
 
 // ──────────────────────────────────────────────────────────────────────
 // CARD RENDERERS
@@ -1268,18 +1402,7 @@ document.getElementById('btnExportarExcel').addEventListener('click', () => {
 // ──────────────────────────────────────────────────────────────────────
 const TIPO_COR = { 'Prazo':'prazo', 'Audiência':'audiencia', 'Reunião':'reuniao', 'Diligência':'diligencia', 'Lembrete':'lembrete' };
 
-const agendaEventos = [
-  { data:"2026-04-17", titulo:"Reunião de equipe — Planejamento semanal",  tipo:"Reunião",    hora:"09:00", responsavel:"Lourenço Grieco",    local:"Sala de reuniões" },
-  { data:"2026-04-18", titulo:"Prazo: Eurofins — Encerramento de pasta",   tipo:"Prazo",      hora:"",      responsavel:"Advogado",            local:"Interno" },
-  { data:"2026-04-22", titulo:"Audiência — Banco Prime Capital",           tipo:"Audiência",  hora:"14:30", responsavel:"Controller",          local:"2ª Vara Cível" },
-  { data:"2026-04-24", titulo:"Diligência: Grupo Orion Logística",         tipo:"Diligência", hora:"11:00", responsavel:"Estagiário",          local:"Cartório" },
-  { data:"2026-04-25", titulo:"Audiência — Hospital Santa Helena",         tipo:"Audiência",  hora:"09:30", responsavel:"Sócio",               local:"3ª Vara do Trabalho" },
-  { data:"2026-04-28", titulo:"Reunião com cliente — Grupo Orion",         tipo:"Reunião",    hora:"15:00", responsavel:"Lourenço Grieco",    local:"Escritório" },
-  { data:"2026-04-29", titulo:"Prazo: Santos Brasil — Resposta",           tipo:"Prazo",      hora:"",      responsavel:"Lourenço Grieco",    local:"Tribunal" },
-  { data:"2026-05-05", titulo:"Audiência — Bayer S.a.",                    tipo:"Audiência",  hora:"10:00", responsavel:"Bruno F. S. Batista", local:"Comarca de Borborema" },
-  { data:"2026-05-12", titulo:"Prazo: Papelaria Tabajara — Manifestação",  tipo:"Prazo",      hora:"",      responsavel:"Lourenço Grieco",    local:"Tribunal" },
-  { data:"2026-05-20", titulo:"Audiência — Construtora Meridional",        tipo:"Audiência",  hora:"14:00", responsavel:"Lourenço Grieco",    local:"4ª Vara Trabalhista" },
-];
+const agendaEventos = [];
 
 let calAno = 2026;
 let calMes = 3;

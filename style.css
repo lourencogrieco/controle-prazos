@@ -94,13 +94,14 @@ a { text-decoration: none; color: inherit; }
   height: 36px;
   display: grid;
   place-items: center;
-  background: var(--gold);
-  border-radius: 6px;
-  color: var(--navy);
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: var(--r-sm);
+  color: #fff;
   font-family: "Manrope", sans-serif;
   font-weight: 800;
-  font-size: 1rem;
-  letter-spacing: .02em;
+  font-size: .9rem;
+  letter-spacing: .04em;
   flex-shrink: 0;
 }
 

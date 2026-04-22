@@ -2896,11 +2896,27 @@ function abrirDetalheAndamento(andamentoId) {
   `;
   document.getElementById('detalheAndDesc').textContent = a.complemento || '(sem descrição)';
 
-  const editBtn = document.getElementById('btnEditarAndamento');
-  if (editBtn) editBtn.style.display = isManual ? '' : 'none';
+  const editBtn   = document.getElementById('btnEditarAndamento');
+  const excluirBtn = document.getElementById('btnExcluirAndamento');
+  if (editBtn)    editBtn.style.display    = isManual ? '' : 'none';
+  if (excluirBtn) excluirBtn.style.display = isManual ? '' : 'none';
 
   carregarDocumentosDetalhe(andamentoId);
   document.getElementById('modalDetalheAndamento').classList.add('open');
+}
+
+async function excluirAndamentoAtual() {
+  const a = state.currentAndamento;
+  if (!a || a.tribunal !== 'manual') return;
+  if (!confirm('Excluir este andamento? Esta ação não pode ser desfeita.')) return;
+  const { error } = await db.from('andamentos_processo').delete().eq('id', a.id);
+  if (error) { toast('Erro ao excluir: ' + error.message, 'error'); return; }
+  document.getElementById('modalDetalheAndamento').classList.remove('open');
+  toast('Andamento excluído.');
+  const { data: rows } = await db.from('andamentos_processo')
+    .select('*').eq('pasta_id', a.pasta_id).order('data_hora', { ascending: false });
+  state.andamentosCNJ = rows || [];
+  renderAndamentosNasInstancias(state.andamentosCNJ);
 }
 
 function editarAndamentoAtual() {

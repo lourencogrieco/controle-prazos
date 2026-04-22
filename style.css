@@ -892,7 +892,7 @@ table {
 }
 
 thead th {
-  padding: 0 12px 10px;
+  padding: 8px 12px;
   text-align: left;
   font-family: "IBM Plex Mono", monospace;
   font-size: var(--text-xs);
@@ -986,6 +986,25 @@ tbody td {
 }
 
 /* ─── PASTA TABLE ─────────────────────────────────────────────── */
+.pasta-table th:first-child,
+.pasta-table td:first-child {
+  width: 36px;
+  min-width: 36px;
+  max-width: 36px;
+  padding-left: 8px;
+  padding-right: 4px;
+  text-align: center;
+}
+
+.pasta-table td:nth-child(2) {
+  border-left: 2px solid var(--ac);
+  padding-left: 14px;
+}
+
+.pasta-table th:nth-child(2) {
+  padding-left: 14px;
+}
+
 .pasta-table tbody tr {
   cursor: pointer;
   transition: background .12s;

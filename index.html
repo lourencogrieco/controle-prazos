@@ -876,15 +876,21 @@
               <span class="cfg-card-title">CADASTROS</span>
             </div>
             <div class="cfg-field-group" style="gap:8px">
-              <p class="cfg-hint">Configure as áreas e tipos de pasta antes de criar processos.</p>
-              <button class="btn-outline" style="width:100%;justify-content:flex-start;gap:10px" onclick="abrirModalAreas()">
-                <span style="font-size:1rem">⚖</span> Áreas Jurídicas
+              <button class="btn-outline cfg-cadastro-btn" onclick="abrirModalNovoCliente('configuracoes')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Clientes
               </button>
-              <button class="btn-outline" style="width:100%;justify-content:flex-start;gap:10px" onclick="abrirModalTiposPasta()">
-                <span style="font-size:1rem">📁</span> Tipos de Pasta
+              <button class="btn-outline cfg-cadastro-btn" onclick="abrirModalAreas()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="3" x2="12" y2="21"/><path d="M5 6l7-3 7 3"/><path d="M5 6L2 12h6L5 6z"/><path d="M19 6l3 6h-6l3-6z"/></svg>
+                Áreas Jurídicas
               </button>
-              <button class="btn-outline" style="width:100%;justify-content:flex-start;gap:10px" onclick="abrirModalConfig()">
-                <span style="font-size:1rem">🎨</span> Aparência do sistema
+              <button class="btn-outline cfg-cadastro-btn" onclick="abrirModalTiposPasta()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                Tipos de Pasta
+              </button>
+              <button class="btn-outline cfg-cadastro-btn" onclick="abrirModalConfig()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+                Aparência do sistema
               </button>
             </div>
           </div>

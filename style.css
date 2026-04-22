@@ -2351,6 +2351,19 @@ tbody td {
 }
 .cfg-hint strong { color: var(--tx); font-weight: 600; }
 
+.cfg-cadastro-btn {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 10px;
+  font-size: var(--text-sm);
+  padding: 9px 12px;
+  color: var(--tx);
+  border-color: var(--br);
+}
+.cfg-cadastro-btn:hover { border-color: var(--ac); color: var(--ac); }
+.cfg-cadastro-btn svg { flex-shrink: 0; opacity: .7; }
+.cfg-cadastro-btn:hover svg { opacity: 1; }
+
 /* SQL block in cfg */
 .cfg-sql {
   font-family: 'IBM Plex Mono', monospace;

@@ -1991,8 +1991,7 @@ tbody td {
   padding: 20px;
   backdrop-filter: blur(3px);
 }
-.modal-overlay.open,
-.modal-overlay:not(.hidden) {
+.modal-overlay.open {
   display: flex;
 }
 

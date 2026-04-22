@@ -504,11 +504,11 @@ function abrirModalNovaPasta(numero) {
   document.getElementById('pObs').value            = p?.descricao || '';
   document.getElementById('pDataAb').value         = p?.dataDistribuicao
     ? p.dataDistribuicao.split('/').reverse().join('-') : '';
-  document.getElementById('modalNovaPasta').classList.remove('hidden');
+  document.getElementById('modalNovaPasta').classList.add('open');
 }
 
 function fecharModalNovaPasta() {
-  document.getElementById('modalNovaPasta').classList.add('hidden');
+  document.getElementById('modalNovaPasta').classList.remove('open');
   document.getElementById('novaPastaForm').reset();
 }
 
@@ -625,11 +625,11 @@ function abrirModalNovoPrazo(id) {
     : p?.status === 'Em andamento' ? 'em_andamento' : 'pendente';
   document.getElementById('prazoDescricao').value    = p?.descricao || '';
   popularSelectsPastas();
-  document.getElementById('modalNovoPrazo').classList.remove('hidden');
+  document.getElementById('modalNovoPrazo').classList.add('open');
 }
 
 function fecharModalNovoPrazo() {
-  document.getElementById('modalNovoPrazo').classList.add('hidden');
+  document.getElementById('modalNovoPrazo').classList.remove('open');
   document.getElementById('novoPrazoForm').reset();
 }
 
@@ -694,11 +694,11 @@ function abrirModalNovaTarefa(id) {
   document.getElementById('tResponsavel').value      = t?.responsavel || '';
   document.getElementById('tDescricao').value        = t?.descricao || '';
   popularSelectsPastas();
-  document.getElementById('modalNovaTarefa').classList.remove('hidden');
+  document.getElementById('modalNovaTarefa').classList.add('open');
 }
 
 function fecharModalNovaTarefa() {
-  document.getElementById('modalNovaTarefa').classList.add('hidden');
+  document.getElementById('modalNovaTarefa').classList.remove('open');
   document.getElementById('novaTarefaForm').reset();
 }
 
@@ -771,11 +771,11 @@ function renderListaAreas() {
 
 function abrirModalAreas() {
   renderListaAreas();
-  document.getElementById('modalAreas').classList.remove('hidden');
+  document.getElementById('modalAreas').classList.add('open');
 }
 
 function fecharModalAreas() {
-  document.getElementById('modalAreas').classList.add('hidden');
+  document.getElementById('modalAreas').classList.remove('open');
   document.getElementById('novaAreaForm').reset();
 }
 
@@ -856,11 +856,11 @@ function renderListaTipos() {
 function abrirModalTiposPasta() {
   popularSelectAreaTipos();
   renderListaTipos();
-  document.getElementById('modalTiposPasta').classList.remove('hidden');
+  document.getElementById('modalTiposPasta').classList.add('open');
 }
 
 function fecharModalTiposPasta() {
-  document.getElementById('modalTiposPasta').classList.add('hidden');
+  document.getElementById('modalTiposPasta').classList.remove('open');
   document.getElementById('novoTipoForm').reset();
 }
 
@@ -914,11 +914,11 @@ function abrirModalNovoCliente(contexto) {
   document.getElementById('cEndereco').value     = '';
   document.getElementById('tituloClienteModal').textContent = 'Novo Cliente';
   document.getElementById('_clienteContexto').value = contexto || '';
-  document.getElementById('modalNovoCliente').classList.remove('hidden');
+  document.getElementById('modalNovoCliente').classList.add('open');
 }
 
 function fecharModalNovoCliente() {
-  document.getElementById('modalNovoCliente').classList.add('hidden');
+  document.getElementById('modalNovoCliente').classList.remove('open');
   document.getElementById('novoClienteForm').reset();
 }
 
@@ -1995,11 +1995,11 @@ document.querySelector('.hdr-btn[title="Configurações"]').addEventListener('cl
   document.getElementById('prevPrimary').style.background       = primary;
   document.getElementById('prevAccent').style.background        = accent;
   if (t.logoUrl) document.getElementById('cfgLogoPreview').src  = t.logoUrl;
-  document.getElementById('modalConfig').classList.remove('hidden');
+  document.getElementById('modalConfig').classList.add('open');
 });
 
 document.getElementById('cfgClose').addEventListener('click', () => {
-  document.getElementById('modalConfig').classList.add('hidden');
+  document.getElementById('modalConfig').classList.remove('open');
 });
 document.getElementById('cfgColorPrimary').addEventListener('input', e => {
   document.getElementById('prevPrimary').style.background       = e.target.value;
@@ -2021,7 +2021,7 @@ document.getElementById('cfgSalvar').addEventListener('click', () => {
   };
   localStorage.setItem(TEMA_KEY, JSON.stringify(tema));
   aplicarTema(tema);
-  document.getElementById('modalConfig').classList.add('hidden');
+  document.getElementById('modalConfig').classList.remove('open');
   toast('Configurações salvas');
 });
 document.getElementById('cfgReset').addEventListener('click', () => {
@@ -2037,7 +2037,7 @@ document.getElementById('cfgReset').addEventListener('click', () => {
   if (img) { img.src = 'logo.svg'; img.style.display = ''; }
   document.getElementById('cfgLogoPreviewWrap').style.background = '#08505D';
   document.getElementById('cfgLogoPreview').src = 'logo.svg';
-  document.getElementById('modalConfig').classList.add('hidden');
+  document.getElementById('modalConfig').classList.remove('open');
   toast('Tema restaurado para o padrão');
 });
 

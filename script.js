@@ -533,15 +533,14 @@ document.getElementById('pTipoPasta').addEventListener('change', atualizarPrevie
 document.getElementById('pAno').addEventListener('input', atualizarPreviewNumero);
 
 document.getElementById('pClienteSelect').addEventListener('change', e => {
-  const sel = e.target;
-  const opt = sel.options[sel.selectedIndex];
+  const clienteId = e.target.value;
   const pCliente = document.getElementById('pCliente');
-  if (opt.value && opt.dataset.nome) {
-    pCliente.value = opt.dataset.nome;
-    pCliente.required = false;
+  if (clienteId) {
+    const c = state.clientes.find(x => x.id === clienteId);
+    if (c) { pCliente.value = c.nome; pCliente.removeAttribute('required'); }
   } else {
     pCliente.value = '';
-    pCliente.required = true;
+    pCliente.setAttribute('required', '');
   }
 });
 

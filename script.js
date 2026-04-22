@@ -777,6 +777,7 @@ function abrirModalAreas() {
 function fecharModalAreas() {
   document.getElementById('modalAreas').classList.remove('open');
   document.getElementById('novaAreaForm').reset();
+  popularDropdownAreas();
 }
 
 document.getElementById('btnGerenciarAreas').addEventListener('click', abrirModalAreas);
@@ -1985,7 +1986,7 @@ function aplicarTema(tema) {
 const _temaSalvo = JSON.parse(localStorage.getItem(TEMA_KEY) || 'null');
 if (_temaSalvo) aplicarTema(_temaSalvo);
 
-document.querySelector('.hdr-btn[title="Configurações"]').addEventListener('click', () => {
+function abrirModalConfig() {
   const t = JSON.parse(localStorage.getItem(TEMA_KEY) || '{}');
   const primary = t.primary || '#08505D';
   const accent  = t.accent  || '#BCC2C5';
@@ -1996,7 +1997,7 @@ document.querySelector('.hdr-btn[title="Configurações"]').addEventListener('cl
   document.getElementById('prevAccent').style.background        = accent;
   if (t.logoUrl) document.getElementById('cfgLogoPreview').src  = t.logoUrl;
   document.getElementById('modalConfig').classList.add('open');
-});
+}
 
 document.getElementById('cfgClose').addEventListener('click', () => {
   document.getElementById('modalConfig').classList.remove('open');

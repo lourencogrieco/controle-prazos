@@ -2600,7 +2600,7 @@ async function sincronizarAndamentos(silencioso = false) {
       // DataJud não encontrou — se for TJSP tenta ESAJ diretamente
       if (json.index === 'api_publica_tjsp') {
         if (!silencioso) toast('DataJud sem dados para TJSP — consultando ESAJ…', 'info');
-        const esajRes  = await fetch(`/api/esaj-proxy?numero=${encodeURIComponent(processo)}`);
+        const esajRes  = await fetch(`https://esaj-proxy-lhub.fly.dev/esaj?numero=${encodeURIComponent(processo)}`);
         const esajJson = await esajRes.json();
         if (!esajRes.ok) {
           if (!silencioso) toast(esajJson.error || 'Processo não encontrado no ESAJ.', 'error');

@@ -58,7 +58,7 @@ export default async function handler(req) {
       },
       body: JSON.stringify({
         size: 5,
-        query: { match: { numeroProcesso: d } },
+        query: { match: { numeroProcesso: `${d.slice(0,7)}-${d.slice(7,9)}.${d.slice(9,13)}.${d.slice(13,14)}.${d.slice(14,16)}.${d.slice(16,20)}` } },
       }),
     });
 

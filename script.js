@@ -250,14 +250,15 @@ function pastaParaDb(p) {
 function dbParaPrazo(row) {
   return {
     id:          row.id,
-    pastaNr:     row.pasta_id || '',
+    pastaId:     row.pasta_id || null,
+    pastaNr:     '',
     cliente:     row.cliente || '',
     processo:    '',
     comarca:     '',
     tipoPrazo:   row.tipo || '',
     prazoFatal:  row.prazo,
     descricao:   row.descricao || '',
-    intimacaoId: null,
+    intimacaoId: row.intimacao_id || null,
     responsavel: row.responsavel || '',
     status:      row.status === 'concluido' ? 'Concluído'
                : row.status === 'atrasado'  ? 'Atrasado'
@@ -346,6 +347,10 @@ async function carregarDados() {
   ]);
   state.pastas     = (pr.data || []).map(dbParaPasta);
   state.prazos     = (pz.data || []).map(dbParaPrazo);
+  state.prazos.forEach(p => {
+    const pa = state.pastas.find(x => x.id === p.pastaId);
+    if (pa) { p.pastaNr = pa.numero; p.processo = pa.processo; p.comarca = pa.comarca; }
+  });
   state.tarefas    = (tf.data || []).map(dbParaTarefa);
   state.tiposPasta = (tp.data || []).map(dbParaTipoPasta);
   state.clientes   = (cl.data || []).map(dbParaCliente);
@@ -658,7 +663,8 @@ function popularResponsaveisDatalist(areaId) {
 function abrirModalNovoPrazo(id) {
   const p = id ? state.prazos.find(x => x.id === id) : null;
   document.getElementById('prazoId').value           = p?.id || '';
-  document.getElementById('prazoPastaSelect').value  = p?.pastaNr || '';
+  document.getElementById('prazoIntimacaoId').value  = p?.intimacaoId || '';
+  document.getElementById('prazoPastaSelect').value  = p?.pastaId || '';
   document.getElementById('prazoCliente').value      = p?.cliente || '';
   document.getElementById('prazoTipo').value         = p?.tipoPrazo || '';
   document.getElementById('prazoFatal').value        = p?.prazoFatal || '';
@@ -707,15 +713,16 @@ document.getElementById('novoPrazoForm').addEventListener('submit', async e => {
     if (!prazo) { toast('Informe a data fatal.', 'error'); return; }
 
     const obj = {
-      id:          prazoId || uid(),
-      empresa_id:  state.empresaId,
-      pasta_id:    document.getElementById('prazoPastaSelect').value || null,
-      cliente:     document.getElementById('prazoCliente').value.trim() || null,
+      id:           prazoId || uid(),
+      empresa_id:   state.empresaId,
+      pasta_id:     document.getElementById('prazoPastaSelect').value || null,
+      cliente:      document.getElementById('prazoCliente').value.trim() || null,
       tipo,
       prazo,
-      responsavel: document.getElementById('prazoResponsavel').value.trim() || null,
-      status:      document.getElementById('prazoStatus').value || 'pendente',
-      descricao:   document.getElementById('prazoDescricao').value.trim() || null,
+      responsavel:  document.getElementById('prazoResponsavel').value.trim() || null,
+      status:       document.getElementById('prazoStatus').value || 'pendente',
+      descricao:    document.getElementById('prazoDescricao').value.trim() || null,
+      intimacao_id: document.getElementById('prazoIntimacaoId')?.value || null,
     };
 
     console.log('[prazo] salvando:', obj);
@@ -1387,19 +1394,27 @@ function renderPrazosAba() {
 
   document.getElementById('prazosInfo').textContent = `${lista.length} registro${lista.length !== 1 ? 's' : ''}`;
   document.getElementById('tabelaPrazosAba').innerHTML = lista.length
-    ? lista.map(p => `<tr class="${rowClassPrazo(p.prazoFatal)}">
-        <td><span class="table-link">${p.pastaNr || '—'}</span></td>
-        <td>${p.cliente}</td>
-        <td style="font-family:'IBM Plex Mono',monospace;font-size:.72rem">${p.processo || '—'}</td>
-        <td>${p.comarca || '—'}</td>
-        <td>${p.tipoPrazo}</td>
-        <td>${formatDate(p.prazoFatal)}</td>
-        <td>${diasRestantesHtml(p.prazoFatal)}</td>
-        <td style="max-width:200px;font-size:.76rem">${p.descricao}</td>
-        <td>—</td>
-        <td>${p.responsavel}</td>
-        <td><span class="status-pill ${statusClass(p.status)}">${p.status}</span></td>
-      </tr>`).join('')
+    ? lista.map(p => {
+        const intimData = p.intimacaoId
+          ? (state.intimacoes.find(i => i.id === p.intimacaoId)?.dataPublicacao || null)
+          : null;
+        const pastaLink = p.pastaNr
+          ? `<a href="#" class="table-link" onclick="event.preventDefault();navegarPara('pastas');setTimeout(()=>abrirPasta('${p.pastaNr}'),100)">${p.pastaNr}</a>`
+          : '—';
+        return `<tr class="${rowClassPrazo(p.prazoFatal)}">
+          <td>${pastaLink}</td>
+          <td>${p.cliente}</td>
+          <td style="font-family:'IBM Plex Mono',monospace;font-size:.72rem">${p.processo || '—'}</td>
+          <td>${p.comarca || '—'}</td>
+          <td>${p.tipoPrazo}</td>
+          <td>${formatDate(p.prazoFatal)}</td>
+          <td>${diasRestantesHtml(p.prazoFatal)}</td>
+          <td style="max-width:200px;font-size:.76rem">${p.descricao}</td>
+          <td>${intimData ? formatDate(intimData) : '—'}</td>
+          <td>${p.responsavel}</td>
+          <td><span class="status-pill ${statusClass(p.status)}">${p.status}</span></td>
+        </tr>`;
+      }).join('')
     : `<tr><td colspan="11" class="tbl-empty">Nenhum prazo cadastrado.</td></tr>`;
 }
 
@@ -1638,14 +1653,15 @@ function criarPrazoDaIntimacao(intim) {
   popularSelectsPastas();
   // Pre-fill pasta se o número do processo bater com alguma pasta
   const pasta = state.pastas.find(p => p.processo && intim.processo && p.processo.replace(/\D/g,'') === intim.processo.replace(/\D/g,''));
-  document.getElementById('prazoId').value          = '';
-  document.getElementById('prazoPastaSelect').value = pasta?.id || '';
-  document.getElementById('prazoCliente').value     = pasta?.cliente || '';
-  document.getElementById('prazoTipo').value        = 'Manifestação';
-  document.getElementById('prazoFatal').value       = '';
-  document.getElementById('prazoResponsavel').value = '';
-  document.getElementById('prazoStatus').value      = 'pendente';
-  document.getElementById('prazoDescricao').value   =
+  document.getElementById('prazoId').value           = '';
+  document.getElementById('prazoIntimacaoId').value  = intim.id || '';
+  document.getElementById('prazoPastaSelect').value  = pasta?.id || '';
+  document.getElementById('prazoCliente').value      = pasta?.cliente || '';
+  document.getElementById('prazoTipo').value         = 'Manifestação';
+  document.getElementById('prazoFatal').value        = '';
+  document.getElementById('prazoResponsavel').value  = '';
+  document.getElementById('prazoStatus').value       = 'pendente';
+  document.getElementById('prazoDescricao').value    =
     `Intimação ${intim.tipoDocumento || intim.nomeClasse || ''} — ${intim.orgao} (${formatDate(intim.dataPublicacao)})`.trim();
   document.getElementById('modalNovoPrazo').classList.add('open');
 }

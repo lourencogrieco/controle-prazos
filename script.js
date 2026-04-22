@@ -24,6 +24,7 @@ const state = {
   pjeConfig:        null,
   andamentosCNJ:    [],
   currentPastaId:   null,
+  currentAndamento: null,
   usuarios:         [],
 };
 
@@ -2548,16 +2549,21 @@ function renderAndamentosNasInstancias(andamentos) {
 
   const rowHtml = a => {
     const data = a.data_hora ? new Date(a.data_hora).toLocaleDateString('pt-BR') : '—';
-    const tipo = a.is_intimacao
+    const isManual = a.tribunal === 'manual';
+    const tipoBadge = a.is_intimacao
       ? '<span style="background:rgba(255,170,0,.15);color:#ffaa00;padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase">Intimação</span>'
       : '<span style="background:var(--s2);color:var(--mu);padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase">Movimento</span>';
-    return `<tr>
+    const manualBadge = isManual
+      ? '<span style="background:rgba(0,200,150,.12);color:#00c896;padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase;margin-left:4px">Manual</span>'
+      : '';
+    const snippet = a.complemento ? `<div style="font-size:.72rem;color:var(--mu);margin-top:2px">${a.complemento.slice(0,80)}${a.complemento.length > 80 ? '…' : ''}</div>` : '';
+    return `<tr style="cursor:pointer" onclick="abrirDetalheAndamento('${a.id}')">
       <td style="white-space:nowrap;font-size:.78rem">${data}</td>
       <td>
         <div style="font-size:.82rem">${a.nome || '—'}</div>
-        ${a.complemento ? `<div style="font-size:.72rem;color:var(--mu);margin-top:2px">${a.complemento}</div>` : ''}
+        ${snippet}
       </td>
-      <td>${tipo}</td>
+      <td style="white-space:nowrap">${tipoBadge}${manualBadge}</td>
     </tr>`;
   };
 
@@ -2674,17 +2680,22 @@ async function sincronizarAndamentos(silencioso = false) {
 function abrirAndamentoManual() {
   const pasta = state.pastas.find(p => p.id === state.currentPastaId);
   if (!pasta) { toast('Abra uma pasta primeiro.', 'error'); return; }
+  document.getElementById('andManualId').value      = '';
   document.getElementById('andManualPastaId').value = pasta.id;
   document.getElementById('andManualData').value    = new Date().toISOString().slice(0, 10);
   document.getElementById('andManualTipo').value    = '';
   document.getElementById('andManualDesc').value    = '';
   document.getElementById('andManualGrau').value    = 'G1';
+  document.getElementById('andManualModalTitle').textContent = 'Lançar Andamento';
+  document.getElementById('btnSalvarAndManual').textContent  = 'Salvar';
   document.getElementById('modalAndamentoManual').classList.add('open');
 }
 
 document.getElementById('formAndamentoManual').addEventListener('submit', async e => {
   e.preventDefault();
   const btn = document.getElementById('btnSalvarAndManual');
+  const andId   = document.getElementById('andManualId').value;
+  const isEdit  = !!andId;
   btn.disabled = true; btn.textContent = 'Salvando…';
   try {
     const pastaId = document.getElementById('andManualPastaId').value;
@@ -2694,28 +2705,38 @@ document.getElementById('formAndamentoManual').addEventListener('submit', async 
     const desc    = document.getElementById('andManualDesc').value.trim();
     const grau    = document.getElementById('andManualGrau').value;
 
-    const row = {
-      id:              uid(),
-      empresa_id:      state.empresaId,
-      pasta_id:        pastaId,
-      numero_processo: pasta?.processo || null,
-      data_hora:       data + 'T00:00:00',
-      nome:            tipo,
-      complemento:     desc,
-      codigo:          null,
-      is_intimacao:    /intima[çc]/i.test(tipo),
-      grau,
-      tribunal:        'manual',
-      sincronizado_em: new Date().toISOString(),
-    };
-
-    const { error } = await db.from('andamentos_processo').insert(row);
-    if (error) { toast('Erro ao salvar: ' + error.message, 'error'); return; }
+    if (isEdit) {
+      const { error } = await db.from('andamentos_processo').update({
+        data_hora:    data + 'T00:00:00',
+        nome:         tipo,
+        complemento:  desc,
+        grau,
+        is_intimacao: /intima[çc]/i.test(tipo),
+      }).eq('id', andId);
+      if (error) { toast('Erro ao atualizar: ' + error.message, 'error'); return; }
+      toast('Andamento atualizado!');
+    } else {
+      const row = {
+        id:              uid(),
+        empresa_id:      state.empresaId,
+        pasta_id:        pastaId,
+        numero_processo: pasta?.processo || null,
+        data_hora:       data + 'T00:00:00',
+        nome:            tipo,
+        complemento:     desc,
+        codigo:          null,
+        is_intimacao:    /intima[çc]/i.test(tipo),
+        grau,
+        tribunal:        'manual',
+        sincronizado_em: new Date().toISOString(),
+      };
+      const { error } = await db.from('andamentos_processo').insert(row);
+      if (error) { toast('Erro ao salvar: ' + error.message, 'error'); return; }
+      toast('Andamento lançado com sucesso!');
+    }
 
     document.getElementById('modalAndamentoManual').classList.remove('open');
-    toast('Andamento lançado com sucesso!');
 
-    // Reload andamentos da pasta
     const { data: rows } = await db.from('andamentos_processo')
       .select('*').eq('pasta_id', pastaId).order('data_hora', { ascending: false });
     state.andamentosCNJ = rows || [];
@@ -2723,7 +2744,7 @@ document.getElementById('formAndamentoManual').addEventListener('submit', async 
   } catch (err) {
     toast('Erro inesperado: ' + err.message, 'error');
   } finally {
-    btn.disabled = false; btn.textContent = 'Salvar';
+    btn.disabled = false; btn.textContent = isEdit ? 'Atualizar' : 'Salvar';
   }
 });
 
@@ -2731,11 +2752,24 @@ document.getElementById('formAndamentoManual').addEventListener('submit', async 
 
 function abrirUploadDoc() {
   if (!state.currentPastaId) { toast('Abra uma pasta primeiro.', 'error'); return; }
-  document.getElementById('docPastaId').value    = state.currentPastaId;
-  document.getElementById('docNome').value       = '';
-  document.getElementById('docTipo').value       = '';
-  document.getElementById('docDescricao').value  = '';
-  document.getElementById('docArquivo').value    = '';
+  document.getElementById('docPastaId').value     = state.currentPastaId;
+  document.getElementById('docAndamentoId').value = '';
+  document.getElementById('docNome').value        = '';
+  document.getElementById('docTipo').value        = '';
+  document.getElementById('docDescricao').value   = '';
+  document.getElementById('docArquivo').value     = '';
+  document.getElementById('modalUploadDoc').classList.add('open');
+}
+
+function abrirUploadDocAndamento() {
+  const a = state.currentAndamento;
+  if (!a) return;
+  document.getElementById('docPastaId').value     = a.pasta_id;
+  document.getElementById('docAndamentoId').value = a.id;
+  document.getElementById('docNome').value        = '';
+  document.getElementById('docTipo').value        = '';
+  document.getElementById('docDescricao').value   = '';
+  document.getElementById('docArquivo').value     = '';
   document.getElementById('modalUploadDoc').classList.add('open');
 }
 
@@ -2779,25 +2813,25 @@ document.getElementById('formUploadDoc').addEventListener('submit', async e => {
   const btn = document.getElementById('btnSalvarDoc');
   btn.disabled = true; btn.textContent = 'Enviando…';
   try {
-    const pastaId  = document.getElementById('docPastaId').value;
-    const arquivo  = document.getElementById('docArquivo').files[0];
-    const nome     = document.getElementById('docNome').value.trim();
-    const tipo     = document.getElementById('docTipo').value;
-    const descricao = document.getElementById('docDescricao').value.trim();
+    const pastaId     = document.getElementById('docPastaId').value;
+    const andamentoId = document.getElementById('docAndamentoId').value || null;
+    const arquivo     = document.getElementById('docArquivo').files[0];
+    const nome        = document.getElementById('docNome').value.trim();
+    const tipo        = document.getElementById('docTipo').value;
+    const descricao   = document.getElementById('docDescricao').value.trim();
 
     if (!arquivo) { toast('Selecione um arquivo.', 'error'); return; }
 
-    // Upload para Supabase Storage
     const ext  = arquivo.name.split('.').pop();
     const path = `${state.empresaId}/${pastaId}/${uid()}.${ext}`;
     const { error: upErr } = await db.storage.from('documentos').upload(path, arquivo);
     if (upErr) { toast('Erro no upload: ' + upErr.message, 'error'); return; }
 
-    // Salva metadados
     const { error: dbErr } = await db.from('documentos_pasta').insert({
       id:            uid(),
       empresa_id:    state.empresaId,
       pasta_id:      pastaId,
+      andamento_id:  andamentoId,
       nome,
       tipo:          tipo || null,
       descricao:     descricao || null,
@@ -2809,7 +2843,11 @@ document.getElementById('formUploadDoc').addEventListener('submit', async e => {
 
     document.getElementById('modalUploadDoc').classList.remove('open');
     toast('Documento enviado com sucesso!');
-    await carregarDocumentos(pastaId);
+    if (andamentoId) {
+      await carregarDocumentosDetalhe(andamentoId);
+    } else {
+      await carregarDocumentos(pastaId);
+    }
   } catch (err) {
     toast('Erro inesperado: ' + err.message, 'error');
   } finally {
@@ -2824,6 +2862,86 @@ async function baixarDocumento(path, nome) {
   const a   = document.createElement('a');
   a.href = url; a.download = nome; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+// ── DETALHE DO ANDAMENTO ─────────────────────────────────────────────────────
+
+function abrirDetalheAndamento(andamentoId) {
+  const a = state.andamentosCNJ.find(x => x.id === andamentoId);
+  if (!a) { toast('Andamento não encontrado.', 'error'); return; }
+  state.currentAndamento = a;
+
+  const isManual = a.tribunal === 'manual';
+  const grauMap  = { G1: '1ª Instância', G2: '2ª Instância', SUP: 'Superior', JE: 'Juizado Especial' };
+  const data     = a.data_hora ? new Date(a.data_hora).toLocaleDateString('pt-BR') : '—';
+
+  document.getElementById('detalheAndTitulo').textContent = a.nome || 'Andamento';
+  document.getElementById('detalheAndInfo').innerHTML = `
+    <div>
+      <div class="field-label">Data</div>
+      <div style="font-size:.85rem;margin-top:4px">${data}</div>
+    </div>
+    <div>
+      <div class="field-label">Instância</div>
+      <div style="font-size:.85rem;margin-top:4px">${grauMap[a.grau] || a.grau || '—'}</div>
+    </div>
+    <div>
+      <div class="field-label">Tipo</div>
+      <div style="font-size:.85rem;margin-top:4px">${a.is_intimacao ? 'Intimação' : 'Movimento'}</div>
+    </div>
+    <div>
+      <div class="field-label">Origem</div>
+      <div style="font-size:.85rem;margin-top:4px">${isManual ? 'Manual' : (a.tribunal || '—').replace('api_publica_', '').toUpperCase()}</div>
+    </div>
+  `;
+  document.getElementById('detalheAndDesc').textContent = a.complemento || '(sem descrição)';
+
+  const editBtn = document.getElementById('btnEditarAndamento');
+  if (editBtn) editBtn.style.display = isManual ? '' : 'none';
+
+  carregarDocumentosDetalhe(andamentoId);
+  document.getElementById('modalDetalheAndamento').classList.add('open');
+}
+
+function editarAndamentoAtual() {
+  const a = state.currentAndamento;
+  if (!a || a.tribunal !== 'manual') return;
+  document.getElementById('modalDetalheAndamento').classList.remove('open');
+
+  document.getElementById('andManualId').value      = a.id;
+  document.getElementById('andManualPastaId').value = a.pasta_id;
+  document.getElementById('andManualData').value    = a.data_hora?.slice(0, 10) || '';
+  document.getElementById('andManualTipo').value    = a.nome || '';
+  document.getElementById('andManualDesc').value    = a.complemento || '';
+  document.getElementById('andManualGrau').value    = a.grau || 'G1';
+  document.getElementById('andManualModalTitle').textContent = 'Editar Andamento';
+  document.getElementById('btnSalvarAndManual').textContent  = 'Atualizar';
+  document.getElementById('modalAndamentoManual').classList.add('open');
+}
+
+async function carregarDocumentosDetalhe(andamentoId) {
+  const el = document.getElementById('detalheAndDocs');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--mu);font-size:.78rem;padding:6px 0">Carregando…</div>';
+  const { data } = await db.from('documentos_pasta')
+    .select('*').eq('andamento_id', andamentoId).order('created_at', { ascending: false });
+  const docs = data || [];
+  if (!docs.length) {
+    el.innerHTML = '<div style="color:var(--mu);font-size:.78rem;padding:6px 0">Nenhum documento vinculado</div>';
+    return;
+  }
+  el.innerHTML = docs.map(d => {
+    const tamanho = d.tamanho_bytes
+      ? (d.tamanho_bytes > 1048576 ? (d.tamanho_bytes / 1048576).toFixed(1) + ' MB' : Math.round(d.tamanho_bytes / 1024) + ' KB')
+      : '—';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--s2);border-radius:2px;margin-bottom:6px">
+      <div>
+        <div style="font-size:.82rem">${d.nome}</div>
+        <div style="font-size:.72rem;color:var(--mu)">${d.tipo ? d.tipo + ' · ' : ''}${tamanho}</div>
+      </div>
+      <button class="btn-link-sm" onclick="baixarDocumento('${d.storage_path}','${d.nome}')">⬇ Baixar</button>
+    </div>`;
+  }).join('');
 }
 
 async function excluirDocumento(id, path) {

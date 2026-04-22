@@ -277,7 +277,7 @@ function dbParaIntimacao(row) {
     link:             row.link || '',
     tipoDocumento:    row.tipo_documento || '',
     nomeClasse:       row.nome_classe || '',
-    status:           row.lida ? 'Lida' : 'Pendente',
+    status:           row.status_lhub || (row.lida ? 'cumprida' : 'pendente'),
     meioCompleto:     row.meio_completo || '',
   };
 }
@@ -1260,7 +1260,14 @@ document.querySelectorAll('.subtab[data-subtab]').forEach(btn => {
     document.getElementById(`subtab-${btn.dataset.subtab}`)?.classList.remove('hidden');
     if (btn.dataset.subtab === 'prazos')     renderPrazosAba();
     if (btn.dataset.subtab === 'tarefas')    renderTarefasAba();
-    if (btn.dataset.subtab === 'intimacoes') renderIntimacoesAba();
+    if (btn.dataset.subtab === 'intimacoes') {
+      const hoje = new Date().toISOString().slice(0, 10);
+      const elDe  = document.getElementById('filtroIntimacoesDe');
+      const elAte = document.getElementById('filtroIntimacoesAte');
+      if (elDe && !elDe.value)  elDe.value  = hoje;
+      if (elAte && !elAte.value) elAte.value = hoje;
+      renderIntimacoesAba();
+    }
   });
 });
 
@@ -1445,6 +1452,19 @@ document.getElementById('filtroTarefasStatus')?.addEventListener('change', rende
 // ──────────────────────────────────────────────────────────────────────
 // RENDER INTIMAÇÕES ABA
 // ──────────────────────────────────────────────────────────────────────
+const INTIM_STATUS_LABEL = {
+  pendente:       'Pendente',
+  cumprida:       'Cumprida',
+  prazo_agendado: 'Prazo agendado',
+  arquivada:      'Arquivada',
+};
+const INTIM_STATUS_CLASS = {
+  pendente:       'status-pill--warn',
+  cumprida:       'status-pill--done',
+  prazo_agendado: 'status-pill--info',
+  arquivada:      'status-pill--muted',
+};
+
 function renderIntimacoesAba() {
   const busca  = (document.getElementById('buscaIntimacoes')?.value ?? '').toLowerCase();
   const status = document.getElementById('filtroIntimacoesStatus')?.value ?? '';
@@ -1471,17 +1491,81 @@ function renderIntimacoesAba() {
     `${lista.length} registro${lista.length !== 1 ? 's' : ''} · ${ultimaSync}`;
 
   document.getElementById('tabelaIntimacoes').innerHTML = lista.length
-    ? lista.map(i => `<tr>
-        <td style="font-family:'IBM Plex Mono',monospace;font-size:.7rem;white-space:nowrap">${i.processo}</td>
-        <td><span class="badge-tribunal">${i.tribunal}</span></td>
-        <td style="font-size:.75rem;max-width:200px">${i.orgao}</td>
-        <td style="white-space:nowrap">${formatDate(i.dataPublicacao)}</td>
-        <td style="font-size:.75rem">${i.tipoDocumento || i.nomeClasse || '—'}</td>
-        <td style="font-size:.75rem">${i.nomeClasse || '—'}</td>
-        <td><span class="status-pill ${i.status === 'Lida' ? 'status-pill--done' : 'status-pill--warn'}">${i.status}</span></td>
-        <td>${i.link ? `<a href="${i.link}" target="_blank" class="int-link">Ver ↗</a>` : '—'}</td>
-      </tr>`).join('')
-    : `<tr><td colspan="8" class="tbl-empty">Nenhuma intimação encontrada. Configure os advogados na aba Configurações e aguarde a sincronização diária.</td></tr>`;
+    ? lista.map(i => {
+        const st   = i.status || 'pendente';
+        const lbl  = INTIM_STATUS_LABEL[st] || st;
+        const cls  = INTIM_STATUS_CLASS[st] || 'status-pill--warn';
+        const opts = Object.entries(INTIM_STATUS_LABEL)
+          .map(([v, t]) => `<option value="${v}"${v === st ? ' selected' : ''}>${t}</option>`)
+          .join('');
+        return `<tr>
+          <td style="font-family:'IBM Plex Mono',monospace;font-size:.7rem;white-space:nowrap">${i.processo}</td>
+          <td><span class="badge-tribunal">${i.tribunal}</span></td>
+          <td style="font-size:.75rem;max-width:180px">${i.orgao}</td>
+          <td style="white-space:nowrap">${formatDate(i.dataPublicacao)}</td>
+          <td style="font-size:.75rem">${i.tipoDocumento || i.nomeClasse || '—'}</td>
+          <td style="font-size:.75rem">${i.nomeClasse || '—'}</td>
+          <td>
+            <select class="intim-status-sel" data-id="${i.id}" style="font-size:.72rem;padding:3px 6px;background:var(--bg);border:1px solid var(--br);border-radius:2px;color:inherit;cursor:pointer">
+              ${opts}
+            </select>
+          </td>
+          <td style="white-space:nowrap">
+            <button class="btn-link-sm" onclick='criarPrazoDaIntimacao(${JSON.stringify(i)})' title="Criar prazo">+ Prazo</button>
+            <button class="btn-link-sm" onclick='criarTarefaDaIntimacao(${JSON.stringify(i)})' title="Criar tarefa" style="margin-left:4px">+ Tarefa</button>
+          </td>
+          <td>${i.link ? `<a href="${i.link}" target="_blank" class="int-link">Ver ↗</a>` : '—'}</td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="9" class="tbl-empty">Nenhuma intimação encontrada para o período selecionado.</td></tr>`;
+
+  // Bind status dropdowns
+  document.querySelectorAll('.intim-status-sel').forEach(sel => {
+    sel.addEventListener('change', e => {
+      alterarStatusIntimacao(sel.dataset.id, e.target.value);
+    });
+  });
+}
+
+async function alterarStatusIntimacao(id, novoStatus) {
+  const { error } = await db.from('intimacoes_pje')
+    .update({ status_lhub: novoStatus, lida: novoStatus !== 'pendente' })
+    .eq('id', id);
+  if (error) { toast('Erro ao atualizar status: ' + error.message, 'error'); return; }
+  const item = state.intimacoes.find(i => i.id === id);
+  if (item) item.status = novoStatus;
+  toast('Status atualizado!');
+}
+
+function criarPrazoDaIntimacao(intim) {
+  popularSelectsPastas();
+  // Pre-fill pasta se o número do processo bater com alguma pasta
+  const pasta = state.pastas.find(p => p.processo && intim.processo && p.processo.replace(/\D/g,'') === intim.processo.replace(/\D/g,''));
+  document.getElementById('prazoId').value          = '';
+  document.getElementById('prazoPastaSelect').value = pasta?.id || '';
+  document.getElementById('prazoCliente').value     = pasta?.cliente || '';
+  document.getElementById('prazoTipo').value        = 'Prazo Processual';
+  document.getElementById('prazoFatal').value       = '';
+  document.getElementById('prazoResponsavel').value = '';
+  document.getElementById('prazoStatus').value      = 'pendente';
+  document.getElementById('prazoDescricao').value   =
+    `Intimação ${intim.tipoDocumento || intim.nomeClasse || ''} — ${intim.orgao} (${formatDate(intim.dataPublicacao)})`.trim();
+  document.getElementById('modalNovoPrazo').classList.add('open');
+}
+
+function criarTarefaDaIntimacao(intim) {
+  popularSelectsPastas();
+  const pasta = state.pastas.find(p => p.processo && intim.processo && p.processo.replace(/\D/g,'') === intim.processo.replace(/\D/g,''));
+  document.getElementById('tarefaId').value          = '';
+  document.getElementById('tTitulo').value           = `Intimação: ${intim.tipoDocumento || intim.nomeClasse || intim.orgao}`;
+  document.getElementById('tTipo').value             = 'Processo';
+  document.getElementById('tPrioridade').value       = 'alta';
+  document.getElementById('tarefaPastaSelect').value = pasta?.id || '';
+  document.getElementById('tPrazo').value            = '';
+  document.getElementById('tResponsavel').value      = '';
+  document.getElementById('tDescricao').value        =
+    `Intimação publicada em ${formatDate(intim.dataPublicacao)}.\nÓrgão: ${intim.orgao}\nProcesso: ${intim.processo}`;
+  document.getElementById('modalNovaTarefa').classList.add('open');
 }
 
 async function sincronizarPJeData() {
@@ -2277,7 +2361,7 @@ async function carregarAndamentosCNJ(pastaId, numeroProcesso) {
   if (!listEl) return;
 
   if (!numeroProcesso) {
-    listEl.innerHTML = '<div class="empty-state">Número do processo não informado nesta pasta.</div>';
+    listEl.innerHTML = '<div class="empty-state">Número do processo não informado nesta pasta. Edite a pasta e preencha o campo "Número do Processo".</div>';
     return;
   }
 
@@ -2291,6 +2375,13 @@ async function carregarAndamentosCNJ(pastaId, numeroProcesso) {
 
   state.andamentosCNJ = data || [];
   renderAndamentosCNJ(state.andamentosCNJ);
+
+  // Auto-sync: triggers if never synced or last sync was > 6h ago
+  const ultimaSync = data?.[0]?.sincronizado_em ? new Date(data[0].sincronizado_em) : null;
+  const seisHorasAtras = new Date(Date.now() - 6 * 60 * 60 * 1000);
+  if (!ultimaSync || ultimaSync < seisHorasAtras) {
+    sincronizarAndamentos(true);
+  }
 }
 
 function renderAndamentosCNJ(andamentos) {
@@ -2352,25 +2443,25 @@ function renderAndamentosCNJ(andamentos) {
   `;
 }
 
-async function sincronizarAndamentos() {
+async function sincronizarAndamentos(silencioso = false) {
   const pasta = state.pastas.find(p => p.id === state.currentPastaId);
-  if (!pasta) { toast('Abra uma pasta primeiro.', 'error'); return; }
+  if (!pasta) { if (!silencioso) toast('Abra uma pasta primeiro.', 'error'); return; }
 
   const processo = pasta.processo;
   if (!processo) {
-    toast('Esta pasta não tem número de processo cadastrado. Edite a pasta e preencha o campo "Número do Processo".', 'error');
+    if (!silencioso) toast('Esta pasta não tem número de processo cadastrado. Edite a pasta e preencha o campo "Número do Processo".', 'error');
     return;
   }
 
   const btn = document.getElementById('btnSyncCNJ');
-  if (btn) { btn.disabled = true; btn.textContent = 'Sincronizando…'; }
+  if (btn) { btn.disabled = true; btn.textContent = silencioso ? 'Atualizando…' : 'Sincronizando…'; }
 
   try {
     const res  = await fetch(`/api/cnj-proxy?numero=${encodeURIComponent(processo)}`);
     const json = await res.json();
 
     if (!res.ok) {
-      toast(json.error || 'Erro ao consultar DataJud.', 'error');
+      if (!silencioso) toast(json.error || 'Erro ao consultar DataJud.', 'error');
       return;
     }
 
@@ -2393,19 +2484,28 @@ async function sincronizarAndamentos() {
       const { error } = await db
         .from('andamentos_processo')
         .upsert(rows, { onConflict: 'pasta_id,data_hora,codigo', ignoreDuplicates: false });
-      if (error) { toast('Erro ao salvar andamentos: ' + error.message, 'error'); return; }
+      if (error) { if (!silencioso) toast('Erro ao salvar andamentos: ' + error.message, 'error'); return; }
     }
 
-    const novosIntimacoes = movimentos.filter(m => m.isIntimacao);
-    await carregarAndamentosCNJ(pasta.id, processo);
+    // Reload from DB to show updated data
+    const { data } = await db
+      .from('andamentos_processo')
+      .select('*')
+      .eq('pasta_id', pasta.id)
+      .order('data_hora', { ascending: false });
+    state.andamentosCNJ = data || [];
+    renderAndamentosCNJ(state.andamentosCNJ);
 
-    const msg = rows.length
-      ? `${rows.length} movimentação(ões) sincronizada(s)${novosIntimacoes.length ? ` — ${novosIntimacoes.length} intimação(ões) detectada(s)` : ''}.`
-      : 'Nenhuma movimentação encontrada no DataJud.';
-    toast(msg);
+    if (!silencioso) {
+      const novosIntimacoes = movimentos.filter(m => m.isIntimacao);
+      const msg = rows.length
+        ? `${rows.length} movimentação(ões) sincronizada(s)${novosIntimacoes.length ? ` — ${novosIntimacoes.length} intimação(ões) detectada(s)` : ''}.`
+        : 'Nenhuma movimentação encontrada no DataJud.';
+      toast(msg);
+    }
   } catch (e) {
     console.error('Erro sincronizar CNJ:', e);
-    toast('Erro: ' + e.message, 'error');
+    if (!silencioso) toast('Erro: ' + e.message, 'error');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '↻ Sincronizar CNJ'; }
   }

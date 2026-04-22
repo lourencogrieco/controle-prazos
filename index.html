@@ -482,8 +482,10 @@
           <label class="select-field">
             <select id="filtroIntimacoesStatus">
               <option value="">Todos os status</option>
-              <option>Pendente</option>
-              <option>Lida</option>
+              <option value="pendente">Pendente</option>
+              <option value="cumprida">Cumprida</option>
+              <option value="prazo_agendado">Prazo agendado</option>
+              <option value="arquivada">Arquivada</option>
             </select>
           </label>
           <label style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--mu)">
@@ -506,6 +508,7 @@
                   <th>Tipo</th>
                   <th>Classe</th>
                   <th>Status</th>
+                  <th>Ações</th>
                   <th>Link</th>
                 </tr>
               </thead>

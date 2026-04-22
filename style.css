@@ -935,9 +935,21 @@ tbody td {
   text-transform: uppercase;
 }
 
-.status-pill.pendente   { background: var(--orange-soft); color: var(--orange); }
-.status-pill.andamento  { background: var(--gold-soft);   color: var(--gold); }
-.status-pill.concluido  { background: var(--green-soft);  color: var(--green); }
+.status-pill.pendente        { background: var(--orange-soft); color: var(--orange); }
+.status-pill.andamento       { background: var(--gold-soft);   color: var(--gold); }
+.status-pill.concluido       { background: var(--green-soft);  color: var(--green); }
+.status-pill--warn           { background: var(--orange-soft); color: var(--orange); }
+.status-pill--done           { background: var(--green-soft);  color: var(--green); }
+.status-pill--info           { background: rgba(80,160,255,.12); color: #50a0ff; }
+.status-pill--muted          { background: var(--s2); color: var(--mu); }
+
+.btn-link-sm {
+  background: none; border: none; padding: 0;
+  color: var(--ac); font-size: .72rem; font-weight: 600;
+  font-family: "IBM Plex Mono", monospace; cursor: pointer;
+  text-decoration: none; letter-spacing: .03em;
+}
+.btn-link-sm:hover { text-decoration: underline; }
 
 /* ─── RESPONSIVE ──────────────────────────────────────────────── */
 @media (max-width: 1400px) {

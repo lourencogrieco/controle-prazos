@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=13">
+  <link rel="stylesheet" href="style.css?v=14">
 </head>
 <body>
 <div class="app">
@@ -862,11 +862,12 @@
               <tr>
                 <th>NOME</th>
                 <th>PERFIL</th>
+                <th>ÁREA</th>
                 <th></th>
               </tr>
             </thead>
             <tbody id="tbodyUsuarios">
-              <tr><td colspan="3" style="text-align:center;color:var(--mu);padding:20px">Carregando...</td></tr>
+              <tr><td colspan="4" style="text-align:center;color:var(--mu);padding:20px">Carregando...</td></tr>
             </tbody>
           </table>
         </div>
@@ -1954,7 +1955,8 @@
         <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:14px">
           <div class="field">
             <span class="field-label">Responsável</span>
-            <input type="text" id="prazoResponsavel" placeholder="Nome do responsável">
+            <input type="text" id="prazoResponsavel" placeholder="Nome do responsável" list="prazoResponsavelList" autocomplete="off">
+            <datalist id="prazoResponsavelList"></datalist>
           </div>
           <div class="field">
             <span class="field-label">Status</span>
@@ -2065,6 +2067,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="script.js?v=13"></script>
+<script src="script.js?v=14"></script>
 </body>
 </html>

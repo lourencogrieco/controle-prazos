@@ -24,6 +24,7 @@ const state = {
   pjeConfig:        null,
   andamentosCNJ:    [],
   currentPastaId:   null,
+  usuarios:         [],
 };
 
 // ──────────────────────────────────────────────────────────────────────
@@ -331,7 +332,7 @@ function dbParaTarefa(row) {
 // ──────────────────────────────────────────────────────────────────────
 async function carregarDados() {
   const eid = state.empresaId;
-  const [pr, pz, tf, tp, cl, ar, it, cfg, ev] = await Promise.all([
+  const [pr, pz, tf, tp, cl, ar, it, cfg, ev, us] = await Promise.all([
     db.from('pastas').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
     db.from('prazos_lhub').select('*').eq('empresa_id', eid).order('prazo'),
     db.from('tarefas_lhub').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
@@ -341,6 +342,7 @@ async function carregarDados() {
     db.from('intimacoes_pje').select('*').eq('empresa_id', eid).order('data_disponibilizacao', { ascending: false }).limit(200),
     db.from('pje_config').select('*').eq('empresa_id', eid).maybeSingle(),
     db.from('agenda_eventos').select('*').eq('empresa_id', eid).order('data'),
+    db.from('usuarios_empresa').select('id,nome,perfil,area_id').eq('empresa_id', eid).order('nome'),
   ]);
   state.pastas     = (pr.data || []).map(dbParaPasta);
   state.prazos     = (pz.data || []).map(dbParaPrazo);
@@ -350,6 +352,7 @@ async function carregarDados() {
   state.areas      = (ar.data || []).map(dbParaArea);
   state.intimacoes = (it.data || []).map(dbParaIntimacao);
   state.pjeConfig  = cfg.data || null;
+  state.usuarios   = (us.data || []);
   // Carrega eventos da agenda no array local
   agendaEventos.length = 0;
   (ev.data || []).forEach(e => agendaEventos.push({
@@ -641,6 +644,16 @@ document.getElementById('prazoForm').addEventListener('submit', async e => {
   await carregarDados();
 });
 
+// Preenche datalist de responsáveis filtrando pelo area_id da pasta
+function popularResponsaveisDatalist(areaId) {
+  const dl = document.getElementById('prazoResponsavelList');
+  if (!dl) return;
+  const lista = areaId
+    ? state.usuarios.filter(u => u.area_id === areaId || !u.area_id)
+    : state.usuarios;
+  dl.innerHTML = lista.map(u => `<option value="${u.nome}"></option>`).join('');
+}
+
 // Modal completo de prazo
 function abrirModalNovoPrazo(id) {
   const p = id ? state.prazos.find(x => x.id === id) : null;
@@ -654,6 +667,7 @@ function abrirModalNovoPrazo(id) {
     : p?.status === 'Em andamento' ? 'em_andamento' : 'pendente';
   document.getElementById('prazoDescricao').value    = p?.descricao || '';
   popularSelectsPastas();
+  popularResponsaveisDatalist(null);
   document.getElementById('modalNovoPrazo').classList.add('open');
 }
 
@@ -672,7 +686,12 @@ document.getElementById('modalNovoPrazo').addEventListener('click', e => {
 document.getElementById('prazoPastaSelect').addEventListener('change', e => {
   const pastaId = e.target.value;
   const pasta   = state.pastas.find(p => p.id === pastaId);
-  if (pasta) document.getElementById('prazoCliente').value = pasta.cliente;
+  if (pasta) {
+    document.getElementById('prazoCliente').value = pasta.cliente;
+    popularResponsaveisDatalist(pasta.areaId);
+  } else {
+    popularResponsaveisDatalist(null);
+  }
 });
 
 document.getElementById('novoPrazoForm').addEventListener('submit', async e => {
@@ -680,30 +699,35 @@ document.getElementById('novoPrazoForm').addEventListener('submit', async e => {
   const btn = document.getElementById('btnSalvarPrazo');
   btn.disabled = true; btn.textContent = 'Salvando…';
   try {
+    if (!state.empresaId) { toast('Sessão não iniciada. Recarregue a página.', 'error'); return; }
     const prazoId = document.getElementById('prazoId').value;
-    const tipo = document.getElementById('prazoTipo').value;
-    if (!tipo) { toast('Selecione o tipo de prazo.', 'error'); return; }
+    const tipo    = document.getElementById('prazoTipo').value;
+    const prazo   = document.getElementById('prazoFatal').value;
+    if (!tipo)  { toast('Selecione o tipo de prazo.', 'error'); return; }
+    if (!prazo) { toast('Informe a data fatal.', 'error'); return; }
 
     const obj = {
       id:          prazoId || uid(),
       empresa_id:  state.empresaId,
       pasta_id:    document.getElementById('prazoPastaSelect').value || null,
-      cliente:     document.getElementById('prazoCliente').value.trim(),
+      cliente:     document.getElementById('prazoCliente').value.trim() || null,
       tipo,
-      prazo:       document.getElementById('prazoFatal').value,
-      responsavel: document.getElementById('prazoResponsavel').value.trim(),
-      status:      document.getElementById('prazoStatus').value,
+      prazo,
+      responsavel: document.getElementById('prazoResponsavel').value.trim() || null,
+      status:      document.getElementById('prazoStatus').value || 'pendente',
       descricao:   document.getElementById('prazoDescricao').value.trim() || null,
     };
 
-    const { error } = await db.from('prazos_lhub').upsert(obj);
+    console.log('[prazo] salvando:', obj);
+    const { data, error } = await db.from('prazos_lhub').upsert(obj).select();
+    console.log('[prazo] resultado:', data, error);
     if (error) { toast('Erro ao salvar prazo: ' + error.message, 'error'); return; }
     fecharModalNovoPrazo();
     toast('Prazo salvo!');
     await carregarDados();
   } catch (err) {
     toast('Erro inesperado: ' + err.message, 'error');
-    console.error('novoPrazoForm:', err);
+    console.error('[prazo] exception:', err);
   } finally {
     btn.disabled = false; btn.textContent = 'Salvar Prazo';
   }
@@ -1473,13 +1497,16 @@ function linkProcesso(processo, tribunal) {
   const segundo  = foroNum === 0;             // foro 0000 = 2ª instância
 
   if (trib.includes('tjsp')) {
-    const sistema = segundo ? 'cposg' : 'cpopg';
-    const action  = segundo ? 'open.do' : 'search.do';
     if (segundo) {
-      return `https://esaj.tjsp.jus.br/${sistema}/${action}` +
-        `?processo.numero=${encodeURIComponent(processo)}`;
+      // Extracts NNNNNNN-DD.AAAA from NNNNNNN-DD.AAAA.J.TT.OOOO
+      const numDigitoAno = processo.split('.').slice(0, 2).join('.');
+      return `https://esaj.tjsp.jus.br/cposg/search.do?cbPesquisa=NUMPROC` +
+        `&numeroDigitoAnoUnificado=${encodeURIComponent(numDigitoAno)}` +
+        `&foroNumeroUnificado=0000` +
+        `&dePesquisaNuUnificado=${encodeURIComponent(processo)}` +
+        `&tipoNuProcesso=UNIFICADO`;
     }
-    return `https://esaj.tjsp.jus.br/${sistema}/${action}?cbPesquisa=NUMPROC` +
+    return `https://esaj.tjsp.jus.br/cpopg/search.do?cbPesquisa=NUMPROC` +
       `&foroNumeroUnificado=${foroStr}` +
       `&dadosConsulta.valorConsultaNuUnificado=${encodeURIComponent(processo)}` +
       `&dadosConsulta.tipoNuProcesso=UNIFICADO`;
@@ -2367,10 +2394,12 @@ async function renderConfiguracoes() {
     return;
   }
   tbody.innerHTML = usuarios.map(u => {
-    const perfil = PERFIS_LABEL[u.perfil] || u.perfil || '—';
+    const perfil    = PERFIS_LABEL[u.perfil] || u.perfil || '—';
+    const areaNome  = state.areas.find(a => a.id === u.area_id)?.nome || '—';
     return `<tr>
       <td>${u.nome || '—'}</td>
       <td><span class="badge-perfil badge-perfil--${u.perfil}">${perfil}</span></td>
+      <td style="font-size:.78rem;color:var(--mu)">${areaNome}</td>
       <td><button class="btn-icon-sm" onclick="editarPerfil('${u.id}','${u.perfil||''}','${(u.nome||'').replace(/'/g,'')}')">✎</button></td>
     </tr>`;
   }).join('');

@@ -1,0 +1,203 @@
+// ──────────────────────────────────────────────────────────────────────
+// AGENDA
+// ──────────────────────────────────────────────────────────────────────
+const TIPO_COR = { 'Prazo':'prazo', 'Audiência':'audiencia', 'Reunião':'reuniao', 'Diligência':'diligencia', 'Lembrete':'lembrete' };
+
+const agendaEventos = [];
+
+let calAno = 2026;
+let calMes = 3;
+let calDataSelecionada = null;
+const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const DIAS_PT  = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+
+function eventosNoDia(iso)     { return agendaEventos.filter(e => e.data === iso); }
+function eventosPorTipoNoMes(ano, mes) {
+  const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`;
+  const tipos  = {};
+  agendaEventos.filter(e => e.data.startsWith(prefix)).forEach(e => {
+    tipos[e.tipo] = (tipos[e.tipo] || 0) + 1;
+  });
+  return tipos;
+}
+
+function renderCalendario() {
+  const titulo = document.getElementById('calMonthYear');
+  const grid   = document.getElementById('calGrid');
+  titulo.textContent = `${MESES_PT[calMes]} ${calAno}`;
+
+  const hoje    = new Date();
+  const hojeIso = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}`;
+
+  const primeiroDia     = new Date(calAno, calMes, 1).getDay();
+  const diasNoMes       = new Date(calAno, calMes + 1, 0).getDate();
+  const diasMesAnterior = new Date(calAno, calMes, 0).getDate();
+  const cells = [];
+
+  for (let i = primeiroDia - 1; i >= 0; i--) {
+    const d = diasMesAnterior - i;
+    const m = calMes === 0 ? 12 : calMes;
+    const a = calMes === 0 ? calAno - 1 : calAno;
+    cells.push({ dia:d, mes:m, ano:a, other:true });
+  }
+  for (let d = 1; d <= diasNoMes; d++) cells.push({ dia:d, mes:calMes+1, ano:calAno, other:false });
+  const resto = 42 - cells.length;
+  for (let d = 1; d <= resto; d++) {
+    const m = calMes === 11 ? 1 : calMes + 2;
+    const a = calMes === 11 ? calAno + 1 : calAno;
+    cells.push({ dia:d, mes:m, ano:a, other:true });
+  }
+
+  grid.innerHTML = cells.map(c => {
+    const iso      = `${c.ano}-${String(c.mes).padStart(2,'0')}-${String(c.dia).padStart(2,'0')}`;
+    const evs      = eventosNoDia(iso);
+    const isHoje   = iso === hojeIso;
+    const isSel    = iso === calDataSelecionada;
+    const isUrgente = evs.some(e => e.tipo === 'Prazo');
+    const classes  = ['cal-day', c.other ? 'cal-day--other' : '', isHoje ? 'cal-day--today' : '',
+      isSel ? 'cal-day--selected' : '', isUrgente && !c.other ? 'cal-day--has-urgent' : ''].filter(Boolean).join(' ');
+    const maxEv    = 3;
+    const visible  = evs.slice(0, maxEv);
+    const extra    = evs.length - maxEv;
+    const evHtml   = visible.map(e =>
+      `<span class="cal-ev cal-ev--${TIPO_COR[e.tipo] || 'lembrete'}" title="${e.titulo}">${e.titulo}</span>`
+    ).join('') + (extra > 0 ? `<span class="cal-ev cal-ev--more">+${extra} mais</span>` : '');
+    return `<div class="${classes}" data-date="${iso}" role="button" tabindex="0">
+      <span class="cal-day-num">${c.dia}</span>
+      <div class="cal-events">${evHtml}</div>
+    </div>`;
+  }).join('');
+
+  grid.querySelectorAll('.cal-day:not(.cal-day--other)').forEach(el => {
+    el.addEventListener('click', () => selecionarDia(el.dataset.date));
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') selecionarDia(el.dataset.date); });
+  });
+
+  renderResumoMes();
+  renderProximos();
+}
+
+function selecionarDia(iso) {
+  calDataSelecionada = iso;
+  renderCalendario();
+  const [a, m, d] = iso.split('-').map(Number);
+  const date = new Date(a, m - 1, d);
+  const label = `${DIAS_PT[date.getDay()]}, ${d} de ${MESES_PT[m - 1]}`;
+  document.getElementById('agendaDiaLabel').textContent  = `${d} de ${MESES_PT[m-1]}`;
+  document.getElementById('agendaDiaTitulo').textContent = label;
+  const evs  = eventosNoDia(iso);
+  const lista = document.getElementById('agendaDiaLista');
+  if (!evs.length) { lista.innerHTML = `<p class="agenda-aside-empty">Nenhum evento neste dia.</p>`; return; }
+  lista.innerHTML = evs.map(e => `
+    <div class="ev-item">
+      <span class="ev-dot" style="background:${corDot(e.tipo)}"></span>
+      <div class="ev-info">
+        <p class="ev-titulo">${e.titulo}</p>
+        <p class="ev-meta">${e.hora ? e.hora + ' · ' : ''}${e.responsavel}${e.local ? ' · ' + e.local : ''}</p>
+      </div>
+    </div>`).join('');
+}
+
+function renderProximos() {
+  const hoje   = new Date();
+  const base   = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  const limite = new Date(base); limite.setDate(limite.getDate() + 7);
+  const proximos = agendaEventos
+    .filter(e => { const d = new Date(e.data + 'T00:00:00'); return d >= base && d <= limite; })
+    .sort((a, b) => a.data.localeCompare(b.data));
+  const el = document.getElementById('agendaProximos');
+  if (!proximos.length) { el.innerHTML = `<p class="agenda-aside-empty">Nenhum evento nos próximos 7 dias.</p>`; return; }
+  const hojeIso = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}`;
+  el.innerHTML = proximos.map(e => {
+    const isHoje   = e.data === hojeIso;
+    const [,m,d]   = e.data.split('-').map(Number);
+    const label    = `${d}/${m}${e.hora ? ' · ' + e.hora : ''}`;
+    const badgeCls = isHoje ? 'ev-date-badge--today' : (e.tipo === 'Prazo' ? 'ev-date-badge--urgent' : '');
+    return `<div class="ev-item">
+      <span class="ev-dot" style="background:${corDot(e.tipo)}"></span>
+      <div class="ev-info">
+        <p class="ev-titulo">${e.titulo}</p>
+        <p class="ev-meta">${e.responsavel}</p>
+      </div>
+      <span class="ev-date-badge ${badgeCls}">${label}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderResumoMes() {
+  const contagem = eventosPorTipoNoMes(calAno, calMes);
+  const total    = Object.values(contagem).reduce((a, b) => a + b, 0) || 1;
+  const ordem    = ['Prazo','Audiência','Reunião','Diligência','Lembrete'];
+  const cores    = { Prazo:'#e74d3c', 'Audiência':'#1890d8', Reunião:'#1d8b60', Diligência:'#e07a17', Lembrete:'#aaa' };
+  document.getElementById('agendaResumo').innerHTML = ordem
+    .filter(t => contagem[t])
+    .map(t => {
+      const pct = Math.round((contagem[t] / total) * 100);
+      return `<div class="bar-item">
+        <div class="bar-label"><span>${t}</span><span>${contagem[t]} evento${contagem[t] > 1 ? 's' : ''}</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${cores[t]}"></div></div>
+      </div>`;
+    }).join('') || `<p class="agenda-aside-empty">Nenhum evento este mês.</p>`;
+}
+
+function corDot(tipo) {
+  return { Prazo:'#e74d3c', 'Audiência':'#1890d8', Reunião:'#1d8b60', Diligência:'#e07a17', Lembrete:'#aaa' }[tipo] || '#aaa';
+}
+
+document.getElementById('calPrev').addEventListener('click', () => {
+  calMes--; if (calMes < 0) { calMes = 11; calAno--; } renderCalendario();
+});
+document.getElementById('calNext').addEventListener('click', () => {
+  calMes++; if (calMes > 11) { calMes = 0; calAno++; } renderCalendario();
+});
+document.getElementById('calHoje').addEventListener('click', () => {
+  const h = new Date(); calAno = h.getFullYear(); calMes = h.getMonth();
+  const iso = `${calAno}-${String(calMes+1).padStart(2,'0')}-${String(h.getDate()).padStart(2,'0')}`;
+  calDataSelecionada = iso; renderCalendario(); selecionarDia(iso);
+});
+
+document.getElementById('btnNovoEvento').addEventListener('click', () => {
+  document.getElementById('modalEvento').classList.add('open');
+  if (calDataSelecionada) document.getElementById('evData').value = calDataSelecionada;
+});
+['modalClose','modalCancelar'].forEach(id => {
+  document.getElementById(id).addEventListener('click', () => {
+    document.getElementById('modalEvento').classList.remove('open');
+  });
+});
+document.getElementById('modalEvento').addEventListener('click', e => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+});
+document.getElementById('eventoForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const novo = {
+    empresa_id:  state.empresaId,
+    data:        document.getElementById('evData').value,
+    titulo:      document.getElementById('evTitulo').value.trim(),
+    tipo:        document.getElementById('evTipo').value,
+    hora:        document.getElementById('evHora').value || null,
+    responsavel: document.getElementById('evResponsavel').value,
+    local:       document.getElementById('evLocal').value.trim() || null,
+  };
+  const { data: salvo, error } = await db.from('agenda_eventos').insert(novo).select().single();
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  agendaEventos.push({ ...novo, id: salvo.id });
+  agendaEventos.sort((a, b) => a.data.localeCompare(b.data));
+  document.getElementById('modalEvento').classList.remove('open');
+  e.target.reset();
+  renderCalendario();
+  if (calDataSelecionada) selecionarDia(calDataSelecionada);
+  toast('Evento salvo!');
+});
+
+// ──────────────────────────────────────────────────────────────────────
+// INIT AGENDA
+// ──────────────────────────────────────────────────────────────────────
+renderPipeline();
+renderCalendario();
+
+const _h   = new Date();
+const _iso = `${_h.getFullYear()}-${String(_h.getMonth()+1).padStart(2,'0')}-${String(_h.getDate()).padStart(2,'0')}`;
+selecionarDia(_iso);
+
+inicializar();

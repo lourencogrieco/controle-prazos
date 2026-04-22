@@ -1,0 +1,503 @@
+// ──────────────────────────────────────────────────────────────────────
+// CRUD — ÁREAS JURÍDICAS
+// ──────────────────────────────────────────────────────────────────────
+function renderListaAreas() {
+  const el = document.getElementById('listaAreas');
+  if (!state.areas.length) {
+    el.innerHTML = '<p style="color:var(--mu);font-size:var(--text-sm)">Nenhuma área cadastrada.</p>';
+    return;
+  }
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse">
+    <tbody>${state.areas.map(a => `
+      <tr>
+        <td style="padding:6px 8px;font-size:.875rem;font-weight:600">${a.nome}</td>
+        <td style="padding:6px 4px;text-align:right">
+          <button onclick="excluirArea('${a.id}')" style="background:none;border:none;color:var(--mu);cursor:pointer;font-size:.9rem" title="Excluir">✕</button>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function abrirModalAreas() {
+  renderListaAreas();
+  document.getElementById('modalAreas').classList.add('open');
+}
+
+function fecharModalAreas() {
+  document.getElementById('modalAreas').classList.remove('open');
+  document.getElementById('novaAreaForm').reset();
+  popularDropdownAreas();
+}
+
+document.getElementById('btnGerenciarAreas').addEventListener('click', abrirModalAreas);
+document.getElementById('fecharAreas').addEventListener('click', fecharModalAreas);
+document.getElementById('modalAreas').addEventListener('click', e => {
+  if (e.target === e.currentTarget) fecharModalAreas();
+});
+
+document.getElementById('novaAreaForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const nome = document.getElementById('areaNome').value.trim();
+  if (state.areas.some(a => a.nome.toLowerCase() === nome.toLowerCase())) {
+    toast('Área já existe', 'error'); return;
+  }
+  const obj = { id: uid(), empresa_id: state.empresaId, nome, ordem: state.areas.length + 1 };
+  const { error } = await db.from('areas_juridicas').insert(obj);
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  toast('Área adicionada');
+  e.target.reset();
+  state.areas.push(dbParaArea(obj));
+  renderListaAreas();
+  popularDropdownAreas();
+  // Atualiza select de área no modal de tipos
+  const tipoAreaSel = document.getElementById('tipoArea');
+  if (tipoAreaSel) popularSelectAreaTipos();
+});
+
+async function excluirArea(id) {
+  const usada = state.tiposPasta.some(t => t.areaId === id);
+  if (usada) { toast('Remova os tipos desta área antes de excluí-la', 'error'); return; }
+  if (!confirm('Excluir esta área?')) return;
+  const { error } = await db.from('areas_juridicas').delete().eq('id', id).eq('empresa_id', state.empresaId);
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  state.areas = state.areas.filter(a => a.id !== id);
+  renderListaAreas();
+  popularDropdownAreas();
+  toast('Área excluída');
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// CRUD — TIPOS DE PASTA
+// ──────────────────────────────────────────────────────────────────────
+function popularSelectAreaTipos() {
+  const sel = document.getElementById('tipoArea');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Selecionar área…</option>' +
+    state.areas.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
+}
+
+function renderListaTipos() {
+  const el = document.getElementById('listaTiposPasta');
+  if (!state.tiposPasta.length) {
+    el.innerHTML = '<p style="color:var(--mu);font-size:var(--text-sm)">Nenhum tipo cadastrado.</p>';
+    return;
+  }
+  const areaNome = id => state.areas.find(a => a.id === id)?.nome || '—';
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse">
+    <thead><tr>
+      <th style="text-align:left;padding:4px 8px;font-size:.7rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Área</th>
+      <th style="text-align:left;padding:4px 8px;font-size:.7rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Cód.</th>
+      <th style="text-align:left;padding:4px 8px;font-size:.7rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Nome</th>
+      <th style="width:36px;border-bottom:1px solid var(--br)"></th>
+    </tr></thead>
+    <tbody>${state.tiposPasta.map(t => `
+      <tr>
+        <td style="padding:6px 8px;font-size:.78rem;color:var(--mu)">${areaNome(t.areaId)}</td>
+        <td style="padding:6px 8px;font-weight:700;font-family:'IBM Plex Mono',monospace;font-size:.82rem">${t.codigo}</td>
+        <td style="padding:6px 8px;font-size:.875rem">${t.nome}</td>
+        <td style="padding:6px 8px">
+          <button onclick="excluirTipoPasta('${t.id}')" style="background:none;border:none;color:var(--mu);cursor:pointer;font-size:.9rem" title="Excluir">✕</button>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function abrirModalTiposPasta() {
+  popularSelectAreaTipos();
+  renderListaTipos();
+  document.getElementById('modalTiposPasta').classList.add('open');
+}
+
+function fecharModalTiposPasta() {
+  document.getElementById('modalTiposPasta').classList.remove('open');
+  document.getElementById('novoTipoForm').reset();
+}
+
+document.getElementById('btnGerenciarTipos').addEventListener('click', abrirModalTiposPasta);
+document.getElementById('fecharTiposPasta').addEventListener('click', fecharModalTiposPasta);
+document.getElementById('modalTiposPasta').addEventListener('click', e => {
+  if (e.target === e.currentTarget) fecharModalTiposPasta();
+});
+
+document.getElementById('novoTipoForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const areaId = document.getElementById('tipoArea').value;
+  const codigo = Number(document.getElementById('tipoCodigo').value);
+  const nome   = document.getElementById('tipoNome').value.trim();
+
+  if (state.tiposPasta.some(t => t.areaId === areaId && t.codigo === codigo)) {
+    toast(`Código ${codigo} já existe nesta área`, 'error'); return;
+  }
+
+  const obj = { id: uid(), empresa_id: state.empresaId, codigo, nome, area_id: areaId };
+  const { error } = await db.from('tipos_pasta').insert(obj);
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  toast('Tipo adicionado');
+  e.target.reset();
+  state.tiposPasta.push({ id: obj.id, codigo, nome, areaId });
+  state.tiposPasta.sort((a, b) => a.codigo - b.codigo);
+  renderListaTipos();
+});
+
+async function excluirTipoPasta(id) {
+  if (!confirm('Excluir este tipo de pasta?')) return;
+  const { error } = await db.from('tipos_pasta').delete().eq('id', id).eq('empresa_id', state.empresaId);
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  state.tiposPasta = state.tiposPasta.filter(t => t.id !== id);
+  renderListaTipos();
+  popularDropdownTipos();
+  toast('Tipo excluído');
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// CRUD — CLIENTES
+// ──────────────────────────────────────────────────────────────────────
+function abrirModalNovoCliente(contexto, cliente) {
+  const g = id => document.getElementById(id);
+  g('clienteId').value   = cliente?.id || '';
+  g('cNome').value       = cliente?.nome || '';
+  const radio = document.querySelector(`input[name="cTipo"][value="${cliente?.tipo || 'PJ'}"]`);
+  if (radio) radio.checked = true;
+  g('cCpfCnpj').value    = cliente?.cpfCnpj || '';
+  g('cTelefone').value   = cliente?.telefone || '';
+  g('cEmail').value      = cliente?.email || '';
+  if (g('cRua'))         g('cRua').value         = cliente?.rua || '';
+  if (g('cNumero'))      g('cNumero').value       = cliente?.numero || '';
+  if (g('cComplemento')) g('cComplemento').value  = cliente?.complemento || '';
+  if (g('cBairro'))      g('cBairro').value       = cliente?.bairro || '';
+  if (g('cCep'))         g('cCep').value          = cliente?.cep || '';
+  if (g('cCidade'))      g('cCidade').value       = cliente?.cidade || '';
+  if (g('cEstado'))      g('cEstado').value       = cliente?.estado || '';
+  g('tituloClienteModal').textContent = cliente ? 'Editar Cliente' : 'Novo Cliente';
+  g('_clienteContexto').value = contexto || '';
+  g('modalNovoCliente').classList.add('open');
+}
+
+function fecharModalNovoCliente() {
+  document.getElementById('modalNovoCliente').classList.remove('open');
+  document.getElementById('novoClienteForm').reset();
+}
+
+document.getElementById('btnNovoClientePasta').addEventListener('click', () => abrirModalNovoCliente('pasta'));
+document.getElementById('fecharNovoCliente').addEventListener('click', fecharModalNovoCliente);
+document.getElementById('btnCancelarCliente').addEventListener('click', fecharModalNovoCliente);
+document.getElementById('modalNovoCliente').addEventListener('click', e => {
+  if (e.target === e.currentTarget) fecharModalNovoCliente();
+});
+
+document.getElementById('novoClienteForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('btnSalvarCliente');
+  btn.disabled = true; btn.textContent = 'Salvando…';
+
+  try {
+    const g = id => document.getElementById(id);
+    const existingId = g('clienteId')?.value || '';
+    const obj = {
+      id:          existingId || uid(),
+      empresa_id:  state.empresaId,
+      nome:        g('cNome').value.trim().toUpperCase(),
+      tipo:        document.querySelector('input[name="cTipo"]:checked').value,
+      cpf_cnpj:    g('cCpfCnpj')?.value?.trim() || null,
+      telefone:    g('cTelefone')?.value?.trim() || null,
+      email:       g('cEmail')?.value?.trim() || null,
+      rua:         g('cRua')?.value?.trim() || null,
+      numero:      g('cNumero')?.value?.trim() || null,
+      complemento: g('cComplemento')?.value?.trim() || null,
+      bairro:      g('cBairro')?.value?.trim() || null,
+      cep:         g('cCep')?.value?.trim() || null,
+      cidade:      g('cCidade')?.value?.trim() || null,
+      estado:      g('cEstado')?.value || null,
+    };
+
+    const { error } = await db.from('clientes_lhub').upsert(obj);
+    btn.disabled = false; btn.textContent = 'Salvar Cliente';
+    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+
+    if (existingId) {
+      const idx = state.clientes.findIndex(c => c.id === existingId);
+      if (idx !== -1) state.clientes[idx] = dbParaCliente(obj);
+    } else {
+      state.clientes.push(dbParaCliente(obj));
+    }
+    state.clientes.sort((a, b) => a.nome.localeCompare(b.nome));
+    popularDropdownClientes();
+    if (document.getElementById('listaClientes')) renderListaClientes();
+
+    const ctx = g('_clienteContexto')?.value;
+    fecharModalNovoCliente();
+    toast(existingId ? 'Cliente atualizado' : 'Cliente cadastrado');
+
+    if (ctx === 'pasta') {
+      document.getElementById('pClienteSelect').value = obj.id;
+      document.getElementById('pCliente').value = obj.nome;
+    } else if (ctx === 'gerenciar') {
+      abrirModalGerenciarClientes();
+    }
+  } catch (err) {
+    btn.disabled = false; btn.textContent = 'Salvar Cliente';
+    toast('Erro inesperado: ' + err.message, 'error');
+  }
+});
+
+// ──────────────────────────────────────────────────────────────────────
+// GERENCIAR CLIENTES
+// ──────────────────────────────────────────────────────────────────────
+function renderListaClientes() {
+  const el = document.getElementById('listaClientes');
+  if (!el) return;
+  if (!state.clientes.length) {
+    el.innerHTML = '<p style="color:var(--mu);font-size:var(--text-sm);padding:8px 0">Nenhum cliente cadastrado.</p>';
+    return;
+  }
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse">
+    <thead><tr>
+      <th style="text-align:left;padding:5px 8px;font-size:.68rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Nome</th>
+      <th style="text-align:left;padding:5px 8px;font-size:.68rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Tipo</th>
+      <th style="text-align:left;padding:5px 8px;font-size:.68rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Telefone</th>
+      <th style="text-align:left;padding:5px 8px;font-size:.68rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Cidade</th>
+      <th style="width:72px;border-bottom:1px solid var(--br)"></th>
+    </tr></thead>
+    <tbody>${state.clientes.map(c => `
+      <tr>
+        <td style="padding:6px 8px;font-size:.82rem;font-weight:600">${c.nome}</td>
+        <td style="padding:6px 8px;font-size:.78rem;color:var(--mu)">${c.tipo}</td>
+        <td style="padding:6px 8px;font-size:.78rem;color:var(--mu)">${c.telefone || '—'}</td>
+        <td style="padding:6px 8px;font-size:.78rem;color:var(--mu)">${c.cidade || '—'}</td>
+        <td style="padding:6px 8px;display:flex;gap:6px">
+          <button onclick="editarCliente('${c.id}')" style="background:none;border:none;color:var(--mu);cursor:pointer;font-size:.85rem" title="Editar">✎</button>
+          <button onclick="excluirCliente('${c.id}')" style="background:none;border:none;color:var(--mu);cursor:pointer;font-size:.85rem" title="Excluir">✕</button>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function editarCliente(id) {
+  const c = state.clientes.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('modalGerenciarClientes').classList.remove('open');
+  abrirModalNovoCliente('gerenciar', c);
+}
+
+async function excluirCliente(id) {
+  if (!confirm('Excluir este cliente?')) return;
+  const { error } = await db.from('clientes_lhub').delete().eq('id', id).eq('empresa_id', state.empresaId);
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  state.clientes = state.clientes.filter(c => c.id !== id);
+  popularDropdownClientes();
+  renderListaClientes();
+  toast('Cliente excluído');
+}
+
+function abrirModalGerenciarClientes() {
+  renderListaClientes();
+  document.getElementById('modalGerenciarClientes').classList.add('open');
+}
+
+function fecharModalGerenciarClientes() {
+  document.getElementById('modalGerenciarClientes').classList.remove('open');
+}
+document.getElementById('modalGerenciarClientes').addEventListener('click', e => {
+  if (e.target === e.currentTarget) fecharModalGerenciarClientes();
+});
+
+// ──────────────────────────────────────────────────────────────────────
+// PERSONALIZAÇÃO / TEMA
+// ──────────────────────────────────────────────────────────────────────
+const TEMA_KEY = 'lhub_tema';
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return { r, g, b };
+}
+
+function lighten(hex, pct) {
+  const { r, g, b } = hexToRgb(hex);
+  const f = pct / 100;
+  return `rgb(${Math.round(r+(255-r)*f)},${Math.round(g+(255-g)*f)},${Math.round(b+(255-b)*f)})`;
+}
+
+function aplicarTema(tema) {
+  const root = document.documentElement;
+  if (tema.primary) {
+    root.style.setProperty('--navy',     tema.primary);
+    root.style.setProperty('--navy-mid', tema.primary);
+    root.style.setProperty('--ac',       tema.primary);
+    root.style.setProperty('--ac-soft',  lighten(tema.primary, 88));
+  }
+  if (tema.accent) {
+    root.style.setProperty('--gold',      tema.accent);
+    root.style.setProperty('--gold-soft', lighten(tema.accent, 82));
+  }
+  if (tema.logoUrl) {
+    const img = document.getElementById('brandLogo');
+    if (img) { img.src = tema.logoUrl; img.style.display = ''; }
+  }
+}
+
+const _temaSalvo = JSON.parse(localStorage.getItem(TEMA_KEY) || 'null');
+if (_temaSalvo) aplicarTema(_temaSalvo);
+
+function abrirModalConfig() {
+  const t = JSON.parse(localStorage.getItem(TEMA_KEY) || '{}');
+  const primary = t.primary || '#08505D';
+  const accent  = t.accent  || '#BCC2C5';
+  document.getElementById('cfgColorPrimary').value              = primary;
+  document.getElementById('cfgColorAccent').value               = accent;
+  document.getElementById('cfgLogoUrl').value                   = t.logoUrl || '';
+  document.getElementById('prevPrimary').style.background       = primary;
+  document.getElementById('prevAccent').style.background        = accent;
+  if (t.logoUrl) document.getElementById('cfgLogoPreview').src  = t.logoUrl;
+  document.getElementById('modalConfig').classList.add('open');
+}
+
+document.getElementById('cfgClose').addEventListener('click', () => {
+  document.getElementById('modalConfig').classList.remove('open');
+});
+document.getElementById('cfgColorPrimary').addEventListener('input', e => {
+  document.getElementById('prevPrimary').style.background       = e.target.value;
+  document.getElementById('cfgLogoPreviewWrap').style.background = e.target.value;
+});
+document.getElementById('cfgColorAccent').addEventListener('input', e => {
+  document.getElementById('prevAccent').style.background = e.target.value;
+});
+document.getElementById('cfgLogoUrl').addEventListener('input', e => {
+  const img = document.getElementById('cfgLogoPreview');
+  img.src = e.target.value || 'logo.png';
+  img.style.display = '';
+});
+document.getElementById('cfgSalvar').addEventListener('click', () => {
+  const tema = {
+    primary: document.getElementById('cfgColorPrimary').value,
+    accent:  document.getElementById('cfgColorAccent').value,
+    logoUrl: document.getElementById('cfgLogoUrl').value.trim() || null,
+  };
+  localStorage.setItem(TEMA_KEY, JSON.stringify(tema));
+  aplicarTema(tema);
+  document.getElementById('modalConfig').classList.remove('open');
+  toast('Configurações salvas');
+});
+document.getElementById('cfgReset').addEventListener('click', () => {
+  localStorage.removeItem(TEMA_KEY);
+  const root = document.documentElement;
+  ['--navy','--navy-mid','--ac','--ac-soft','--gold','--gold-soft'].forEach(v => root.style.removeProperty(v));
+  document.getElementById('cfgColorPrimary').value              = '#08505D';
+  document.getElementById('cfgColorAccent').value               = '#BCC2C5';
+  document.getElementById('cfgLogoUrl').value                   = '';
+  document.getElementById('prevPrimary').style.background       = '#08505D';
+  document.getElementById('prevAccent').style.background        = '#BCC2C5';
+  const img = document.getElementById('brandLogo');
+  if (img) { img.src = 'logo.svg'; img.style.display = ''; }
+  document.getElementById('cfgLogoPreviewWrap').style.background = '#08505D';
+  document.getElementById('cfgLogoPreview').src = 'logo.svg';
+  document.getElementById('modalConfig').classList.remove('open');
+  toast('Tema restaurado para o padrão');
+});
+
+// ──────────────────────────────────────────────────────────────────────
+// CONFIGURAÇÕES (view)
+// ──────────────────────────────────────────────────────────────────────
+async function renderConfiguracoes() {
+  // Preenche áreas no select do modal
+  const selArea = document.getElementById('convArea');
+  if (selArea && state.areas?.length) {
+    selArea.innerHTML = '<option value="">— Todas as áreas —</option>' +
+      state.areas.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
+  }
+
+  // PJe nomes
+  const ta = document.getElementById('cfgPjeNomes');
+  if (ta && state.pjeConfig?.nomes) ta.value = state.pjeConfig.nomes.join('\n');
+
+  // Usuários
+  const { data: usuarios } = await db
+    .from('usuarios_empresa')
+    .select('id, nome, perfil')
+    .eq('empresa_id', state.empresaId)
+    .order('nome');
+
+  const tbody = document.getElementById('tbodyUsuarios');
+  if (!tbody) return;
+  if (!usuarios?.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--mu);padding:20px">Nenhum usuário</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = usuarios.map(u => {
+    const perfil    = PERFIS_LABEL[u.perfil] || u.perfil || '—';
+    const areaNome  = state.areas.find(a => a.id === u.area_id)?.nome || '—';
+    return `<tr>
+      <td>${u.nome || '—'}</td>
+      <td><span class="badge-perfil badge-perfil--${u.perfil}">${perfil}</span></td>
+      <td style="font-size:.78rem;color:var(--mu)">${areaNome}</td>
+      <td><button class="btn-icon-sm" onclick="editarPerfil('${u.id}','${u.perfil||''}','${(u.nome||'').replace(/'/g,'')}')">✎</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function salvarPjeConfig() {
+  const ta = document.getElementById('cfgPjeNomes');
+  const nomes = ta.value.split('\n').map(n => n.trim()).filter(Boolean);
+  if (!nomes.length) { toast('Informe ao menos um nome.', 'error'); return; }
+  const { error } = await db.from('pje_config')
+    .update({ nomes })
+    .eq('empresa_id', state.empresaId);
+  if (error) { toast('Erro ao salvar.', 'error'); return; }
+  state.pjeConfig = { ...state.pjeConfig, nomes };
+  toast('Configuração PJe salva!');
+}
+
+function abrirModalConvidarUsuario() {
+  document.getElementById('modalConvidarUsuario').classList.add('open');
+}
+function fecharModalConvidarUsuario() {
+  document.getElementById('modalConvidarUsuario').classList.remove('open');
+  document.getElementById('convNome').value = '';
+  document.getElementById('convEmail').value = '';
+}
+
+async function convidarUsuario() {
+  const nome   = document.getElementById('convNome').value.trim();
+  const email  = document.getElementById('convEmail').value.trim();
+  const perfil = document.getElementById('convPerfil').value;
+  const areaId = document.getElementById('convArea').value || null;
+  if (!nome || !email) { toast('Preencha nome e e-mail.', 'error'); return; }
+
+  // Cria registro na usuarios_empresa (sem auth — admin vincula depois)
+  const { error } = await db.from('usuarios_empresa').insert({
+    empresa_id: state.empresaId,
+    nome,
+    email,
+    perfil,
+    area_id: areaId,
+  });
+  if (error) { toast('Erro ao convidar: ' + error.message, 'error'); return; }
+  toast(`${nome} adicionado! Peça para ele criar conta com o e-mail ${email}.`);
+  fecharModalConvidarUsuario();
+  renderConfiguracoes();
+}
+
+function editarPerfil(userId, perfilAtual, nome) {
+  document.getElementById('editPerfilUserId').value = userId;
+  document.getElementById('editPerfilNome').textContent = nome || userId;
+  document.getElementById('editPerfilSelect').value = perfilAtual || 'advogado';
+  document.getElementById('modalEditarPerfil').classList.add('open');
+}
+
+async function salvarEdicaoPerfil() {
+  const userId = document.getElementById('editPerfilUserId').value;
+  const perfil = document.getElementById('editPerfilSelect').value;
+  if (!userId || userId === 'undefined') {
+    toast('ID do usuário inválido — recarregue a página.', 'error');
+    return;
+  }
+  const { error } = await db.rpc('update_user_perfil', { p_id: userId, p_perfil: perfil });
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  document.getElementById('modalEditarPerfil').classList.remove('open');
+  toast('Perfil atualizado!');
+  renderConfiguracoes();
+}

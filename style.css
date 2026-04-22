@@ -1365,6 +1365,8 @@ tbody td {
 
 .andamento-table-wrap { margin-top: 4px; }
 
+#cnj-andamentos-list { padding: 14px 16px; }
+
 .andamento-table { width: 100%; border-collapse: collapse; }
 .andamento-table th {
   padding: 6px 10px 8px;

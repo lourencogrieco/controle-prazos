@@ -11,17 +11,19 @@ const db = supabase.createClient(SUPA_URL, SUPA_KEY);
 // STATE
 // ──────────────────────────────────────────────────────────────────────
 const state = {
-  user:        null,
-  empresaId:   null,
-  meuPerfil:   null,
-  pastas:      [],
-  prazos:      [],
-  tarefas:     [],
-  tiposPasta:  [],
-  clientes:    [],
-  areas:       [],
-  intimacoes:  [],
-  pjeConfig:   null,
+  user:             null,
+  empresaId:        null,
+  meuPerfil:        null,
+  pastas:           [],
+  prazos:           [],
+  tarefas:          [],
+  tiposPasta:       [],
+  clientes:         [],
+  areas:            [],
+  intimacoes:       [],
+  pjeConfig:        null,
+  andamentosCNJ:    [],
+  currentPastaId:   null,
 };
 
 // ──────────────────────────────────────────────────────────────────────
@@ -1986,6 +1988,8 @@ function abrirPasta(numero) {
   const p = state.pastas.find(x => x.numero === numero);
   if (!p) return;
 
+  state.currentPastaId = p.id;
+
   document.getElementById('pastas-list').classList.add('hidden');
   document.getElementById('pastas-detail').classList.remove('hidden');
   document.getElementById('pastaNumeroDetalhe').textContent = p.numero;
@@ -2015,6 +2019,8 @@ function abrirPasta(numero) {
 
   const btnEditar = document.getElementById('pastaEditarBtn');
   if (btnEditar) btnEditar.onclick = () => abrirModalNovaPasta(p.numero);
+
+  carregarAndamentosCNJ(p.id, p.processo);
 }
 
 document.getElementById('btnVoltarPastas').addEventListener('click', () => {
@@ -2260,4 +2266,147 @@ async function salvarEdicaoPerfil() {
   document.getElementById('modalEditarPerfil').classList.remove('open');
   toast('Perfil atualizado!');
   renderConfiguracoes();
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// CNJ DATAJUD — ANDAMENTOS DO TRIBUNAL
+// ──────────────────────────────────────────────────────────────────────
+
+async function carregarAndamentosCNJ(pastaId, numeroProcesso) {
+  const listEl = document.getElementById('cnj-andamentos-list');
+  if (!listEl) return;
+
+  if (!numeroProcesso) {
+    listEl.innerHTML = '<div class="empty-state">Número do processo não informado nesta pasta.</div>';
+    return;
+  }
+
+  const { data, error } = await db
+    .from('andamentos_processo')
+    .select('*')
+    .eq('pasta_id', pastaId)
+    .order('data_hora', { ascending: false });
+
+  if (error) { console.error('Erro ao carregar andamentos CNJ:', error); return; }
+
+  state.andamentosCNJ = data || [];
+  renderAndamentosCNJ(state.andamentosCNJ);
+}
+
+function renderAndamentosCNJ(andamentos) {
+  const listEl  = document.getElementById('cnj-andamentos-list');
+  const infoEl  = document.getElementById('cnjSyncInfo');
+  const badgeEl = document.getElementById('cnjTribunalBadge');
+  if (!listEl) return;
+
+  if (!andamentos.length) {
+    listEl.innerHTML = '<div class="empty-state">Nenhum andamento carregado. Clique em "Sincronizar CNJ" para buscar as movimentações do tribunal.</div>';
+    if (infoEl) infoEl.textContent = '';
+    return;
+  }
+
+  const tribunal = andamentos[0]?.tribunal || '';
+  if (badgeEl) badgeEl.textContent = tribunal.replace('api_publica_', '').toUpperCase();
+
+  const sinc = andamentos[0]?.sincronizado_em
+    ? new Date(andamentos[0].sincronizado_em).toLocaleString('pt-BR')
+    : '';
+  if (infoEl) infoEl.textContent = sinc ? `Última sync: ${sinc}` : '';
+
+  const novos = andamentos.filter(a => a.is_intimacao);
+
+  listEl.innerHTML = `
+    ${novos.length ? `<div style="margin-bottom:10px;padding:8px 12px;background:rgba(255,170,0,.08);border:1px solid rgba(255,170,0,.25);border-radius:4px;font-size:12px;color:#ffaa00">
+      <strong>${novos.length} intimação(ões)</strong> detectada(s) nas movimentações do tribunal.
+    </div>` : ''}
+    <table class="andamento-table" style="width:100%">
+      <thead>
+        <tr>
+          <th style="width:120px">Data</th>
+          <th>Movimento</th>
+          <th style="width:80px">Código</th>
+          <th style="width:90px">Tipo</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${andamentos.map(a => {
+          const data = a.data_hora
+            ? new Date(a.data_hora).toLocaleDateString('pt-BR')
+            : '—';
+          const tipo = a.is_intimacao
+            ? '<span style="background:rgba(255,170,0,.15);color:#ffaa00;padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase">Intimação</span>'
+            : '<span style="background:var(--s2);color:var(--mu);padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase">Movimento</span>';
+          return `<tr>
+            <td style="white-space:nowrap">${data}</td>
+            <td>
+              <div style="font-size:13px">${a.nome || '—'}</div>
+              ${a.complemento ? `<div style="font-size:11px;color:var(--mu);margin-top:2px">${a.complemento}</div>` : ''}
+            </td>
+            <td style="font-size:11px;color:var(--mu)">${a.codigo || '—'}</td>
+            <td>${tipo}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+    <p class="tbl-count" style="margin-top:8px">Total: ${andamentos.length} movimentação(ões)</p>
+  `;
+}
+
+async function sincronizarAndamentos() {
+  const pasta = state.pastas.find(p => p.id === state.currentPastaId);
+  if (!pasta) { toast('Abra uma pasta primeiro.', 'error'); return; }
+
+  const processo = pasta.processo;
+  if (!processo) {
+    toast('Esta pasta não tem número de processo cadastrado. Edite a pasta e preencha o campo "Número do Processo".', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btnSyncCNJ');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sincronizando…'; }
+
+  try {
+    const res  = await fetch(`/api/cnj-proxy?numero=${encodeURIComponent(processo)}`);
+    const json = await res.json();
+
+    if (!res.ok) {
+      toast(json.error || 'Erro ao consultar DataJud.', 'error');
+      return;
+    }
+
+    const { movimentos, tribunal, numeroFormatado } = json;
+
+    const rows = movimentos.map(m => ({
+      empresa_id:      state.empresaId,
+      pasta_id:        pasta.id,
+      numero_processo: numeroFormatado || processo,
+      data_hora:       m.dataHora || null,
+      nome:            m.nome || null,
+      complemento:     m.complemento || null,
+      codigo:          m.codigo || null,
+      is_intimacao:    !!m.isIntimacao,
+      tribunal:        tribunal,
+      sincronizado_em: new Date().toISOString(),
+    }));
+
+    if (rows.length) {
+      const { error } = await db
+        .from('andamentos_processo')
+        .upsert(rows, { onConflict: 'pasta_id,data_hora,codigo', ignoreDuplicates: false });
+      if (error) { toast('Erro ao salvar andamentos: ' + error.message, 'error'); return; }
+    }
+
+    const novosIntimacoes = movimentos.filter(m => m.isIntimacao);
+    await carregarAndamentosCNJ(pasta.id, processo);
+
+    const msg = rows.length
+      ? `${rows.length} movimentação(ões) sincronizada(s)${novosIntimacoes.length ? ` — ${novosIntimacoes.length} intimação(ões) detectada(s)` : ''}.`
+      : 'Nenhuma movimentação encontrada no DataJud.';
+    toast(msg);
+  } catch (e) {
+    console.error('Erro sincronizar CNJ:', e);
+    toast('Erro: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '↻ Sincronizar CNJ'; }
+  }
 }

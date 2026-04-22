@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=11">
+  <link rel="stylesheet" href="style.css?v=12">
 </head>
 <body>
 <div class="app">
@@ -1256,6 +1256,7 @@
                   </svg>
                 </button>
                 <button class="btn-primary">+ Nova instância</button>
+                <button class="btn-outline" id="btnSyncCNJ" onclick="sincronizarAndamentos()">↻ Sincronizar CNJ</button>
               </div>
               <label class="check-label">
                 <input type="checkbox"> Mostrar instâncias inativas
@@ -1330,6 +1331,18 @@
                   <button class="btn-outline btn-sm">+ Novo incidente/recurso</button>
                 </div>
                 <div class="empty-state">Nenhum andamento de 2ª Instância.</div>
+              </div>
+
+              <!-- CNJ DataJud — espelho do tribunal -->
+              <div class="instancia-section" id="cnj-andamentos-section">
+                <div class="instancia-head">
+                  <strong class="instancia-label">ANDAMENTOS DO TRIBUNAL (CNJ DataJud)</strong>
+                  <span id="cnjTribunalBadge" class="badge" style="margin-left:8px;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border-radius:2px;background:var(--s2);color:var(--mu)"></span>
+                  <span id="cnjSyncInfo" style="font-size:11px;color:var(--mu);margin-left:auto"></span>
+                </div>
+                <div id="cnj-andamentos-list">
+                  <div class="empty-state">Nenhum andamento carregado. Clique em "Sincronizar CNJ" para buscar as movimentações do tribunal.</div>
+                </div>
               </div>
             </div>
 
@@ -2045,6 +2058,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="script.js?v=11"></script>
+<script src="script.js?v=12"></script>
 </body>
 </html>

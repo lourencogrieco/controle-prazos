@@ -187,7 +187,7 @@
               <option>Estagiário</option>
             </select>
           </label>
-          <button class="btn-primary">+ Adicionar solicitação</button>
+          <button class="btn-primary" onclick="abrirModalNovaPasta(null)">+ Adicionar solicitação</button>
         </div>
       </div>
 
@@ -490,7 +490,7 @@
             De <input type="date" id="filtroIntimacoesDe" class="input-sm">
             até <input type="date" id="filtroIntimacoesAte" class="input-sm">
           </label>
-          <button class="btn-outline" id="btnSyncPJe" onclick="sincronizarPJe()">↻ Sincronizar PJe</button>
+          <button class="btn-outline" id="btnSyncPJe" onclick="sincronizarPJe()">↻ Sincronizar</button>
           <button class="btn-outline" onclick="sincronizarPJeData()">↻ Buscar por data</button>
         </div>
 
@@ -1410,7 +1410,7 @@
                 </label>
                 <button class="btn-outline">Adicionar filtro ▾</button>
                 <label class="select-field"><select><option>Todos os usuários</option></select></label>
-                <button class="btn-primary">+ Adicionar solicitação</button>
+                <button class="btn-primary" onclick="abrirModalNovaPasta(null)">+ Adicionar solicitação</button>
               </div>
               <div class="board board--3col">
                 <article class="board-col">

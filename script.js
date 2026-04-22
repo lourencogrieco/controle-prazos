@@ -1475,7 +1475,7 @@ async function sincronizarPJe() {
     console.error('Erro sincronizar PJe:', e);
     toast('Erro ao sincronizar: ' + e.message, 'error');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '↻ Sincronizar PJe'; }
+    if (btn) { btn.disabled = false; btn.textContent = '↻ Sincronizar'; }
   }
 }
 

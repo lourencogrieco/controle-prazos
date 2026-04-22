@@ -679,26 +679,34 @@ document.getElementById('novoPrazoForm').addEventListener('submit', async e => {
   e.preventDefault();
   const btn = document.getElementById('btnSalvarPrazo');
   btn.disabled = true; btn.textContent = 'Salvando…';
+  try {
+    const prazoId = document.getElementById('prazoId').value;
+    const tipo = document.getElementById('prazoTipo').value;
+    if (!tipo) { toast('Selecione o tipo de prazo.', 'error'); return; }
 
-  const prazoId = document.getElementById('prazoId').value;
-  const obj = {
-    id:          prazoId || uid(),
-    empresa_id:  state.empresaId,
-    pasta_id:    document.getElementById('prazoPastaSelect').value || null,
-    cliente:     document.getElementById('prazoCliente').value.trim(),
-    tipo:        document.getElementById('prazoTipo').value,
-    prazo:       document.getElementById('prazoFatal').value,
-    responsavel: document.getElementById('prazoResponsavel').value.trim(),
-    status:      document.getElementById('prazoStatus').value,
-    descricao:   document.getElementById('prazoDescricao').value.trim() || null,
-  };
+    const obj = {
+      id:          prazoId || uid(),
+      empresa_id:  state.empresaId,
+      pasta_id:    document.getElementById('prazoPastaSelect').value || null,
+      cliente:     document.getElementById('prazoCliente').value.trim(),
+      tipo,
+      prazo:       document.getElementById('prazoFatal').value,
+      responsavel: document.getElementById('prazoResponsavel').value.trim(),
+      status:      document.getElementById('prazoStatus').value,
+      descricao:   document.getElementById('prazoDescricao').value.trim() || null,
+    };
 
-  const { error } = await db.from('prazos_lhub').upsert(obj);
-  btn.disabled = false; btn.textContent = 'Salvar Prazo';
-  if (error) { toast('Erro: ' + error.message, 'error'); return; }
-  fecharModalNovoPrazo();
-  toast('Prazo salvo');
-  await carregarDados();
+    const { error } = await db.from('prazos_lhub').upsert(obj);
+    if (error) { toast('Erro ao salvar prazo: ' + error.message, 'error'); return; }
+    fecharModalNovoPrazo();
+    toast('Prazo salvo!');
+    await carregarDados();
+  } catch (err) {
+    toast('Erro inesperado: ' + err.message, 'error');
+    console.error('novoPrazoForm:', err);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Salvar Prazo';
+  }
 });
 
 async function excluirPrazo(id) {
@@ -1454,17 +1462,25 @@ document.getElementById('filtroTarefasStatus')?.addEventListener('change', rende
 // ──────────────────────────────────────────────────────────────────────
 
 // Gera link direto para o processo no portal do tribunal
+// TJSP: foro 0000 = 2º grau (cposg) | foro != 0000 = 1º grau (cpopg)
 function linkProcesso(processo, tribunal) {
   if (!processo) return null;
   const digits = processo.replace(/\D/g, '');
   if (digits.length < 20) return null;
-  // foro = últimos 4 dígitos (OOOO)
-  const foro = parseInt(digits.slice(16), 10);
-  const trib = (tribunal || '').toLowerCase();
+  const foroStr  = digits.slice(16);          // OOOO (4 dígitos)
+  const foroNum  = parseInt(foroStr, 10);
+  const trib     = (tribunal || '').toLowerCase();
+  const segundo  = foroNum === 0;             // foro 0000 = 2ª instância
 
   if (trib.includes('tjsp')) {
-    return `https://esaj.tjsp.jus.br/cpopg/search.do?cbPesquisa=NUMPROC` +
-      `&foroNumeroUnificado=${String(foro).padStart(4,'0')}` +
+    const sistema = segundo ? 'cposg' : 'cpopg';
+    const action  = segundo ? 'open.do' : 'search.do';
+    if (segundo) {
+      return `https://esaj.tjsp.jus.br/${sistema}/${action}` +
+        `?processo.numero=${encodeURIComponent(processo)}`;
+    }
+    return `https://esaj.tjsp.jus.br/${sistema}/${action}?cbPesquisa=NUMPROC` +
+      `&foroNumeroUnificado=${foroStr}` +
       `&dadosConsulta.valorConsultaNuUnificado=${encodeURIComponent(processo)}` +
       `&dadosConsulta.tipoNuProcesso=UNIFICADO`;
   }
@@ -1477,9 +1493,11 @@ function linkProcesso(processo, tribunal) {
   if (trib.includes('tjrs')) {
     return `https://www.tjrs.jus.br/site_php/consulta/consulta_processo.php?NUMPROC=${encodeURIComponent(processo)}`;
   }
-  // Para TRF, TRT, STJ, STF — usa o portal e-SAJ/PJe genérico
   if (trib.includes('stj')) {
     return `https://processo.stj.jus.br/SCON/pesquisar.jsp?b=ACOR&livre=${encodeURIComponent(processo)}`;
+  }
+  if (trib.includes('trf')) {
+    return `https://eproc.trf1.jus.br/eproc/externo_controlador.php?acao=processo_consulta_publica&num_processo=${encodeURIComponent(processo)}`;
   }
   return null;
 }
@@ -1542,8 +1560,11 @@ function renderIntimacoesAba() {
           ? `<a class="int-link" href="#" onclick="event.preventDefault();navegarPara('pastas');setTimeout(()=>abrirPasta('${pasta.numero}'),100)">${pasta.numero}</a>`
           : '<span style="color:var(--mu);font-size:.7rem">—</span>';
         const linkDireto = linkProcesso(i.processo, i.tribunal);
-        return `<tr>
-          <td style="font-family:'IBM Plex Mono',monospace;font-size:.7rem;white-space:nowrap">${i.processo}</td>
+        const iJson = JSON.stringify(i).replace(/'/g, '&#39;');
+        return `<tr style="cursor:default">
+          <td style="font-family:'IBM Plex Mono',monospace;font-size:.7rem;white-space:nowrap">
+            <button class="btn-link-sm" onclick='lerIntimacao(${iJson})' title="Ler intimação" style="font-family:inherit;text-align:left">${i.processo}</button>
+          </td>
           <td style="font-size:.75rem">${pastaCell}</td>
           <td><span class="badge-tribunal">${i.tribunal}</span></td>
           <td style="font-size:.75rem;max-width:160px">${i.orgao}</td>
@@ -1556,8 +1577,9 @@ function renderIntimacoesAba() {
             </select>
           </td>
           <td style="white-space:nowrap">
-            <button class="btn-link-sm" onclick='criarPrazoDaIntimacao(${JSON.stringify(i)})' title="Criar prazo">+ Prazo</button>
-            <button class="btn-link-sm" onclick='criarTarefaDaIntimacao(${JSON.stringify(i)})' title="Criar tarefa" style="margin-left:4px">+ Tarefa</button>
+            <button class="btn-link-sm" onclick='lerIntimacao(${iJson})' title="Ler texto">Ler</button>
+            <button class="btn-link-sm" onclick='criarPrazoDaIntimacao(${iJson})' title="Criar prazo" style="margin-left:6px">+ Prazo</button>
+            <button class="btn-link-sm" onclick='criarTarefaDaIntimacao(${iJson})' title="Criar tarefa" style="margin-left:4px">+ Tarefa</button>
           </td>
           <td>${linkDireto
             ? `<a href="${linkDireto}" target="_blank" class="int-link">Ver ↗</a>`
@@ -1592,7 +1614,7 @@ function criarPrazoDaIntimacao(intim) {
   document.getElementById('prazoId').value          = '';
   document.getElementById('prazoPastaSelect').value = pasta?.id || '';
   document.getElementById('prazoCliente').value     = pasta?.cliente || '';
-  document.getElementById('prazoTipo').value        = 'Prazo Processual';
+  document.getElementById('prazoTipo').value        = 'Manifestação';
   document.getElementById('prazoFatal').value       = '';
   document.getElementById('prazoResponsavel').value = '';
   document.getElementById('prazoStatus').value      = 'pendente';
@@ -1614,6 +1636,23 @@ function criarTarefaDaIntimacao(intim) {
   document.getElementById('tDescricao').value        =
     `Intimação publicada em ${formatDate(intim.dataPublicacao)}.\nÓrgão: ${intim.orgao}\nProcesso: ${intim.processo}`;
   document.getElementById('modalNovaTarefa').classList.add('open');
+}
+
+function lerIntimacao(intim) {
+  const tipo = intim.tipoDocumento || intim.tipoComunicacao || 'Intimação';
+  const titulo = `${tipo}${intim.nomeClasse ? ' — ' + intim.nomeClasse : ''}`;
+  const meta   = `${intim.processo} · ${intim.tribunal} · Publicado em ${formatDate(intim.dataPublicacao)} · ${intim.orgao}`;
+
+  document.getElementById('lerIntimTitulo').textContent = titulo;
+  document.getElementById('lerIntimMeta').textContent   = meta;
+  document.getElementById('lerIntimTexto').textContent  = intim.texto || 'Texto não disponível.';
+
+  const link = linkProcesso(intim.processo, intim.tribunal) || intim.link || '#';
+  const linkEl = document.getElementById('lerIntimLink');
+  linkEl.href = link;
+  linkEl.style.display = link === '#' ? 'none' : '';
+
+  document.getElementById('modalLerIntimacao').classList.add('open');
 }
 
 async function sincronizarPJeData() {

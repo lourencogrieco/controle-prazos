@@ -2055,6 +2055,18 @@ tbody td {
   max-height: calc(90vh - 80px);
 }
 
+/* Botão de salvar sempre visível na base do modal, independente do scroll */
+.modal .form-foot {
+  position: sticky;
+  bottom: -20px;
+  margin: 16px -22px -20px;
+  padding: 14px 22px;
+  background: var(--s0);
+  border-top: 1px solid var(--br);
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+  z-index: 1;
+}
+
 .modal-full { grid-column: 1 / -1; }
 
 /* hidden utility */

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=12">
+  <link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
 <div class="app">
@@ -2044,7 +2044,27 @@
   </div>
 </div>
 
+<!-- ===== MODAL LER INTIMAÇÃO ===== -->
+<div id="modalLerIntimacao" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-head">
+      <div>
+        <h3 id="lerIntimTitulo" style="margin:0;font-size:.95rem"></h3>
+        <p id="lerIntimMeta" style="margin:4px 0 0;font-size:.75rem;color:var(--mu)"></p>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('modalLerIntimacao').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="lerIntimTexto" style="font-size:.85rem;line-height:1.7;white-space:pre-wrap;background:var(--bg);border:1px solid var(--br);border-radius:4px;padding:16px;max-height:55vh;overflow-y:auto;color:var(--tx)"></div>
+    </div>
+    <div class="form-foot" style="display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn-outline" onclick="document.getElementById('modalLerIntimacao').classList.remove('open')">Fechar</button>
+      <a id="lerIntimLink" href="#" target="_blank" class="btn-primary" style="text-decoration:none">Ver processo ↗</a>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="script.js?v=12"></script>
+<script src="script.js?v=13"></script>
 </body>
 </html>

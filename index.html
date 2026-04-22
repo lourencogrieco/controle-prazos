@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=18">
+  <link rel="stylesheet" href="style.css?v=19">
 </head>
 <body>
 <div class="app">
@@ -1262,6 +1262,7 @@
                   </svg>
                 </button>
                 <button class="btn-primary">+ Nova instância</button>
+                <button class="btn-outline" id="btnLancarAndamento" onclick="abrirAndamentoManual()">+ Lançar andamento</button>
                 <button class="btn-outline" id="btnSyncCNJ" onclick="sincronizarAndamentos()">↻ Sincronizar CNJ</button>
               </div>
               <label class="check-label">
@@ -1495,7 +1496,7 @@
                   </svg>
                   <input type="text" placeholder="Pesquisar">
                 </label>
-                <button class="btn-primary">✏ Adicionar documento</button>
+                <button class="btn-primary" id="btnAdicionarDoc" onclick="abrirUploadDoc()">+ Adicionar documento</button>
               </div>
               <div class="table-scroll">
                 <table>
@@ -1510,7 +1511,7 @@
                       <th>Ações</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody id="tabelaDocumentosBody">
                     <tr><td colspan="7" class="tbl-empty">Nenhum documento encontrado</td></tr>
                   </tbody>
                 </table>
@@ -2068,7 +2069,115 @@
   </div>
 </div>
 
+<!-- Modal: Lançar andamento manual -->
+<div id="modalAndamentoManual" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-head">
+      <h3>Lançar Andamento</h3>
+      <button class="modal-close" onclick="document.getElementById('modalAndamentoManual').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="formAndamentoManual">
+        <input type="hidden" id="andManualPastaId">
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:14px">
+          <div class="field">
+            <span class="field-label">Data <span style="color:var(--red)">*</span></span>
+            <input type="date" id="andManualData" required>
+          </div>
+          <div class="field">
+            <span class="field-label">Instância</span>
+            <select id="andManualGrau">
+              <option value="G1">1ª Instância</option>
+              <option value="G2">2ª Instância</option>
+              <option value="SUP">Superior</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" style="margin-top:12px">
+          <span class="field-label">Tipo <span style="color:var(--red)">*</span></span>
+          <select id="andManualTipo" required>
+            <option value="">— selecione —</option>
+            <option>Despacho</option>
+            <option>Decisão</option>
+            <option>Sentença</option>
+            <option>Acórdão</option>
+            <option>Intimação</option>
+            <option>Juntada de Petição</option>
+            <option>Juntada de Documento</option>
+            <option>Publicação em Diário</option>
+            <option>Audiência</option>
+            <option>Concluso</option>
+            <option>Vista ao Ministério Público</option>
+            <option>Outro</option>
+          </select>
+        </div>
+        <div class="field" style="margin-top:12px">
+          <span class="field-label">Descrição <span style="color:var(--red)">*</span></span>
+          <textarea id="andManualDesc" rows="4" required placeholder="Descreva o andamento..."></textarea>
+        </div>
+        <div class="form-foot" style="margin-top:20px">
+          <button type="button" class="btn-outline" onclick="document.getElementById('modalAndamentoManual').classList.remove('open')">Cancelar</button>
+          <button type="submit" class="btn-primary" id="btnSalvarAndManual">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Upload de documento -->
+<div id="modalUploadDoc" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head">
+      <h3>Adicionar Documento</h3>
+      <button class="modal-close" onclick="document.getElementById('modalUploadDoc').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="formUploadDoc">
+        <input type="hidden" id="docPastaId">
+        <div class="field">
+          <span class="field-label">Arquivo <span style="color:var(--red)">*</span></span>
+          <input type="file" id="docArquivo" required accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.odt">
+        </div>
+        <div class="field" style="margin-top:12px">
+          <span class="field-label">Nome do documento <span style="color:var(--red)">*</span></span>
+          <input type="text" id="docNome" required placeholder="Ex: Petição inicial, Contestação...">
+        </div>
+        <div class="field" style="margin-top:12px">
+          <span class="field-label">Tipo de peça</span>
+          <select id="docTipo">
+            <option value="">— selecione —</option>
+            <option>Petição Inicial</option>
+            <option>Contestação</option>
+            <option>Réplica</option>
+            <option>Recurso de Apelação</option>
+            <option>Agravo</option>
+            <option>Embargos de Declaração</option>
+            <option>Recurso Especial</option>
+            <option>Recurso Extraordinário</option>
+            <option>Sentença</option>
+            <option>Acórdão</option>
+            <option>Decisão Interlocutória</option>
+            <option>Procuração</option>
+            <option>Contrato</option>
+            <option>Documento de Parte</option>
+            <option>Laudo Pericial</option>
+            <option>Outro</option>
+          </select>
+        </div>
+        <div class="field" style="margin-top:12px">
+          <span class="field-label">Descrição</span>
+          <textarea id="docDescricao" rows="2" placeholder="Observações opcionais..."></textarea>
+        </div>
+        <div class="form-foot" style="margin-top:20px">
+          <button type="button" class="btn-outline" onclick="document.getElementById('modalUploadDoc').classList.remove('open')">Cancelar</button>
+          <button type="submit" class="btn-primary" id="btnSalvarDoc">Enviar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="script.js?v=18"></script>
+<script src="script.js?v=19"></script>
 </body>
 </html>

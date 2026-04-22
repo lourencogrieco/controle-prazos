@@ -2257,6 +2257,7 @@ document.querySelectorAll('.pasta-tab[data-ptab]').forEach(btn => {
     document.querySelectorAll('.pasta-pane').forEach(pn => pn.classList.remove('is-active'));
     btn.classList.add('is-active');
     document.getElementById(`ptab-${btn.dataset.ptab}`)?.classList.add('is-active');
+    if (btn.dataset.ptab === 'documentos') carregarDocumentos(state.currentPastaId);
   });
 });
 
@@ -2666,4 +2667,169 @@ async function sincronizarAndamentos(silencioso = false) {
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '↻ Sincronizar CNJ'; }
   }
+}
+
+// ── ANDAMENTO MANUAL ─────────────────────────────────────────────────────────
+
+function abrirAndamentoManual() {
+  const pasta = state.pastas.find(p => p.id === state.currentPastaId);
+  if (!pasta) { toast('Abra uma pasta primeiro.', 'error'); return; }
+  document.getElementById('andManualPastaId').value = pasta.id;
+  document.getElementById('andManualData').value    = new Date().toISOString().slice(0, 10);
+  document.getElementById('andManualTipo').value    = '';
+  document.getElementById('andManualDesc').value    = '';
+  document.getElementById('andManualGrau').value    = 'G1';
+  document.getElementById('modalAndamentoManual').classList.add('open');
+}
+
+document.getElementById('formAndamentoManual').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('btnSalvarAndManual');
+  btn.disabled = true; btn.textContent = 'Salvando…';
+  try {
+    const pastaId = document.getElementById('andManualPastaId').value;
+    const pasta   = state.pastas.find(p => p.id === pastaId);
+    const data    = document.getElementById('andManualData').value;
+    const tipo    = document.getElementById('andManualTipo').value;
+    const desc    = document.getElementById('andManualDesc').value.trim();
+    const grau    = document.getElementById('andManualGrau').value;
+
+    const row = {
+      id:              uid(),
+      empresa_id:      state.empresaId,
+      pasta_id:        pastaId,
+      numero_processo: pasta?.processo || null,
+      data_hora:       data + 'T00:00:00',
+      nome:            tipo,
+      complemento:     desc,
+      codigo:          null,
+      is_intimacao:    /intima[çc]/i.test(tipo),
+      grau,
+      tribunal:        'manual',
+      sincronizado_em: new Date().toISOString(),
+    };
+
+    const { error } = await db.from('andamentos_processo').insert(row);
+    if (error) { toast('Erro ao salvar: ' + error.message, 'error'); return; }
+
+    document.getElementById('modalAndamentoManual').classList.remove('open');
+    toast('Andamento lançado com sucesso!');
+
+    // Reload andamentos da pasta
+    const { data: rows } = await db.from('andamentos_processo')
+      .select('*').eq('pasta_id', pastaId).order('data_hora', { ascending: false });
+    state.andamentosCNJ = rows || [];
+    renderAndamentosNasInstancias(state.andamentosCNJ);
+  } catch (err) {
+    toast('Erro inesperado: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Salvar';
+  }
+});
+
+// ── DOCUMENTOS ───────────────────────────────────────────────────────────────
+
+function abrirUploadDoc() {
+  if (!state.currentPastaId) { toast('Abra uma pasta primeiro.', 'error'); return; }
+  document.getElementById('docPastaId').value    = state.currentPastaId;
+  document.getElementById('docNome').value       = '';
+  document.getElementById('docTipo').value       = '';
+  document.getElementById('docDescricao').value  = '';
+  document.getElementById('docArquivo').value    = '';
+  document.getElementById('modalUploadDoc').classList.add('open');
+}
+
+async function carregarDocumentos(pastaId) {
+  if (!pastaId) return;
+  const { data } = await db.from('documentos_pasta')
+    .select('*').eq('pasta_id', pastaId).order('created_at', { ascending: false });
+  renderDocumentos(data || []);
+}
+
+function renderDocumentos(docs) {
+  const tbody = document.getElementById('tabelaDocumentosBody');
+  if (!tbody) return;
+  if (!docs.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="tbl-empty">Nenhum documento encontrado</td></tr>';
+    return;
+  }
+  tbody.innerHTML = docs.map(d => {
+    const tamanho = d.tamanho_bytes
+      ? (d.tamanho_bytes > 1048576
+        ? (d.tamanho_bytes / 1048576).toFixed(1) + ' MB'
+        : Math.round(d.tamanho_bytes / 1024) + ' KB')
+      : '—';
+    return `<tr>
+      <td>${d.nome}</td>
+      <td>${d.tipo || '—'}</td>
+      <td>${d.criado_por || '—'}</td>
+      <td>—</td>
+      <td>${tamanho}</td>
+      <td>${formatDate(d.created_at?.slice(0,10))}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn-link-sm" onclick="baixarDocumento('${d.storage_path}','${d.nome}')">⬇ Baixar</button>
+        <button class="btn-link-sm" style="color:var(--red)" onclick="excluirDocumento('${d.id}','${d.storage_path}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+document.getElementById('formUploadDoc').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('btnSalvarDoc');
+  btn.disabled = true; btn.textContent = 'Enviando…';
+  try {
+    const pastaId  = document.getElementById('docPastaId').value;
+    const arquivo  = document.getElementById('docArquivo').files[0];
+    const nome     = document.getElementById('docNome').value.trim();
+    const tipo     = document.getElementById('docTipo').value;
+    const descricao = document.getElementById('docDescricao').value.trim();
+
+    if (!arquivo) { toast('Selecione um arquivo.', 'error'); return; }
+
+    // Upload para Supabase Storage
+    const ext  = arquivo.name.split('.').pop();
+    const path = `${state.empresaId}/${pastaId}/${uid()}.${ext}`;
+    const { error: upErr } = await db.storage.from('documentos').upload(path, arquivo);
+    if (upErr) { toast('Erro no upload: ' + upErr.message, 'error'); return; }
+
+    // Salva metadados
+    const { error: dbErr } = await db.from('documentos_pasta').insert({
+      id:            uid(),
+      empresa_id:    state.empresaId,
+      pasta_id:      pastaId,
+      nome,
+      tipo:          tipo || null,
+      descricao:     descricao || null,
+      storage_path:  path,
+      tamanho_bytes: arquivo.size,
+      criado_por:    state.meuPerfil?.nome || '',
+    });
+    if (dbErr) { toast('Erro ao salvar metadados: ' + dbErr.message, 'error'); return; }
+
+    document.getElementById('modalUploadDoc').classList.remove('open');
+    toast('Documento enviado com sucesso!');
+    await carregarDocumentos(pastaId);
+  } catch (err) {
+    toast('Erro inesperado: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Enviar';
+  }
+});
+
+async function baixarDocumento(path, nome) {
+  const { data, error } = await db.storage.from('documentos').download(path);
+  if (error) { toast('Erro ao baixar: ' + error.message, 'error'); return; }
+  const url = URL.createObjectURL(data);
+  const a   = document.createElement('a');
+  a.href = url; a.download = nome; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+async function excluirDocumento(id, path) {
+  if (!confirm('Excluir este documento?')) return;
+  await db.storage.from('documentos').remove([path]);
+  await db.from('documentos_pasta').delete().eq('id', id);
+  toast('Documento excluído.');
+  await carregarDocumentos(state.currentPastaId);
 }

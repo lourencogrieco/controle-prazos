@@ -1452,6 +1452,45 @@ document.getElementById('filtroTarefasStatus')?.addEventListener('change', rende
 // ──────────────────────────────────────────────────────────────────────
 // RENDER INTIMAÇÕES ABA
 // ──────────────────────────────────────────────────────────────────────
+
+// Gera link direto para o processo no portal do tribunal
+function linkProcesso(processo, tribunal) {
+  if (!processo) return null;
+  const digits = processo.replace(/\D/g, '');
+  if (digits.length < 20) return null;
+  // foro = últimos 4 dígitos (OOOO)
+  const foro = parseInt(digits.slice(16), 10);
+  const trib = (tribunal || '').toLowerCase();
+
+  if (trib.includes('tjsp')) {
+    return `https://esaj.tjsp.jus.br/cpopg/search.do?cbPesquisa=NUMPROC` +
+      `&foroNumeroUnificado=${String(foro).padStart(4,'0')}` +
+      `&dadosConsulta.valorConsultaNuUnificado=${encodeURIComponent(processo)}` +
+      `&dadosConsulta.tipoNuProcesso=UNIFICADO`;
+  }
+  if (trib.includes('tjmg')) {
+    return `https://processo.tjmg.jus.br/cpopg2/open.do?processo.numero=${encodeURIComponent(processo)}`;
+  }
+  if (trib.includes('tjrj')) {
+    return `https://www4.tjrj.jus.br/consultaProcessoWebV2/consultaMov.do?numProcesso=${encodeURIComponent(processo)}`;
+  }
+  if (trib.includes('tjrs')) {
+    return `https://www.tjrs.jus.br/site_php/consulta/consulta_processo.php?NUMPROC=${encodeURIComponent(processo)}`;
+  }
+  // Para TRF, TRT, STJ, STF — usa o portal e-SAJ/PJe genérico
+  if (trib.includes('stj')) {
+    return `https://processo.stj.jus.br/SCON/pesquisar.jsp?b=ACOR&livre=${encodeURIComponent(processo)}`;
+  }
+  return null;
+}
+
+// Encontra pasta vinculada pelo número do processo
+function pastaDaIntimacao(numeroProcesso) {
+  if (!numeroProcesso) return null;
+  const digits = numeroProcesso.replace(/\D/g, '');
+  return state.pastas.find(p => p.processo && p.processo.replace(/\D/g,'') === digits) || null;
+}
+
 const INTIM_STATUS_LABEL = {
   pendente:       'Pendente',
   cumprida:       'Cumprida',
@@ -1498,10 +1537,16 @@ function renderIntimacoesAba() {
         const opts = Object.entries(INTIM_STATUS_LABEL)
           .map(([v, t]) => `<option value="${v}"${v === st ? ' selected' : ''}>${t}</option>`)
           .join('');
+        const pasta = pastaDaIntimacao(i.processo);
+        const pastaCell = pasta
+          ? `<a class="int-link" href="#" onclick="event.preventDefault();navegarPara('pastas');setTimeout(()=>abrirPasta('${pasta.numero}'),100)">${pasta.numero}</a>`
+          : '<span style="color:var(--mu);font-size:.7rem">—</span>';
+        const linkDireto = linkProcesso(i.processo, i.tribunal);
         return `<tr>
           <td style="font-family:'IBM Plex Mono',monospace;font-size:.7rem;white-space:nowrap">${i.processo}</td>
+          <td style="font-size:.75rem">${pastaCell}</td>
           <td><span class="badge-tribunal">${i.tribunal}</span></td>
-          <td style="font-size:.75rem;max-width:180px">${i.orgao}</td>
+          <td style="font-size:.75rem;max-width:160px">${i.orgao}</td>
           <td style="white-space:nowrap">${formatDate(i.dataPublicacao)}</td>
           <td style="font-size:.75rem">${i.tipoDocumento || i.nomeClasse || '—'}</td>
           <td style="font-size:.75rem">${i.nomeClasse || '—'}</td>
@@ -1514,10 +1559,13 @@ function renderIntimacoesAba() {
             <button class="btn-link-sm" onclick='criarPrazoDaIntimacao(${JSON.stringify(i)})' title="Criar prazo">+ Prazo</button>
             <button class="btn-link-sm" onclick='criarTarefaDaIntimacao(${JSON.stringify(i)})' title="Criar tarefa" style="margin-left:4px">+ Tarefa</button>
           </td>
-          <td>${i.link ? `<a href="${i.link}" target="_blank" class="int-link">Ver ↗</a>` : '—'}</td>
+          <td>${linkDireto
+            ? `<a href="${linkDireto}" target="_blank" class="int-link">Ver ↗</a>`
+            : (i.link ? `<a href="${i.link}" target="_blank" class="int-link">Ver ↗</a>` : '—')}
+          </td>
         </tr>`;
       }).join('')
-    : `<tr><td colspan="9" class="tbl-empty">Nenhuma intimação encontrada para o período selecionado.</td></tr>`;
+    : `<tr><td colspan="10" class="tbl-empty">Nenhuma intimação encontrada para o período selecionado.</td></tr>`;
 
   // Bind status dropdowns
   document.querySelectorAll('.intim-status-sel').forEach(sel => {
@@ -2374,7 +2422,7 @@ async function carregarAndamentosCNJ(pastaId, numeroProcesso) {
   if (error) { console.error('Erro ao carregar andamentos CNJ:', error); return; }
 
   state.andamentosCNJ = data || [];
-  renderAndamentosCNJ(state.andamentosCNJ);
+  renderAndamentosNasInstancias(state.andamentosCNJ);
 
   // Auto-sync: triggers if never synced or last sync was > 6h ago
   const ultimaSync = data?.[0]?.sincronizado_em ? new Date(data[0].sincronizado_em) : null;
@@ -2384,17 +2432,17 @@ async function carregarAndamentosCNJ(pastaId, numeroProcesso) {
   }
 }
 
-function renderAndamentosCNJ(andamentos) {
-  const listEl  = document.getElementById('cnj-andamentos-list');
+function renderAndamentosNasInstancias(andamentos) {
+  const body1   = document.getElementById('andamentosBody1');
+  const body2   = document.getElementById('andamentosBody2');
+  const count1  = document.getElementById('andamentosCount1');
+  const count2  = document.getElementById('andamentosCount2');
   const infoEl  = document.getElementById('cnjSyncInfo');
   const badgeEl = document.getElementById('cnjTribunalBadge');
-  if (!listEl) return;
+  if (!body1) return;
 
-  if (!andamentos.length) {
-    listEl.innerHTML = '<div class="empty-state">Nenhum andamento carregado. Clique em "Sincronizar CNJ" para buscar as movimentações do tribunal.</div>';
-    if (infoEl) infoEl.textContent = '';
-    return;
-  }
+  const g1 = andamentos.filter(a => !a.grau || a.grau === 'G1' || a.grau === 'JE');
+  const g2 = andamentos.filter(a => a.grau === 'G2' || a.grau === 'SUP');
 
   const tribunal = andamentos[0]?.tribunal || '';
   if (badgeEl) badgeEl.textContent = tribunal.replace('api_publica_', '').toUpperCase();
@@ -2402,45 +2450,38 @@ function renderAndamentosCNJ(andamentos) {
   const sinc = andamentos[0]?.sincronizado_em
     ? new Date(andamentos[0].sincronizado_em).toLocaleString('pt-BR')
     : '';
-  if (infoEl) infoEl.textContent = sinc ? `Última sync: ${sinc}` : '';
+  if (infoEl) infoEl.textContent = sinc ? `Sync: ${sinc}` : '';
 
-  const novos = andamentos.filter(a => a.is_intimacao);
+  const rowHtml = a => {
+    const data = a.data_hora ? new Date(a.data_hora).toLocaleDateString('pt-BR') : '—';
+    const tipo = a.is_intimacao
+      ? '<span style="background:rgba(255,170,0,.15);color:#ffaa00;padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase">Intimação</span>'
+      : '<span style="background:var(--s2);color:var(--mu);padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase">Movimento</span>';
+    return `<tr>
+      <td style="white-space:nowrap;font-size:.78rem">${data}</td>
+      <td>
+        <div style="font-size:.82rem">${a.nome || '—'}</div>
+        ${a.complemento ? `<div style="font-size:.72rem;color:var(--mu);margin-top:2px">${a.complemento}</div>` : ''}
+      </td>
+      <td>${tipo}</td>
+    </tr>`;
+  };
 
-  listEl.innerHTML = `
-    ${novos.length ? `<div style="margin-bottom:10px;padding:8px 12px;background:rgba(255,170,0,.08);border:1px solid rgba(255,170,0,.25);border-radius:4px;font-size:12px;color:#ffaa00">
-      <strong>${novos.length} intimação(ões)</strong> detectada(s) nas movimentações do tribunal.
-    </div>` : ''}
-    <table class="andamento-table" style="width:100%">
-      <thead>
-        <tr>
-          <th style="width:120px">Data</th>
-          <th>Movimento</th>
-          <th style="width:80px">Código</th>
-          <th style="width:90px">Tipo</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${andamentos.map(a => {
-          const data = a.data_hora
-            ? new Date(a.data_hora).toLocaleDateString('pt-BR')
-            : '—';
-          const tipo = a.is_intimacao
-            ? '<span style="background:rgba(255,170,0,.15);color:#ffaa00;padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase">Intimação</span>'
-            : '<span style="background:var(--s2);color:var(--mu);padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase">Movimento</span>';
-          return `<tr>
-            <td style="white-space:nowrap">${data}</td>
-            <td>
-              <div style="font-size:13px">${a.nome || '—'}</div>
-              ${a.complemento ? `<div style="font-size:11px;color:var(--mu);margin-top:2px">${a.complemento}</div>` : ''}
-            </td>
-            <td style="font-size:11px;color:var(--mu)">${a.codigo || '—'}</td>
-            <td>${tipo}</td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>
-    <p class="tbl-count" style="margin-top:8px">Total: ${andamentos.length} movimentação(ões)</p>
-  `;
+  if (g1.length) {
+    body1.innerHTML = g1.map(rowHtml).join('');
+    if (count1) count1.textContent = `${g1.length} movimentação(ões) · CNJ DataJud`;
+  } else {
+    body1.innerHTML = '<tr><td colspan="3" class="tbl-empty">Nenhum andamento de 1ª instância. Clique em "Sincronizar CNJ".</td></tr>';
+    if (count1) count1.textContent = '';
+  }
+
+  if (g2.length) {
+    body2.innerHTML = g2.map(rowHtml).join('');
+    if (count2) count2.textContent = `${g2.length} movimentação(ões) recursal(is)`;
+  } else {
+    body2.innerHTML = '<tr><td colspan="3" class="tbl-empty">Nenhum andamento recursal encontrado.</td></tr>';
+    if (count2) count2.textContent = '';
+  }
 }
 
 async function sincronizarAndamentos(silencioso = false) {
@@ -2476,6 +2517,7 @@ async function sincronizarAndamentos(silencioso = false) {
       complemento:     m.complemento || null,
       codigo:          m.codigo || null,
       is_intimacao:    !!m.isIntimacao,
+      grau:            m.grau || 'G1',
       tribunal:        tribunal,
       sincronizado_em: new Date().toISOString(),
     }));
@@ -2494,7 +2536,7 @@ async function sincronizarAndamentos(silencioso = false) {
       .eq('pasta_id', pasta.id)
       .order('data_hora', { ascending: false });
     state.andamentosCNJ = data || [];
-    renderAndamentosCNJ(state.andamentosCNJ);
+    renderAndamentosNasInstancias(state.andamentosCNJ);
 
     if (!silencioso) {
       const novosIntimacoes = movimentos.filter(m => m.isIntimacao);

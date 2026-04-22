@@ -12,6 +12,8 @@ const ESTADO_MAP = {
   '25':'tjse','26':'tjsp','27':'tjto',
 };
 
+const INTIM_CODES = new Set([11010,11009,12385,12386,12387,12388,12389,12390,12391,12392,22,6006]);
+
 function getIndex(numero) {
   const d = numero.replace(/\D/g, '');
   if (d.length < 20) return null;
@@ -24,6 +26,14 @@ function getIndex(numero) {
   if (J === '2') return 'api_publica_stj';
   if (J === '1') return 'api_publica_stf';
   return null;
+}
+
+function normalizaGrau(grau) {
+  if (!grau) return 'G1';
+  const g = String(grau).toUpperCase();
+  if (g === 'G2' || g === 'SEGUNDO_GRAU' || g === '2') return 'G2';
+  if (g === 'SUP' || g === 'SUPERIOR') return 'SUP';
+  return 'G1';
 }
 
 export default async function handler(req) {
@@ -53,36 +63,57 @@ export default async function handler(req) {
         'Authorization': `APIKey ${CNJ_KEY}`,
         'Content-Type': 'application/json',
       },
+      // size:5 captures G1 + G2 hits for the same process number
       body: JSON.stringify({
-        size: 1,
+        size: 5,
         query: { match: { numeroProcesso: digits } },
       }),
     });
 
     const data = await resp.json();
-    const hit = data?.hits?.hits?.[0]?._source;
-    if (!hit) {
+    const hits = data?.hits?.hits ?? [];
+
+    if (!hits.length) {
       return new Response(JSON.stringify({ error: 'Processo não encontrado no DataJud', index }), {
         status: 404, headers: { ...CORS, 'Content-Type': 'application/json' },
       });
     }
 
-    const movimentos = (hit.movimentos || []).map(m => ({
-      dataHora:    m.dataHora,
-      nome:        m.nome,
-      complemento: (m.complementosTabelados || []).map(c => c.descricao).join('; ') || null,
-      codigo:      m.codigo,
-    }));
+    let numeroFormatado = '';
+    const todosMovimentos = [];
 
-    // detecta intimações por nome ou código CNJ conhecido
-    const INTIM_CODES = new Set([11010,11009,12385,12386,12387,12388,12389,12390,12391,12392,22,6006]);
-    movimentos.forEach(m => {
-      m.isIntimacao = INTIM_CODES.has(m.codigo)
-        || /intima[çc]/i.test(m.nome)
-        || /publica[çc][aã]o.*di[aá]rio/i.test(m.nome);
-    });
+    for (const h of hits) {
+      const src = h._source;
+      if (!src) continue;
+      if (!numeroFormatado) numeroFormatado = src.numeroProcesso || '';
 
-    return new Response(JSON.stringify({ movimentos, tribunal: index, numeroFormatado: hit.numeroProcesso }), {
+      const grau = normalizaGrau(src.grau);
+
+      const movs = (src.movimentos || []).map(m => {
+        const isIntimacao = INTIM_CODES.has(m.codigo)
+          || /intima[çc]/i.test(m.nome)
+          || /publica[çc][aã]o.*di[aá]rio/i.test(m.nome);
+        return {
+          dataHora:    m.dataHora,
+          nome:        m.nome,
+          complemento: (m.complementosTabelados || []).map(c => c.descricao).join('; ') || null,
+          codigo:      m.codigo,
+          grau,
+          isIntimacao,
+        };
+      });
+
+      todosMovimentos.push(...movs);
+    }
+
+    // Sort descending by date across all grades
+    todosMovimentos.sort((a, b) => (b.dataHora || '').localeCompare(a.dataHora || ''));
+
+    return new Response(JSON.stringify({
+      movimentos: todosMovimentos,
+      tribunal: index,
+      numeroFormatado,
+    }), {
       status: 200, headers: { ...CORS, 'Content-Type': 'application/json' },
     });
   } catch (err) {

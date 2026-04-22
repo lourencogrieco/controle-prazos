@@ -1,43 +1,11 @@
 export const config = { runtime: 'edge' };
 
-const CNJ_KEY = 'cDZHYzlZa0JadVREZDJCendROXV4';
-const CNJ_BASE = 'https://api-publica.datajud.cnj.jus.br';
-const CORS = { 'Access-Control-Allow-Origin': '*' };
-
-const ESTADO_MAP = {
-  '01':'tjac','02':'tjal','03':'tjap','04':'tjam','05':'tjba','06':'tjce',
-  '07':'tjdf','08':'tjes','09':'tjgo','10':'tjma','11':'tjmt','12':'tjms',
-  '13':'tjmg','14':'tjpa','15':'tjpb','16':'tjpr','17':'tjpe','18':'tjpi',
-  '19':'tjrj','20':'tjrn','21':'tjrs','22':'tjro','23':'tjrr','24':'tjsc',
-  '25':'tjse','26':'tjsp','27':'tjto',
-};
-
-const INTIM_CODES = new Set([11010,11009,12385,12386,12387,12388,12389,12390,12391,12392,22,6006]);
-
-function getIndex(numero) {
-  const d = numero.replace(/\D/g, '');
-  if (d.length < 20) return null;
-  const J  = d[13];
-  const TT = d.substring(14, 16);
-  if (J === '8') return ESTADO_MAP[TT] ? `api_publica_${ESTADO_MAP[TT]}` : null;
-  if (J === '5') return `api_publica_trf${parseInt(TT)}`;
-  if (J === '4') return `api_publica_trt${parseInt(TT)}`;
-  if (J === '3') return 'api_publica_tst';
-  if (J === '2') return 'api_publica_stj';
-  if (J === '1') return 'api_publica_stf';
-  return null;
-}
-
-function normalizaGrau(grau) {
-  if (!grau) return 'G1';
-  const g = String(grau).toUpperCase();
-  if (g === 'G2' || g === 'SEGUNDO_GRAU' || g === '2') return 'G2';
-  if (g === 'SUP' || g === 'SUPERIOR') return 'SUP';
-  return 'G1';
-}
-
 export default async function handler(req) {
-  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
+  const CORS = { 'Access-Control-Allow-Origin': '*' };
+
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: CORS });
+  }
 
   const { searchParams } = new URL(req.url);
   const numero = searchParams.get('numero');
@@ -47,31 +15,55 @@ export default async function handler(req) {
     });
   }
 
-  const index = getIndex(numero);
+  const ESTADO_MAP = {
+    '01':'tjac','02':'tjal','03':'tjap','04':'tjam','05':'tjba','06':'tjce',
+    '07':'tjdf','08':'tjes','09':'tjgo','10':'tjma','11':'tjmt','12':'tjms',
+    '13':'tjmg','14':'tjpa','15':'tjpb','16':'tjpr','17':'tjpe','18':'tjpi',
+    '19':'tjrj','20':'tjrn','21':'tjrs','22':'tjro','23':'tjrr','24':'tjsc',
+    '25':'tjse','26':'tjsp','27':'tjto',
+  };
+
+  const INTIM_CODES = [11010,11009,12385,12386,12387,12388,12389,12390,12391,12392,22,6006];
+
+  const d = numero.replace(/\D/g, '');
+  if (d.length < 20) {
+    return new Response(JSON.stringify({ error: 'Número de processo inválido (mínimo 20 dígitos)' }), {
+      status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const J  = d[13];
+  const TT = d.substring(14, 16);
+
+  let index = null;
+  if (J === '8') index = ESTADO_MAP[TT] ? `api_publica_${ESTADO_MAP[TT]}` : null;
+  else if (J === '5') index = `api_publica_trf${Number(TT)}`;
+  else if (J === '4') index = `api_publica_trt${Number(TT)}`;
+  else if (J === '3') index = 'api_publica_tst';
+  else if (J === '2') index = 'api_publica_stj';
+  else if (J === '1') index = 'api_publica_stf';
+
   if (!index) {
     return new Response(JSON.stringify({ error: 'Tribunal não identificado pelo número do processo' }), {
       status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
     });
   }
 
-  const digits = numero.replace(/\D/g, '');
-
   try {
-    const resp = await fetch(`${CNJ_BASE}/${index}/_search`, {
+    const resp = await fetch(`https://api-publica.datajud.cnj.jus.br/${index}/_search`, {
       method: 'POST',
       headers: {
-        'Authorization': `APIKey ${CNJ_KEY}`,
+        'Authorization': 'APIKey cDZHYzlZa0JadVREZDJCendROXV4',
         'Content-Type': 'application/json',
       },
-      // size:5 captures G1 + G2 hits for the same process number
       body: JSON.stringify({
         size: 5,
-        query: { match: { numeroProcesso: digits } },
+        query: { match: { numeroProcesso: d } },
       }),
     });
 
     const data = await resp.json();
-    const hits = data?.hits?.hits ?? [];
+    const hits = (data && data.hits && data.hits.hits) ? data.hits.hits : [];
 
     if (!hits.length) {
       return new Response(JSON.stringify({ error: 'Processo não encontrado no DataJud', index }), {
@@ -82,32 +74,48 @@ export default async function handler(req) {
     let numeroFormatado = '';
     const todosMovimentos = [];
 
-    for (const h of hits) {
-      const src = h._source;
+    for (let h = 0; h < hits.length; h++) {
+      const src = hits[h]._source;
       if (!src) continue;
       if (!numeroFormatado) numeroFormatado = src.numeroProcesso || '';
 
-      const grau = normalizaGrau(src.grau);
+      const grauRaw = src.grau ? String(src.grau).toUpperCase() : '';
+      const grau = (grauRaw === 'G2' || grauRaw === 'SEGUNDO_GRAU') ? 'G2'
+                 : (grauRaw === 'SUP' || grauRaw === 'SUPERIOR')     ? 'SUP'
+                 : 'G1';
 
-      const movs = (src.movimentos || []).map(m => {
-        const isIntimacao = INTIM_CODES.has(m.codigo)
-          || /intima[çc]/i.test(m.nome)
-          || /publica[çc][aã]o.*di[aá]rio/i.test(m.nome);
-        return {
-          dataHora:    m.dataHora,
-          nome:        m.nome,
-          complemento: (m.complementosTabelados || []).map(c => c.descricao).join('; ') || null,
-          codigo:      m.codigo,
+      const movs = src.movimentos || [];
+      for (let m = 0; m < movs.length; m++) {
+        const mv = movs[m];
+        const nome = mv.nome || '';
+        const codigo = mv.codigo || 0;
+        const isIntimacao = INTIM_CODES.indexOf(codigo) !== -1
+          || /intima[çc]/i.test(nome)
+          || /publica[çc][aã]o.*di[aá]rio/i.test(nome);
+
+        const comps = mv.complementosTabelados || [];
+        let complemento = '';
+        for (let c = 0; c < comps.length; c++) {
+          if (comps[c].descricao) complemento += (complemento ? '; ' : '') + comps[c].descricao;
+        }
+
+        todosMovimentos.push({
+          dataHora: mv.dataHora || null,
+          nome,
+          complemento: complemento || null,
+          codigo,
           grau,
           isIntimacao,
-        };
-      });
-
-      todosMovimentos.push(...movs);
+        });
+      }
     }
 
-    // Sort descending by date across all grades
-    todosMovimentos.sort((a, b) => (b.dataHora || '').localeCompare(a.dataHora || ''));
+    // Sort descending by date
+    todosMovimentos.sort(function(a, b) {
+      const da = a.dataHora || '';
+      const db = b.dataHora || '';
+      return da < db ? 1 : da > db ? -1 : 0;
+    });
 
     return new Response(JSON.stringify({
       movimentos: todosMovimentos,
@@ -116,6 +124,7 @@ export default async function handler(req) {
     }), {
       status: 200, headers: { ...CORS, 'Content-Type': 'application/json' },
     });
+
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500, headers: { ...CORS, 'Content-Type': 'application/json' },

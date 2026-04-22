@@ -1394,9 +1394,18 @@ function renderPrazosAba() {
   document.getElementById('prazosInfo').textContent = `${lista.length} registro${lista.length !== 1 ? 's' : ''}`;
   document.getElementById('tabelaPrazosAba').innerHTML = lista.length
     ? lista.map(p => {
-        const intimData = p.intimacaoId
-          ? (state.intimacoes.find(i => i.id === p.intimacaoId)?.dataPublicacao || null)
-          : null;
+        // 1. link direto por ID
+      let intimData = p.intimacaoId
+        ? (state.intimacoes.find(i => i.id === p.intimacaoId)?.dataPublicacao || null)
+        : null;
+      // 2. fallback: extrai data do padrão "(DD/MM/YYYY)" no final da descrição
+      if (!intimData && p.descricao) {
+        const dm = p.descricao.match(/\((\d{2}\/\d{2}\/\d{4})\)\s*$/);
+        if (dm) {
+          const [dd, mm, yyyy] = dm[1].split('/');
+          intimData = yyyy + '-' + mm + '-' + dd;
+        }
+      }
         const pastaLink = p.pastaNr
           ? `<a href="#" class="table-link" onclick="event.preventDefault();navegarPara('pastas');setTimeout(()=>abrirPasta('${p.pastaNr}'),100)">${p.pastaNr}</a>`
           : '—';
@@ -2585,12 +2594,30 @@ async function sincronizarAndamentos(silencioso = false) {
     const res  = await fetch(`/api/cnj-proxy?numero=${encodeURIComponent(processo)}`);
     const json = await res.json();
 
-    if (!res.ok) {
-      if (!silencioso) toast(json.error || 'Erro ao consultar DataJud.', 'error');
-      return;
-    }
+    let movimentos, tribunal, numeroFormatado;
 
-    const { movimentos, tribunal, numeroFormatado } = json;
+    if (!res.ok) {
+      // DataJud não encontrou — se for TJSP tenta ESAJ diretamente
+      if (json.index === 'api_publica_tjsp') {
+        if (!silencioso) toast('DataJud sem dados para TJSP — consultando ESAJ…', 'info');
+        const esajRes  = await fetch(`/api/esaj-proxy?numero=${encodeURIComponent(processo)}`);
+        const esajJson = await esajRes.json();
+        if (!esajRes.ok) {
+          if (!silencioso) toast(esajJson.error || 'Processo não encontrado no ESAJ.', 'error');
+          return;
+        }
+        movimentos     = esajJson.movimentos;
+        tribunal       = esajJson.tribunal;
+        numeroFormatado = esajJson.numeroFormatado;
+      } else {
+        if (!silencioso) toast(json.error || 'Erro ao consultar DataJud.', 'error');
+        return;
+      }
+    } else {
+      movimentos     = json.movimentos;
+      tribunal       = json.tribunal;
+      numeroFormatado = json.numeroFormatado;
+    }
 
     const rows = movimentos.map(m => ({
       empresa_id:      state.empresaId,
@@ -2607,9 +2634,13 @@ async function sincronizarAndamentos(silencioso = false) {
     }));
 
     if (rows.length) {
+      // ESAJ não tem código — usa pasta_id+data_hora+nome como chave
+      const onConflict = rows[0]?.codigo != null
+        ? 'pasta_id,data_hora,codigo'
+        : 'pasta_id,data_hora,nome';
       const { error } = await db
         .from('andamentos_processo')
-        .upsert(rows, { onConflict: 'pasta_id,data_hora,codigo', ignoreDuplicates: false });
+        .upsert(rows, { onConflict, ignoreDuplicates: true });
       if (error) { if (!silencioso) toast('Erro ao salvar andamentos: ' + error.message, 'error'); return; }
     }
 

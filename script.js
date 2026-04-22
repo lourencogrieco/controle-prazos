@@ -1990,21 +1990,20 @@ function abrirPasta(numero) {
   document.getElementById('pastas-detail').classList.remove('hidden');
   document.getElementById('pastaNumeroDetalhe').textContent = p.numero;
 
-  document.getElementById('pastaAreaBadge').textContent    = p.area || p.tipoServico;
-  document.getElementById('pCliente').textContent          = p.cliente;
-  document.getElementById('pCodigoSIA').textContent        = p.codigoSIA;
-  document.getElementById('pTipoServico').textContent      = p.tipoServico;
-  document.getElementById('pServico').textContent          = p.servico;
-  document.getElementById('pParteContraria').textContent   = p.parteContraria;
-  document.getElementById('pAdvogado').textContent         = p.advogado;
+  const d = id => document.getElementById(id);
+  d('pastaAreaBadge').textContent      = p.area || p.tipoServico || '—';
+  d('dtlCliente').textContent          = p.cliente || '—';
+  d('dtlTipoServico').textContent      = p.tipoServico || '—';
+  d('dtlServico').textContent          = p.servico || '—';
+  d('dtlParteContraria').textContent   = (p.parteContraria && p.parteContraria !== '-') ? p.parteContraria : '—';
+  d('dtlAdvogado').textContent         = p.advogado || '—';
 
-  document.getElementById('pDescricao').value        = p.descricao;
-  document.getElementById('pDataDistribuicao').value = p.dataDistribuicao;
-  document.getElementById('pDataContrato').value     = '00/00/0000';
-  document.getElementById('pValorCausa').value       = p.valorCausa;
-  document.getElementById('pIncluidoPor').value      = p.incluidoPor;
-  document.getElementById('pAreaResp').innerHTML     = `<option>${p.area || '—'}</option>`;
-  document.getElementById('pAdvResp').innerHTML      = `<option>${p.advogado}</option>`;
+  if (d('dtlDescricao'))         d('dtlDescricao').value        = p.descricao || '';
+  if (d('dtlDataDistribuicao'))  d('dtlDataDistribuicao').value = p.dataDistribuicao || '';
+  if (d('dtlValorCausa'))        d('dtlValorCausa').value       = p.valorCausa || '';
+  if (d('dtlIncluidoPor'))       d('dtlIncluidoPor').value      = p.incluidoPor || '';
+  if (d('dtlAreaResp'))          d('dtlAreaResp').innerHTML     = `<option>${p.area || '—'}</option>`;
+  if (d('dtlAdvResp'))           d('dtlAdvResp').innerHTML      = `<option>${p.advogado || '—'}</option>`;
 
   document.getElementById('instanciaNumero1').textContent  = p.processo || '—';
   document.getElementById('instanciaComarca1').textContent = `Comarca: ${p.comarca || '—'}`;
@@ -2014,16 +2013,8 @@ function abrirPasta(numero) {
   document.querySelector('.pasta-tab[data-ptab="andamentos"]').classList.add('is-active');
   document.getElementById('ptab-andamentos').classList.add('is-active');
 
-  // Botão editar pasta
-  const btnEditar = document.getElementById('btnEditarPasta');
-  if (btnEditar) {
-    btnEditar.onclick = () => abrirModalNovaPasta(p.numero);
-  }
-  // Botão excluir pasta
-  const btnExcluir = document.getElementById('btnExcluirPasta');
-  if (btnExcluir) {
-    btnExcluir.onclick = () => excluirPasta(p.id);
-  }
+  const btnEditar = document.getElementById('pastaEditarBtn');
+  if (btnEditar) btnEditar.onclick = () => abrirModalNovaPasta(p.numero);
 }
 
 document.getElementById('btnVoltarPastas').addEventListener('click', () => {

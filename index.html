@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=10">
+  <link rel="stylesheet" href="style.css?v=11">
 </head>
 <body>
 <div class="app">
@@ -1206,19 +1206,19 @@
 
             <dl class="pasta-meta">
               <dt>Cliente(s)</dt>
-              <dd id="pCliente">—</dd>
+              <dd id="dtlCliente">—</dd>
 
               <dt>Categoria</dt>
-              <dd id="pTipoServico">—</dd>
+              <dd id="dtlTipoServico">—</dd>
 
               <dt>Tipo de ação / Serviço</dt>
-              <dd id="pServico">—</dd>
+              <dd id="dtlServico">—</dd>
 
               <dt>Parte contrária</dt>
-              <dd id="pParteContraria">—</dd>
+              <dd id="dtlParteContraria">—</dd>
 
               <dt>Advogado responsável</dt>
-              <dd id="pAdvogado">—</dd>
+              <dd id="dtlAdvogado">—</dd>
             </dl>
 
             <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Recolher">‹</button>
@@ -1338,35 +1338,35 @@
               <div class="dados-grid">
                 <label class="field dados-full">
                   <span>Descrição do objeto</span>
-                  <textarea id="pDescricao" rows="3" readonly></textarea>
+                  <textarea id="dtlDescricao" rows="3" readonly></textarea>
                 </label>
                 <label class="field">
                   <span>Data da distribuição <span class="req">*</span></span>
-                  <input type="text" id="pDataDistribuicao" readonly>
+                  <input type="text" id="dtlDataDistribuicao" readonly>
                 </label>
                 <label class="field">
                   <span>Data do contrato originário</span>
-                  <input type="text" id="pDataContrato" value="00/00/0000" readonly>
+                  <input type="text" id="dtlDataContrato" value="00/00/0000" readonly>
                 </label>
                 <label class="field">
                   <span>Valor da causa <span class="req">*</span></span>
-                  <input type="text" id="pValorCausa" readonly>
+                  <input type="text" id="dtlValorCausa" readonly>
                 </label>
                 <label class="field">
                   <span>Empresa</span>
-                  <select id="pEmpresa" disabled><option>Selecione uma empresa</option></select>
+                  <select id="dtlEmpresa" disabled><option>Selecione uma empresa</option></select>
                 </label>
                 <label class="field">
                   <span>Incluído por <span class="req">*</span></span>
-                  <input type="text" id="pIncluidoPor" readonly>
+                  <input type="text" id="dtlIncluidoPor" readonly>
                 </label>
                 <label class="field">
                   <span>Área responsável <span class="req">*</span></span>
-                  <select id="pAreaResp" disabled><option></option></select>
+                  <select id="dtlAreaResp" disabled><option></option></select>
                 </label>
                 <label class="field">
                   <span>Advogado responsável <span class="req">*</span></span>
-                  <select id="pAdvResp" disabled><option></option></select>
+                  <select id="dtlAdvResp" disabled><option></option></select>
                 </label>
                 <label class="field">
                   <span>Advogado corresponsável</span>
@@ -2045,6 +2045,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="script.js?v=10"></script>
+<script src="script.js?v=11"></script>
 </body>
 </html>

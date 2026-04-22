@@ -2500,30 +2500,24 @@ async function salvarEdicaoPerfil() {
 // ──────────────────────────────────────────────────────────────────────
 
 async function carregarAndamentosCNJ(pastaId, numeroProcesso) {
-  const listEl = document.getElementById('cnj-andamentos-list');
-  if (!listEl) return;
-
-  if (!numeroProcesso) {
-    listEl.innerHTML = '<div class="empty-state">Número do processo não informado nesta pasta. Edite a pasta e preencha o campo "Número do Processo".</div>';
-    return;
-  }
-
   const { data, error } = await db
     .from('andamentos_processo')
     .select('*')
     .eq('pasta_id', pastaId)
     .order('data_hora', { ascending: false });
 
-  if (error) { console.error('Erro ao carregar andamentos CNJ:', error); return; }
+  if (error) { console.error('Erro ao carregar andamentos:', error); return; }
 
   state.andamentosCNJ = data || [];
   renderAndamentosNasInstancias(state.andamentosCNJ);
 
-  // Auto-sync: triggers if never synced or last sync was > 6h ago
-  const ultimaSync = data?.[0]?.sincronizado_em ? new Date(data[0].sincronizado_em) : null;
-  const seisHorasAtras = new Date(Date.now() - 6 * 60 * 60 * 1000);
-  if (!ultimaSync || ultimaSync < seisHorasAtras) {
-    sincronizarAndamentos(true);
+  // Auto-sync CNJ only when process number exists and data is stale (> 6h)
+  if (numeroProcesso) {
+    const ultimaSync = data?.find(d => d.tribunal !== 'manual')?.sincronizado_em;
+    const seisHorasAtras = new Date(Date.now() - 6 * 60 * 60 * 1000);
+    if (!ultimaSync || new Date(ultimaSync) < seisHorasAtras) {
+      sincronizarAndamentos(true);
+    }
   }
 }
 

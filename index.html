@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=15">
+  <link rel="stylesheet" href="style.css?v=16">
 </head>
 <body>
 <div class="app">
@@ -1165,6 +1165,7 @@
                   <th>N° da pasta</th>
                   <th>Cliente</th>
                   <th>Parte contrária</th>
+                  <th>N° Processo</th>
                   <th>Categoria</th>
                   <th>Tipo de ação / Serviço</th>
                 </tr>
@@ -1682,8 +1683,8 @@
             </select>
           </div>
           <div class="field">
-            <span class="field-label">Tipo de ação / Serviço</span>
-            <input type="text" id="pTipoAcao" placeholder="Ex: Ação Declaratória, Parecer">
+            <span class="field-label">Tipo de ação / Serviço <span style="color:var(--red)">*</span></span>
+            <input type="text" id="pTipoAcao" placeholder="Ex: Ação Declaratória, Parecer" required>
           </div>
         </div>
         <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:14px">
@@ -2068,6 +2069,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="script.js?v=15"></script>
+<script src="script.js?v=16"></script>
 </body>
 </html>

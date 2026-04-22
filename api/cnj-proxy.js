@@ -58,7 +58,15 @@ export default async function handler(req) {
       },
       body: JSON.stringify({
         size: 5,
-        query: { match: { numeroProcesso: `${d.slice(0,7)}-${d.slice(7,9)}.${d.slice(9,13)}.${d.slice(13,14)}.${d.slice(14,16)}.${d.slice(16,20)}` } },
+        query: {
+          bool: {
+            should: [
+              { match: { numeroProcesso: `${d.slice(0,7)}-${d.slice(7,9)}.${d.slice(9,13)}.${d.slice(13,14)}.${d.slice(14,16)}.${d.slice(16,20)}` } },
+              { match: { numeroProcesso: d } },
+            ],
+            minimum_should_match: 1,
+          },
+        },
       }),
     });
 
@@ -66,7 +74,11 @@ export default async function handler(req) {
     const hits = (data && data.hits && data.hits.hits) ? data.hits.hits : [];
 
     if (!hits.length) {
-      return new Response(JSON.stringify({ error: 'Processo não encontrado no DataJud', index }), {
+      const isTJSP = index === 'api_publica_tjsp';
+      const msg = isTJSP
+        ? 'Processo não encontrado no DataJud. O TJSP usa o sistema ESAJ, que tem integração parcial com o DataJud — verifique diretamente no ESAJ.'
+        : 'Processo não encontrado no DataJud.';
+      return new Response(JSON.stringify({ error: msg, index }), {
         status: 404, headers: { ...CORS, 'Content-Type': 'application/json' },
       });
     }

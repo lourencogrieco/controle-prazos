@@ -601,16 +601,15 @@ document.getElementById('novaPastaForm').addEventListener('submit', async e => {
     obj.cliente_id  = document.getElementById('pClienteSelect')?.value || null;
 
     const { error } = await db.from('pastas').upsert(obj);
-    btn.disabled = false;
-    btn.textContent = 'Salvar Pasta';
     if (error) { toast('Erro ao salvar: ' + error.message, 'error'); return; }
     fecharModalNovaPasta();
     toast('Pasta salva com sucesso');
     await carregarDados();
   } catch (err) {
+    toast('Erro inesperado: ' + err.message, 'error');
+  } finally {
     btn.disabled = false;
     btn.textContent = 'Salvar Pasta';
-    toast('Erro inesperado: ' + err.message, 'error');
   }
 });
 
@@ -2174,9 +2173,10 @@ function renderPastaList() {
       <td><span class="pasta-link">${p.numero}</span></td>
       <td class="pasta-client">${p.cliente}</td>
       <td>${p.parteContraria}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:.72rem">${p.processo || '—'}</td>
       <td>${p.tipoServico}</td>
       <td>${p.servico}</td>
-    </tr>`).join('') || `<tr><td colspan="6" class="tbl-empty">Nenhuma pasta encontrada.</td></tr>`;
+    </tr>`).join('') || `<tr><td colspan="7" class="tbl-empty">Nenhuma pasta encontrada.</td></tr>`;
 
   const fim = Math.min(inicio + pastaLinhas, total);
   document.getElementById('pastasPaginacaoInfo').textContent =

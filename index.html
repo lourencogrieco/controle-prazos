@@ -876,7 +876,7 @@
               <span class="cfg-card-title">CADASTROS</span>
             </div>
             <div class="cfg-field-group" style="gap:8px">
-              <button class="btn-outline cfg-cadastro-btn" onclick="abrirModalNovoCliente('configuracoes')">
+              <button class="btn-outline cfg-cadastro-btn" onclick="abrirModalGerenciarClientes()">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 Clientes
               </button>
@@ -1794,6 +1794,22 @@
   </div>
 </div>
 
+<!-- ===== MODAL GERENCIAR CLIENTES ===== -->
+<div id="modalGerenciarClientes" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-head">
+      <h3>Clientes</h3>
+      <button class="modal-close" onclick="fecharModalGerenciarClientes()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+        <button class="btn-primary btn-sm" onclick="fecharModalGerenciarClientes();abrirModalNovoCliente('gerenciar')">+ Novo Cliente</button>
+      </div>
+      <div id="listaClientes"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODAL NOVO CLIENTE ===== -->
 <div id="modalNovoCliente" class="modal-overlay" role="dialog" aria-modal="true">
   <div class="modal" style="max-width:500px">
@@ -1845,9 +1861,15 @@
             <input type="text" id="cNumero" placeholder="100">
           </div>
         </div>
-        <div class="field">
-          <span class="field-label">Complemento</span>
-          <input type="text" id="cComplemento" placeholder="Apto 21, Bloco B">
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:12px">
+          <div class="field" style="margin:0">
+            <span class="field-label">Complemento</span>
+            <input type="text" id="cComplemento" placeholder="Apto 21, Bloco B">
+          </div>
+          <div class="field" style="margin:0">
+            <span class="field-label">Bairro</span>
+            <input type="text" id="cBairro" placeholder="Centro">
+          </div>
         </div>
         <div class="form-grid" style="grid-template-columns:100px 1fr 72px;gap:12px">
           <div class="field" style="margin:0">

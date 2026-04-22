@@ -299,6 +299,7 @@ function dbParaCliente(row) {
     rua:         row.rua || '',
     numero:      row.numero || '',
     complemento: row.complemento || '',
+    bairro:      row.bairro || '',
     cep:         row.cep || '',
     cidade:      row.cidade || '',
     estado:      row.estado || '',
@@ -532,8 +533,16 @@ document.getElementById('pTipoPasta').addEventListener('change', atualizarPrevie
 document.getElementById('pAno').addEventListener('input', atualizarPreviewNumero);
 
 document.getElementById('pClienteSelect').addEventListener('change', e => {
-  const opt = e.target.options[e.target.selectedIndex];
-  if (opt.dataset.nome) document.getElementById('pCliente').value = opt.dataset.nome;
+  const sel = e.target;
+  const opt = sel.options[sel.selectedIndex];
+  const pCliente = document.getElementById('pCliente');
+  if (opt.value && opt.dataset.nome) {
+    pCliente.value = opt.dataset.nome;
+    pCliente.required = false;
+  } else {
+    pCliente.value = '';
+    pCliente.required = true;
+  }
 });
 
 document.getElementById('novaPastaForm').addEventListener('submit', async e => {
@@ -552,12 +561,16 @@ document.getElementById('novaPastaForm').addEventListener('submit', async e => {
       ? document.getElementById('pastaNumeroValor').textContent
       : gerarNumeroPasta(codigoTipo, areaId, ano);
 
-    const clienteVal = document.getElementById('pCliente')?.value.trim() || '';
+    const selectedClienteId = document.getElementById('pClienteSelect')?.value || '';
+    const selectedCliente   = state.clientes.find(c => c.id === selectedClienteId);
+    const clienteNome = selectedCliente?.nome
+      || document.getElementById('pCliente')?.value.trim()
+      || 'N/A';
     const obj = pastaParaDb({
       id:               pastaId || uid(),
       numero,
       codigoSIA:        '-',
-      cliente:          clienteVal || 'N/A',
+      cliente:          clienteNome,
       parteContraria:   document.getElementById('pParteContraria')?.value.trim() || '-',
       tipoServico:      document.getElementById('pCategoria').value,
       servico:          document.getElementById('pTipoAcao')?.value.trim() || '',
@@ -916,22 +929,25 @@ async function excluirTipoPasta(id) {
 // ──────────────────────────────────────────────────────────────────────
 // CRUD — CLIENTES
 // ──────────────────────────────────────────────────────────────────────
-function abrirModalNovoCliente(contexto) {
-  document.getElementById('clienteId').value    = '';
-  document.getElementById('cNome').value         = '';
-  document.querySelector('input[name="cTipo"][value="PJ"]').checked = true;
-  document.getElementById('cCpfCnpj').value      = '';
-  document.getElementById('cTelefone').value     = '';
-  document.getElementById('cEmail').value        = '';
-  document.getElementById('cRua').value          = '';
-  document.getElementById('cNumero').value       = '';
-  document.getElementById('cComplemento').value  = '';
-  document.getElementById('cCep').value          = '';
-  document.getElementById('cCidade').value       = '';
-  document.getElementById('cEstado').value       = '';
-  document.getElementById('tituloClienteModal').textContent = 'Novo Cliente';
-  document.getElementById('_clienteContexto').value = contexto || '';
-  document.getElementById('modalNovoCliente').classList.add('open');
+function abrirModalNovoCliente(contexto, cliente) {
+  const g = id => document.getElementById(id);
+  g('clienteId').value   = cliente?.id || '';
+  g('cNome').value       = cliente?.nome || '';
+  const radio = document.querySelector(`input[name="cTipo"][value="${cliente?.tipo || 'PJ'}"]`);
+  if (radio) radio.checked = true;
+  g('cCpfCnpj').value    = cliente?.cpfCnpj || '';
+  g('cTelefone').value   = cliente?.telefone || '';
+  g('cEmail').value      = cliente?.email || '';
+  if (g('cRua'))         g('cRua').value         = cliente?.rua || '';
+  if (g('cNumero'))      g('cNumero').value       = cliente?.numero || '';
+  if (g('cComplemento')) g('cComplemento').value  = cliente?.complemento || '';
+  if (g('cBairro'))      g('cBairro').value       = cliente?.bairro || '';
+  if (g('cCep'))         g('cCep').value          = cliente?.cep || '';
+  if (g('cCidade'))      g('cCidade').value       = cliente?.cidade || '';
+  if (g('cEstado'))      g('cEstado').value       = cliente?.estado || '';
+  g('tituloClienteModal').textContent = cliente ? 'Editar Cliente' : 'Novo Cliente';
+  g('_clienteContexto').value = contexto || '';
+  g('modalNovoCliente').classList.add('open');
 }
 
 function fecharModalNovoCliente() {
@@ -953,8 +969,9 @@ document.getElementById('novoClienteForm').addEventListener('submit', async e =>
 
   try {
     const g = id => document.getElementById(id);
+    const existingId = g('clienteId')?.value || '';
     const obj = {
-      id:          uid(),
+      id:          existingId || uid(),
       empresa_id:  state.empresaId,
       nome:        g('cNome').value.trim().toUpperCase(),
       tipo:        document.querySelector('input[name="cTipo"]:checked').value,
@@ -964,31 +981,102 @@ document.getElementById('novoClienteForm').addEventListener('submit', async e =>
       rua:         g('cRua')?.value.trim() || null,
       numero:      g('cNumero')?.value.trim() || null,
       complemento: g('cComplemento')?.value.trim() || null,
+      bairro:      g('cBairro')?.value.trim() || null,
       cep:         g('cCep')?.value.trim() || null,
       cidade:      g('cCidade')?.value.trim() || null,
       estado:      g('cEstado')?.value || null,
     };
 
-    const { error } = await db.from('clientes_lhub').insert(obj);
+    const { error } = await db.from('clientes_lhub').upsert(obj);
     btn.disabled = false; btn.textContent = 'Salvar Cliente';
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
 
-    state.clientes.push(dbParaCliente(obj));
+    if (existingId) {
+      const idx = state.clientes.findIndex(c => c.id === existingId);
+      if (idx !== -1) state.clientes[idx] = dbParaCliente(obj);
+    } else {
+      state.clientes.push(dbParaCliente(obj));
+    }
     state.clientes.sort((a, b) => a.nome.localeCompare(b.nome));
     popularDropdownClientes();
+    if (document.getElementById('listaClientes')) renderListaClientes();
 
-    const ctx = document.getElementById('_clienteContexto')?.value;
+    const ctx = g('_clienteContexto')?.value;
     fecharModalNovoCliente();
-    toast('Cliente cadastrado');
+    toast(existingId ? 'Cliente atualizado' : 'Cliente cadastrado');
 
     if (ctx === 'pasta') {
       document.getElementById('pClienteSelect').value = obj.id;
       document.getElementById('pCliente').value = obj.nome;
+    } else if (ctx === 'gerenciar') {
+      abrirModalGerenciarClientes();
     }
   } catch (err) {
     btn.disabled = false; btn.textContent = 'Salvar Cliente';
     toast('Erro inesperado: ' + err.message, 'error');
   }
+});
+
+// ──────────────────────────────────────────────────────────────────────
+// GERENCIAR CLIENTES
+// ──────────────────────────────────────────────────────────────────────
+function renderListaClientes() {
+  const el = document.getElementById('listaClientes');
+  if (!el) return;
+  if (!state.clientes.length) {
+    el.innerHTML = '<p style="color:var(--mu);font-size:var(--text-sm);padding:8px 0">Nenhum cliente cadastrado.</p>';
+    return;
+  }
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse">
+    <thead><tr>
+      <th style="text-align:left;padding:5px 8px;font-size:.68rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Nome</th>
+      <th style="text-align:left;padding:5px 8px;font-size:.68rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Tipo</th>
+      <th style="text-align:left;padding:5px 8px;font-size:.68rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Telefone</th>
+      <th style="text-align:left;padding:5px 8px;font-size:.68rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Cidade</th>
+      <th style="width:72px;border-bottom:1px solid var(--br)"></th>
+    </tr></thead>
+    <tbody>${state.clientes.map(c => `
+      <tr>
+        <td style="padding:6px 8px;font-size:.82rem;font-weight:600">${c.nome}</td>
+        <td style="padding:6px 8px;font-size:.78rem;color:var(--mu)">${c.tipo}</td>
+        <td style="padding:6px 8px;font-size:.78rem;color:var(--mu)">${c.telefone || '—'}</td>
+        <td style="padding:6px 8px;font-size:.78rem;color:var(--mu)">${c.cidade || '—'}</td>
+        <td style="padding:6px 8px;display:flex;gap:6px">
+          <button onclick="editarCliente('${c.id}')" style="background:none;border:none;color:var(--mu);cursor:pointer;font-size:.85rem" title="Editar">✎</button>
+          <button onclick="excluirCliente('${c.id}')" style="background:none;border:none;color:var(--mu);cursor:pointer;font-size:.85rem" title="Excluir">✕</button>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function editarCliente(id) {
+  const c = state.clientes.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('modalGerenciarClientes').classList.remove('open');
+  abrirModalNovoCliente('gerenciar', c);
+}
+
+async function excluirCliente(id) {
+  if (!confirm('Excluir este cliente?')) return;
+  const { error } = await db.from('clientes_lhub').delete().eq('id', id).eq('empresa_id', state.empresaId);
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  state.clientes = state.clientes.filter(c => c.id !== id);
+  popularDropdownClientes();
+  renderListaClientes();
+  toast('Cliente excluído');
+}
+
+function abrirModalGerenciarClientes() {
+  renderListaClientes();
+  document.getElementById('modalGerenciarClientes').classList.add('open');
+}
+
+function fecharModalGerenciarClientes() {
+  document.getElementById('modalGerenciarClientes').classList.remove('open');
+}
+document.getElementById('modalGerenciarClientes').addEventListener('click', e => {
+  if (e.target === e.currentTarget) fecharModalGerenciarClientes();
 });
 
 // ──────────────────────────────────────────────────────────────────────

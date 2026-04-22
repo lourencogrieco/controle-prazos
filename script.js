@@ -542,44 +542,51 @@ document.getElementById('novaPastaForm').addEventListener('submit', async e => {
   btn.disabled = true;
   btn.textContent = 'Salvando…';
 
-  const pastaId    = document.getElementById('pastaId').value;
-  const areaId     = document.getElementById('pAreaPasta').value;
-  const codigoTipo = document.getElementById('pTipoPasta').value;
-  const ano        = document.getElementById('pAno').value;
-  const areaNome   = state.areas.find(a => a.id === areaId)?.nome || '';
-  const numero     = pastaId
-    ? document.getElementById('pastaNumeroValor').textContent
-    : gerarNumeroPasta(codigoTipo, areaId, ano);
+  try {
+    const pastaId    = document.getElementById('pastaId').value;
+    const areaId     = document.getElementById('pAreaPasta').value;
+    const codigoTipo = document.getElementById('pTipoPasta').value;
+    const ano        = document.getElementById('pAno').value;
+    const areaNome   = state.areas.find(a => a.id === areaId)?.nome || '';
+    const numero     = pastaId
+      ? document.getElementById('pastaNumeroValor').textContent
+      : gerarNumeroPasta(codigoTipo, areaId, ano);
 
-  const obj = pastaParaDb({
-    id:               pastaId || uid(),
-    numero,
-    codigoSIA:        '-',
-    cliente:          document.getElementById('pCliente').value.trim(),
-    parteContraria:   document.getElementById('pParteContraria').value.trim() || '-',
-    tipoServico:      document.getElementById('pCategoria').value,
-    servico:          document.getElementById('pTipoAcao').value.trim(),
-    advogado:         document.getElementById('pAdvogado').value.trim(),
-    comarca:          document.getElementById('pComarca').value.trim(),
-    processo:         document.getElementById('pProcesso').value.trim(),
-    valorCausa:       document.getElementById('pValorCausa').value.trim() || 'R$ 0,00',
-    area:             areaNome,
-    descricao:        document.getElementById('pObs').value.trim(),
-    dataDistribuicao: document.getElementById('pDataAb').value || null,
-    incluidoPor:      state.meuPerfil?.nome || '',
-    status:           'ativo',
-  });
-  obj.codigo_tipo = codigoTipo ? Number(codigoTipo) : null;
-  obj.area_id     = areaId || null;
-  obj.cliente_id  = document.getElementById('pClienteSelect').value || null;
+    const clienteVal = document.getElementById('pCliente')?.value.trim() || '';
+    const obj = pastaParaDb({
+      id:               pastaId || uid(),
+      numero,
+      codigoSIA:        '-',
+      cliente:          clienteVal || 'N/A',
+      parteContraria:   document.getElementById('pParteContraria')?.value.trim() || '-',
+      tipoServico:      document.getElementById('pCategoria').value,
+      servico:          document.getElementById('pTipoAcao')?.value.trim() || '',
+      advogado:         document.getElementById('pAdvogado')?.value.trim() || '',
+      comarca:          document.getElementById('pComarca')?.value.trim() || '',
+      processo:         document.getElementById('pProcesso')?.value.trim() || '',
+      valorCausa:       document.getElementById('pValorCausa')?.value.trim() || 'R$ 0,00',
+      area:             areaNome,
+      descricao:        document.getElementById('pObs')?.value.trim() || '',
+      dataDistribuicao: document.getElementById('pDataAb')?.value || null,
+      incluidoPor:      state.meuPerfil?.nome || '',
+      status:           'ativo',
+    });
+    obj.codigo_tipo = codigoTipo ? Number(codigoTipo) : null;
+    obj.area_id     = areaId || null;
+    obj.cliente_id  = document.getElementById('pClienteSelect')?.value || null;
 
-  const { error } = await db.from('pastas').upsert(obj);
-  btn.disabled = false;
-  btn.textContent = 'Salvar Pasta';
-  if (error) { toast('Erro ao salvar: ' + error.message, 'error'); return; }
-  fecharModalNovaPasta();
-  toast('Pasta salva com sucesso');
-  await carregarDados();
+    const { error } = await db.from('pastas').upsert(obj);
+    btn.disabled = false;
+    btn.textContent = 'Salvar Pasta';
+    if (error) { toast('Erro ao salvar: ' + error.message, 'error'); return; }
+    fecharModalNovaPasta();
+    toast('Pasta salva com sucesso');
+    await carregarDados();
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = 'Salvar Pasta';
+    toast('Erro inesperado: ' + err.message, 'error');
+  }
 });
 
 async function excluirPasta(id) {
@@ -944,38 +951,43 @@ document.getElementById('novoClienteForm').addEventListener('submit', async e =>
   const btn = document.getElementById('btnSalvarCliente');
   btn.disabled = true; btn.textContent = 'Salvando…';
 
-  const obj = {
-    id:          uid(),
-    empresa_id:  state.empresaId,
-    nome:        document.getElementById('cNome').value.trim().toUpperCase(),
-    tipo:        document.querySelector('input[name="cTipo"]:checked').value,
-    cpf_cnpj:    document.getElementById('cCpfCnpj').value.trim() || null,
-    telefone:    document.getElementById('cTelefone').value.trim() || null,
-    email:       document.getElementById('cEmail').value.trim() || null,
-    rua:         document.getElementById('cRua').value.trim() || null,
-    numero:      document.getElementById('cNumero').value.trim() || null,
-    complemento: document.getElementById('cComplemento').value.trim() || null,
-    cep:         document.getElementById('cCep').value.trim() || null,
-    cidade:      document.getElementById('cCidade').value.trim() || null,
-    estado:      document.getElementById('cEstado').value || null,
-  };
+  try {
+    const g = id => document.getElementById(id);
+    const obj = {
+      id:          uid(),
+      empresa_id:  state.empresaId,
+      nome:        g('cNome').value.trim().toUpperCase(),
+      tipo:        document.querySelector('input[name="cTipo"]:checked').value,
+      cpf_cnpj:    g('cCpfCnpj')?.value.trim() || null,
+      telefone:    g('cTelefone')?.value.trim() || null,
+      email:       g('cEmail')?.value.trim() || null,
+      rua:         g('cRua')?.value.trim() || null,
+      numero:      g('cNumero')?.value.trim() || null,
+      complemento: g('cComplemento')?.value.trim() || null,
+      cep:         g('cCep')?.value.trim() || null,
+      cidade:      g('cCidade')?.value.trim() || null,
+      estado:      g('cEstado')?.value || null,
+    };
 
-  const { error } = await db.from('clientes_lhub').insert(obj);
-  btn.disabled = false; btn.textContent = 'Salvar Cliente';
-  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    const { error } = await db.from('clientes_lhub').insert(obj);
+    btn.disabled = false; btn.textContent = 'Salvar Cliente';
+    if (error) { toast('Erro: ' + error.message, 'error'); return; }
 
-  state.clientes.push(dbParaCliente(obj));
-  state.clientes.sort((a, b) => a.nome.localeCompare(b.nome));
-  popularDropdownClientes();
+    state.clientes.push(dbParaCliente(obj));
+    state.clientes.sort((a, b) => a.nome.localeCompare(b.nome));
+    popularDropdownClientes();
 
-  const ctx = document.getElementById('_clienteContexto')?.value;
-  fecharModalNovoCliente();
-  toast('Cliente cadastrado');
+    const ctx = document.getElementById('_clienteContexto')?.value;
+    fecharModalNovoCliente();
+    toast('Cliente cadastrado');
 
-  if (ctx === 'pasta') {
-    // seleciona o novo cliente no dropdown da pasta
-    document.getElementById('pClienteSelect').value = obj.id;
-    document.getElementById('pCliente').value = obj.nome;
+    if (ctx === 'pasta') {
+      document.getElementById('pClienteSelect').value = obj.id;
+      document.getElementById('pCliente').value = obj.nome;
+    }
+  } catch (err) {
+    btn.disabled = false; btn.textContent = 'Salvar Cliente';
+    toast('Erro inesperado: ' + err.message, 'error');
   }
 });
 

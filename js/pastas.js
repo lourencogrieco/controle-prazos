@@ -291,7 +291,7 @@ function abrirPasta(numero) {
   const btnEditar = document.getElementById('pastaEditarBtn');
   if (btnEditar) btnEditar.onclick = () => abrirModalNovaPasta(p.numero);
 
-  carregarAndamentosCNJ(p.id, p.processo);
+  carregarAndamentosCNJ(p.id);
 }
 
 document.getElementById('btnVoltarPastas').addEventListener('click', () => {

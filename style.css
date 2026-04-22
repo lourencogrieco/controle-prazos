@@ -2031,6 +2031,12 @@ tbody td {
   display: flex;
 }
 
+/* Modais que podem abrir em cima do modal de detalhe do andamento */
+#modalUploadDoc,
+#modalAndamentoManual {
+  z-index: 600;
+}
+
 .modal {
   background: var(--s0);
   border-radius: var(--r-lg);

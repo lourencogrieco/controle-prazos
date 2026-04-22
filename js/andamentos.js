@@ -2,7 +2,7 @@
 // CNJ DATAJUD — ANDAMENTOS DO TRIBUNAL
 // ──────────────────────────────────────────────────────────────────────
 
-async function carregarAndamentosCNJ(pastaId, numeroProcesso) {
+async function carregarAndamentosCNJ(pastaId) {
   const { data, error } = await db
     .from('andamentos_processo')
     .select('*')
@@ -13,15 +13,6 @@ async function carregarAndamentosCNJ(pastaId, numeroProcesso) {
 
   state.andamentosCNJ = data || [];
   renderAndamentosNasInstancias(state.andamentosCNJ);
-
-  // Auto-sync CNJ only when process number exists and data is stale (> 6h)
-  if (numeroProcesso) {
-    const ultimaSync = data?.find(d => d.tribunal !== 'manual')?.sincronizado_em;
-    const seisHorasAtras = new Date(Date.now() - 6 * 60 * 60 * 1000);
-    if (!ultimaSync || new Date(ultimaSync) < seisHorasAtras) {
-      sincronizarAndamentos(true);
-    }
-  }
 }
 
 function renderAndamentosNasInstancias(andamentos) {

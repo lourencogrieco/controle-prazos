@@ -313,6 +313,9 @@ h2 {
   background: var(--s0);
   transition: border-color .15s, color .15s;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
 }
 
 .btn-outline:hover { border-color: var(--ac); color: var(--ac); }
@@ -2032,7 +2035,11 @@ tbody td {
 
 .modal-close:hover { background: var(--red-soft); color: var(--red); }
 
-.modal-body { padding: 20px 22px; }
+.modal-body {
+  padding: 20px 22px;
+  overflow-y: auto;
+  max-height: calc(90vh - 80px);
+}
 
 .modal-full { grid-column: 1 / -1; }
 

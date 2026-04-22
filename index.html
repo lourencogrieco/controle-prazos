@@ -867,8 +867,26 @@
           </table>
         </div>
 
-        <!-- PJe Config -->
+        <!-- Coluna direita -->
         <div style="display:flex;flex-direction:column;gap:16px">
+
+          <!-- Cadastros -->
+          <div class="cfg-card">
+            <div class="cfg-card-head">
+              <span class="cfg-card-title">CADASTROS</span>
+            </div>
+            <div class="cfg-field-group" style="gap:8px">
+              <p class="cfg-hint">Configure as áreas e tipos de pasta antes de criar processos.</p>
+              <button class="btn-outline" style="width:100%;justify-content:flex-start;gap:10px" onclick="abrirModalAreas()">
+                <span style="font-size:1rem">⚖</span> Áreas Jurídicas
+              </button>
+              <button class="btn-outline" style="width:100%;justify-content:flex-start;gap:10px" onclick="abrirModalTiposPasta()">
+                <span style="font-size:1rem">📁</span> Tipos de Pasta
+              </button>
+            </div>
+          </div>
+
+          <!-- PJe Config -->
           <div class="cfg-card">
             <div class="cfg-card-head">
               <span class="cfg-card-title">INTEGRAÇÃO PJe</span>
@@ -876,7 +894,7 @@
             <div class="cfg-field-group">
               <div>
                 <label class="cfg-label">Nomes para busca <small>(um por linha)</small></label>
-                <textarea id="cfgPjeNomes" class="cfg-textarea" rows="5" placeholder="lourenço grieco neto&#10;outro advogado"></textarea>
+                <textarea id="cfgPjeNomes" class="cfg-textarea" rows="4" placeholder="lourenço grieco neto&#10;outro advogado"></textarea>
               </div>
               <button class="btn-primary btn-sm" onclick="salvarPjeConfig()">Salvar configuração</button>
             </div>

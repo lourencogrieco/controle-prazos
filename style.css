@@ -2383,3 +2383,80 @@ tbody td {
 
 /* ── BTN-SM ─────────────────────────────────────────────────────────── */
 .btn-sm { padding: 5px 12px; font-size: .75rem; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   RESPONSIVIDADE MOBILE  ≤ 640px
+   ══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* Header */
+  .hdr { padding: 0 12px; gap: 8px; }
+  .hdr-brand .brand-text { display: none; }
+  .hdr-right { gap: 4px; }
+  .hdr-btn { width: 32px; height: 32px; font-size: .85rem; }
+  .hdr-user-name { display: none; }
+  .hdr-user-avatar { width: 30px; height: 30px; font-size: .7rem; }
+
+  /* App main */
+  .app-main { padding: 14px 12px 24px; }
+
+  /* Page bar */
+  .page-bar { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .page-bar-right {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .page-bar-right .btn-primary,
+  .page-bar-right .btn-outline { flex: 1; justify-content: center; font-size: .75rem; }
+  .search-field { width: 100%; }
+  .search-field input { width: 100%; }
+  .page-title { font-size: 1.3rem; }
+
+  /* Data table — scroll horizontal */
+  .data-table, .pasta-table { display: block; overflow-x: auto; white-space: nowrap; }
+
+  /* Dashboard */
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .dash-card--wide { grid-column: span 1; flex-direction: column; }
+  .metric-strip { flex-wrap: wrap; gap: 8px; }
+  .metric-strip > * { flex: 1 1 40%; }
+
+  /* Agenda */
+  .agenda-layout { grid-template-columns: 1fr; }
+  .agenda-aside { display: flex; flex-direction: column; gap: 12px; }
+  .cal-day { min-height: 36px; }
+
+  /* Pastas */
+  .pasta-layout { grid-template-columns: 1fr; }
+  .pasta-sidebar { border-right: none; border-bottom: 1px solid var(--br); }
+  .dados-grid { grid-template-columns: 1fr; }
+
+  /* Intimações */
+  .view-subbar { flex-direction: column; align-items: stretch; gap: 8px; }
+  .view-subbar > * { width: 100%; }
+  .subtab-row { flex-wrap: wrap; gap: 4px; }
+
+  /* Pipeline board */
+  .board, .board--3col { grid-template-columns: 1fr; }
+  .board-col { min-width: 0; }
+
+  /* Configurações */
+  .cfg-grid { grid-template-columns: 1fr; padding: 12px; }
+
+  /* Modais */
+  .modal { margin: 0; border-radius: 12px 12px 0 0; max-width: 100% !important; width: 100%; }
+  .modal-overlay { align-items: flex-end; padding: 0; }
+  .form-grid { grid-template-columns: 1fr !important; }
+  .modal-full { grid-column: span 1 !important; }
+
+  /* Bottom grid */
+  .bottom-grid { grid-template-columns: 1fr; }
+
+  /* Filtros de intimações */
+  .intim-filters { flex-direction: column; gap: 8px; }
+  .intim-filters > * { width: 100%; }
+
+  /* Relatórios */
+  .rel-controls { flex-wrap: wrap; gap: 8px; }
+  .rel-controls > * { flex: 1 1 45%; }
+}

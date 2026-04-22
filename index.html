@@ -1834,9 +1834,43 @@
           <span class="field-label">E-mail</span>
           <input type="email" id="cEmail" placeholder="contato@empresa.com.br">
         </div>
+        <div class="modal-section-label" style="margin-top:16px">Endereço</div>
+        <div class="form-grid" style="grid-template-columns:1fr 90px;gap:12px">
+          <div class="field" style="margin:0">
+            <span class="field-label">Rua / Logradouro</span>
+            <input type="text" id="cRua" placeholder="Av. Paulista">
+          </div>
+          <div class="field" style="margin:0">
+            <span class="field-label">Número</span>
+            <input type="text" id="cNumero" placeholder="100">
+          </div>
+        </div>
         <div class="field">
-          <span class="field-label">Endereço</span>
-          <input type="text" id="cEndereco" placeholder="Rua, número, cidade">
+          <span class="field-label">Complemento</span>
+          <input type="text" id="cComplemento" placeholder="Apto 21, Bloco B">
+        </div>
+        <div class="form-grid" style="grid-template-columns:100px 1fr 72px;gap:12px">
+          <div class="field" style="margin:0">
+            <span class="field-label">CEP</span>
+            <input type="text" id="cCep" placeholder="00000-000" maxlength="9">
+          </div>
+          <div class="field" style="margin:0">
+            <span class="field-label">Cidade</span>
+            <input type="text" id="cCidade" placeholder="São Paulo">
+          </div>
+          <div class="field" style="margin:0">
+            <span class="field-label">Estado</span>
+            <select id="cEstado">
+              <option value="">UF</option>
+              <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
+              <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+              <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
+              <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
+              <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
+              <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
+              <option>SP</option><option>SE</option><option>TO</option>
+            </select>
+          </div>
         </div>
         <div class="form-foot" style="margin-top:20px">
           <button type="button" class="btn-outline" id="btnCancelarCliente">Cancelar</button>

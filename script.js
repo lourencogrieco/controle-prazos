@@ -290,13 +290,18 @@ function dbParaTipoPasta(row) {
 
 function dbParaCliente(row) {
   return {
-    id:       row.id,
-    nome:     row.nome,
-    tipo:     row.tipo || 'PJ',
-    cpfCnpj:  row.cpf_cnpj || '',
-    email:    row.email || '',
-    telefone: row.telefone || '',
-    endereco: row.endereco || '',
+    id:          row.id,
+    nome:        row.nome,
+    tipo:        row.tipo || 'PJ',
+    cpfCnpj:     row.cpf_cnpj || '',
+    email:       row.email || '',
+    telefone:    row.telefone || '',
+    rua:         row.rua || '',
+    numero:      row.numero || '',
+    complemento: row.complemento || '',
+    cep:         row.cep || '',
+    cidade:      row.cidade || '',
+    estado:      row.estado || '',
   };
 }
 
@@ -905,14 +910,18 @@ async function excluirTipoPasta(id) {
 // CRUD — CLIENTES
 // ──────────────────────────────────────────────────────────────────────
 function abrirModalNovoCliente(contexto) {
-  // contexto: 'pasta' (abre e volta p/ modal de pasta ao fechar)
   document.getElementById('clienteId').value    = '';
   document.getElementById('cNome').value         = '';
   document.querySelector('input[name="cTipo"][value="PJ"]').checked = true;
   document.getElementById('cCpfCnpj').value      = '';
   document.getElementById('cTelefone').value     = '';
   document.getElementById('cEmail').value        = '';
-  document.getElementById('cEndereco').value     = '';
+  document.getElementById('cRua').value          = '';
+  document.getElementById('cNumero').value       = '';
+  document.getElementById('cComplemento').value  = '';
+  document.getElementById('cCep').value          = '';
+  document.getElementById('cCidade').value       = '';
+  document.getElementById('cEstado').value       = '';
   document.getElementById('tituloClienteModal').textContent = 'Novo Cliente';
   document.getElementById('_clienteContexto').value = contexto || '';
   document.getElementById('modalNovoCliente').classList.add('open');
@@ -936,14 +945,19 @@ document.getElementById('novoClienteForm').addEventListener('submit', async e =>
   btn.disabled = true; btn.textContent = 'Salvando…';
 
   const obj = {
-    id:        uid(),
-    empresa_id: state.empresaId,
-    nome:       document.getElementById('cNome').value.trim().toUpperCase(),
-    tipo:       document.querySelector('input[name="cTipo"]:checked').value,
-    cpf_cnpj:   document.getElementById('cCpfCnpj').value.trim() || null,
-    telefone:   document.getElementById('cTelefone').value.trim() || null,
-    email:      document.getElementById('cEmail').value.trim() || null,
-    endereco:   document.getElementById('cEndereco').value.trim() || null,
+    id:          uid(),
+    empresa_id:  state.empresaId,
+    nome:        document.getElementById('cNome').value.trim().toUpperCase(),
+    tipo:        document.querySelector('input[name="cTipo"]:checked').value,
+    cpf_cnpj:    document.getElementById('cCpfCnpj').value.trim() || null,
+    telefone:    document.getElementById('cTelefone').value.trim() || null,
+    email:       document.getElementById('cEmail').value.trim() || null,
+    rua:         document.getElementById('cRua').value.trim() || null,
+    numero:      document.getElementById('cNumero').value.trim() || null,
+    complemento: document.getElementById('cComplemento').value.trim() || null,
+    cep:         document.getElementById('cCep').value.trim() || null,
+    cidade:      document.getElementById('cCidade').value.trim() || null,
+    estado:      document.getElementById('cEstado').value || null,
   };
 
   const { error } = await db.from('clientes_lhub').insert(obj);

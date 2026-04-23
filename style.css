@@ -2080,6 +2080,46 @@ tbody td {
   max-height: calc(90vh - 80px);
 }
 
+/* ─── PICKER DE TIPO DE SOLICITAÇÃO ────────────────────────────── */
+.sol-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--s1);
+  border: 1px solid var(--br);
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background .15s, border-color .15s;
+}
+.sol-option:hover {
+  background: var(--ac-soft);
+  border-color: var(--ac);
+}
+.sol-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  width: 36px;
+  text-align: center;
+  line-height: 1;
+}
+.sol-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sol-label {
+  font-size: .88rem;
+  font-weight: 700;
+  color: var(--tx-strong);
+}
+.sol-desc {
+  font-size: .74rem;
+  color: var(--mu);
+}
+
 /* Botão de salvar sempre visível na base do modal, independente do scroll */
 .modal .form-foot {
   position: sticky;

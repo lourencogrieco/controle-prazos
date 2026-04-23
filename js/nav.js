@@ -53,6 +53,24 @@ document.querySelectorAll('.nav-tab[data-view]').forEach(btn => {
 // ──────────────────────────────────────────────────────────────────────
 // DASHBOARD CLOCK
 // ──────────────────────────────────────────────────────────────────────
+// PICKER — TIPO DE SOLICITAÇÃO
+// ──────────────────────────────────────────────────────────────────────
+function abrirMenuSolicitacao() {
+  document.getElementById('modalSolicitacaoTipo').classList.add('open');
+}
+
+function fecharMenuSolicitacao() {
+  document.getElementById('modalSolicitacaoTipo').classList.remove('open');
+}
+
+function escolherSolicitacao(tipo) {
+  fecharMenuSolicitacao();
+  if (tipo === 'prazo')  { abrirModalNovoPrazo(null);  return; }
+  if (tipo === 'tarefa') { abrirModalNovaTarefa(null); return; }
+  if (tipo === 'evento') { document.getElementById('modalEvento').classList.add('open'); }
+}
+
+// ──────────────────────────────────────────────────────────────────────
 function updateClock() {
   const t = currentTime();
   document.querySelectorAll('.dash-time').forEach(el => {

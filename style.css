@@ -1564,6 +1564,14 @@ tbody td {
   flex-wrap: wrap;
   margin-bottom: 16px;
 }
+.pane-count {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .72rem;
+  color: var(--mu);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-right: auto;
+}
 
 .check-label {
   display: inline-flex;

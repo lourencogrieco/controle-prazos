@@ -113,6 +113,7 @@ function dbParaCliente(row) {
 function dbParaTarefa(row) {
   return {
     id:          row.id,
+    pastaId:     row.pasta_id || null,
     titulo:      row.titulo,
     tipo:        row.tipo || 'Outro',
     prioridade:  row.prioridade === 'alta'    ? 'Alta'

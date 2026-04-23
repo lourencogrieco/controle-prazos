@@ -292,6 +292,115 @@ function abrirPasta(numero) {
   if (btnEditar) btnEditar.onclick = () => abrirModalNovaPasta(p.numero);
 
   carregarAndamentosCNJ(p.id);
+  renderPrazosNaPasta();
+  renderSolicitacoesNaPasta();
+  renderTarefasNaPasta();
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// RENDER ESPELHO — Prazos, Solicitações e Tarefas da pasta
+// ──────────────────────────────────────────────────────────────────────
+function renderPrazosNaPasta() {
+  const id = state.currentPastaId;
+  if (!id) return;
+  const lista = state.prazos.filter(p => p.pastaId === id);
+  const tbody = document.getElementById('ptabPrazosBody');
+  const count = document.getElementById('ptabPrazosCount');
+  if (!tbody) return;
+  if (count) count.textContent = `${lista.length} prazo${lista.length !== 1 ? 's' : ''}`;
+  tbody.innerHTML = lista.length
+    ? lista.map(p => `<tr class="${rowClassPrazo(p.prazoFatal)}">
+        <td>${p.tipoPrazo}</td>
+        <td>${formatDate(p.prazoFatal)}</td>
+        <td>${diasRestantesHtml(p.prazoFatal)}</td>
+        <td style="max-width:200px;font-size:.76rem">${p.descricao || '—'}</td>
+        <td>${avatarGroup(p.responsavel)}</td>
+        <td><span class="status-pill ${statusClass(p.status)}">${p.status}</span></td>
+        <td>${podeEditarRegistro() ? `<div class="row-actions">
+          <button class="btn-icon" title="Editar" onclick="event.stopPropagation();abrirModalNovoPrazo('${p.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          ${podeExcluirRegistro() ? `<button class="btn-icon btn-icon--danger" title="Excluir" onclick="event.stopPropagation();excluirPrazo('${p.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+          </button>` : ''}
+        </div>` : ''}</td>
+      </tr>`).join('')
+    : `<tr><td colspan="7" class="tbl-empty">Nenhum prazo vinculado a esta pasta.</td></tr>`;
+}
+
+function renderSolicitacoesNaPasta() {
+  const id = state.currentPastaId;
+  if (!id) return;
+  const lista = state.prazos.filter(p => p.pastaId === id);
+  const pendentes  = lista.filter(p => p.status === 'Pendente' || p.status === 'Atrasado');
+  const andamento  = lista.filter(p => p.status === 'Em andamento');
+  const concluidos = lista.filter(p => p.status === 'Concluído');
+  const empty = label => `<div class="empty-state">${label}</div>`;
+
+  const makeCard = p => {
+    const diff = p.prazoFatal ? daysUntil(p.prazoFatal) : 99;
+    const daysCls = diff < 0 ? 'req-days--vencido' : diff <= 3 ? 'req-days--urgente' : diff <= 10 ? 'req-days--aviso' : 'req-days--ok';
+    return `<article class="req-card${diff <= 3 ? ' req-card--urgent' : ''}" draggable="true" data-id="${p.id}">
+      <div class="req-row-top">
+        <div class="req-tags-inline">
+          <span class="tag tag--area">Prazo</span>
+          <span class="tag tag--type">${p.tipoPrazo}</span>
+        </div>
+        <span class="req-drag-handle">⠿</span>
+      </div>
+      <div class="req-row-main"><span class="req-client">${p.cliente}</span></div>
+      <div class="req-row-foot">
+        <span class="req-days ${daysCls}">${p.prazoFatal ? formatDate(p.prazoFatal) : '—'}</span>
+        <div class="req-foot-right">${avatarGroup(p.responsavel)}</div>
+      </div>
+    </article>`;
+  };
+
+  const el = id => document.getElementById(id);
+  if (el('ptabSolPendentes'))  el('ptabSolPendentes').innerHTML  = pendentes.length  ? pendentes.map(makeCard).join('')  : empty('Nenhum prazo pendente.');
+  if (el('ptabSolAndamento'))  el('ptabSolAndamento').innerHTML  = andamento.length  ? andamento.map(makeCard).join('')  : empty('Nenhum em andamento.');
+  if (el('ptabSolConcluido'))  el('ptabSolConcluido').innerHTML  = concluidos.length ? concluidos.map(makeCard).join('') : empty('Nenhum concluído.');
+  if (el('ptabSolCountPend'))  el('ptabSolCountPend').textContent  = pendentes.length;
+  if (el('ptabSolCountAnd'))   el('ptabSolCountAnd').textContent   = andamento.length;
+  if (el('ptabSolCountConc'))  el('ptabSolCountConc').textContent  = concluidos.length;
+}
+
+function renderTarefasNaPasta() {
+  const id = state.currentPastaId;
+  if (!id) return;
+  const lista      = state.tarefas.filter(t => t.pastaId === id);
+  const pendentes  = lista.filter(t => t.status === 'Pendente');
+  const andamento  = lista.filter(t => t.status === 'Em andamento');
+  const concluidas = lista.filter(t => t.status === 'Concluída');
+  const empty = label => `<div class="empty-state">${label}</div>`;
+
+  const el = id => document.getElementById(id);
+  if (el('ptabTarefasCount'))    el('ptabTarefasCount').textContent    = `${lista.length} tarefa${lista.length !== 1 ? 's' : ''}`;
+  if (el('ptabTarefPendentes'))  el('ptabTarefPendentes').innerHTML    = pendentes.length  ? pendentes.map(tarefaCard).join('')  : empty('Nenhuma tarefa pendente.');
+  if (el('ptabTarefAndamento'))  el('ptabTarefAndamento').innerHTML    = andamento.length  ? andamento.map(tarefaCard).join('')  : empty('Nenhuma em andamento.');
+  if (el('ptabTarefConcluidas')) el('ptabTarefConcluidas').innerHTML   = concluidas.length ? concluidas.map(tarefaCard).join('') : empty('Nenhuma concluída.');
+  if (el('ptabTarefCountPend'))  el('ptabTarefCountPend').textContent  = pendentes.length;
+  if (el('ptabTarefCountAnd'))   el('ptabTarefCountAnd').textContent   = andamento.length;
+  if (el('ptabTarefCountConc'))  el('ptabTarefCountConc').textContent  = concluidas.length;
+}
+
+function abrirModalNovoPrazoNaPasta() {
+  abrirModalNovoPrazo(null);
+  setTimeout(() => {
+    const sel = document.getElementById('prazoPastaSelect');
+    if (sel && state.currentPastaId) {
+      sel.value = state.currentPastaId;
+      sel.dispatchEvent(new Event('change'));
+    }
+  }, 50);
+}
+
+function abrirModalNovaTarefaNaPasta() {
+  abrirModalNovaTarefa(null);
+  setTimeout(() => {
+    const sel = document.getElementById('tarefaPastaSelect');
+    if (sel && state.currentPastaId) sel.value = state.currentPastaId;
+  }, 50);
 }
 
 document.getElementById('btnVoltarPastas').addEventListener('click', () => {
@@ -305,7 +414,10 @@ document.querySelectorAll('.pasta-tab[data-ptab]').forEach(btn => {
     document.querySelectorAll('.pasta-pane').forEach(pn => pn.classList.remove('is-active'));
     btn.classList.add('is-active');
     document.getElementById(`ptab-${btn.dataset.ptab}`)?.classList.add('is-active');
-    if (btn.dataset.ptab === 'documentos') carregarDocumentos(state.currentPastaId);
+    if (btn.dataset.ptab === 'documentos')    carregarDocumentos(state.currentPastaId);
+    if (btn.dataset.ptab === 'prazos')        renderPrazosNaPasta();
+    if (btn.dataset.ptab === 'solicitacoes')  renderSolicitacoesNaPasta();
+    if (btn.dataset.ptab === 'tarefas')       renderTarefasNaPasta();
   });
 });
 

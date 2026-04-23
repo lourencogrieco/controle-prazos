@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=27">
+  <link rel="stylesheet" href="style.css?v=28">
 </head>
 <body>
 <div class="app">
@@ -1257,6 +1257,7 @@
               <button class="pasta-tab" data-ptab="dados">Dados do processo</button>
               <button class="pasta-tab" data-ptab="timesheet">Timesheet</button>
               <button class="pasta-tab" data-ptab="atendimento">Atendimento</button>
+              <button class="pasta-tab" data-ptab="prazos">Prazos</button>
               <button class="pasta-tab" data-ptab="solicitacoes">Solicitações</button>
               <button class="pasta-tab" data-ptab="tarefas">Tarefas</button>
               <button class="pasta-tab" data-ptab="documentos">Documentos</button>
@@ -1449,6 +1450,32 @@
             </div>
 
             <!-- SOLICITAÇÕES -->
+            <!-- PRAZOS -->
+            <div id="ptab-prazos" class="pasta-pane">
+              <div class="pane-toolbar">
+                <span class="pane-count" id="ptabPrazosCount">0 prazos</span>
+                <button class="btn-primary" onclick="abrirModalNovoPrazoNaPasta()">+ Novo prazo</button>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Tipo</th>
+                      <th>Prazo fatal</th>
+                      <th>Dias</th>
+                      <th style="max-width:200px">Descrição</th>
+                      <th>Responsável</th>
+                      <th>Status</th>
+                      <th style="width:68px"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="ptabPrazosBody">
+                    <tr><td colspan="7" class="tbl-empty">Nenhum prazo vinculado a esta pasta.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
             <div id="ptab-solicitacoes" class="pasta-pane">
               <div class="pane-toolbar">
                 <label class="search-field">
@@ -1464,16 +1491,16 @@
               </div>
               <div class="board board--3col">
                 <article class="board-col">
-                  <header class="board-col-head"><span>Novas solicitações</span><span class="col-count">0</span></header>
-                  <div class="board-col-body"><div class="empty-state">Nenhuma nova solicitação.</div></div>
+                  <header class="board-col-head"><span>Novas solicitações</span><span class="col-count" id="ptabSolCountPend">0</span></header>
+                  <div class="board-col-body" id="ptabSolPendentes"><div class="empty-state">Nenhum prazo pendente.</div></div>
                 </article>
                 <article class="board-col">
-                  <header class="board-col-head"><span>Em andamento</span><span class="col-count">0</span></header>
-                  <div class="board-col-body"><div class="empty-state">Nenhuma em andamento.</div></div>
+                  <header class="board-col-head"><span>Em andamento</span><span class="col-count" id="ptabSolCountAnd">0</span></header>
+                  <div class="board-col-body" id="ptabSolAndamento"><div class="empty-state">Nenhum em andamento.</div></div>
                 </article>
                 <article class="board-col">
-                  <header class="board-col-head"><span>Concluído</span><span class="col-count">0</span></header>
-                  <div class="board-col-body"><div class="empty-state">Nenhuma concluída.</div></div>
+                  <header class="board-col-head"><span>Concluído</span><span class="col-count" id="ptabSolCountConc">0</span></header>
+                  <div class="board-col-body" id="ptabSolConcluido"><div class="empty-state">Nenhum concluído.</div></div>
                 </article>
               </div>
             </div>
@@ -1481,27 +1508,21 @@
             <!-- TAREFAS -->
             <div id="ptab-tarefas" class="pasta-pane">
               <div class="pane-toolbar">
-                <label class="search-field">
-                  <svg class="search-ico" width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5"/>
-                    <path d="M9.5 9.5l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                  </svg>
-                  <input type="text" placeholder="Pesquisar">
-                </label>
-                <button class="btn-outline">Adicionar filtro ▾</button>
+                <span class="pane-count" id="ptabTarefasCount">0 tarefas</span>
+                <button class="btn-primary" onclick="abrirModalNovaTarefaNaPasta()">+ Nova tarefa</button>
               </div>
               <div class="board board--3col">
                 <article class="board-col">
-                  <header class="board-col-head"><span>Novas solicitações</span><span class="col-count">0</span></header>
-                  <div class="board-col-body"><div class="empty-state">Nenhuma tarefa.</div></div>
+                  <header class="board-col-head"><span>Pendentes</span><span class="col-count" id="ptabTarefCountPend">0</span></header>
+                  <div class="board-col-body" id="ptabTarefPendentes"><div class="empty-state">Nenhuma tarefa pendente.</div></div>
                 </article>
                 <article class="board-col">
-                  <header class="board-col-head"><span>Em andamento</span><span class="col-count">0</span></header>
-                  <div class="board-col-body"><div class="empty-state">Nenhuma em andamento.</div></div>
+                  <header class="board-col-head"><span>Em andamento</span><span class="col-count" id="ptabTarefCountAnd">0</span></header>
+                  <div class="board-col-body" id="ptabTarefAndamento"><div class="empty-state">Nenhuma em andamento.</div></div>
                 </article>
                 <article class="board-col">
-                  <header class="board-col-head"><span>Próximo ao vencimento</span><span class="col-count">0</span></header>
-                  <div class="board-col-body"><div class="empty-state">Nenhuma tarefa próxima.</div></div>
+                  <header class="board-col-head"><span>Concluídas</span><span class="col-count" id="ptabTarefCountConc">0</span></header>
+                  <div class="board-col-body" id="ptabTarefConcluidas"><div class="empty-state">Nenhuma concluída.</div></div>
                 </article>
               </div>
             </div>
@@ -2291,20 +2312,20 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/core.js?v=32"></script>
-<script src="js/auth.js?v=32"></script>
-<script src="js/mappers.js?v=32"></script>
-<script src="js/dashboard.js?v=32"></script>
-<script src="js/nav.js?v=32"></script>
-<script src="js/atividades.js?v=32"></script>
-<script src="js/configuracoes.js?v=32"></script>
-<script src="js/agenda.js?v=32"></script>
-<script src="js/intimacoes.js?v=32"></script>
-<script src="js/prazos.js?v=32"></script>
-<script src="js/tarefas.js?v=32"></script>
-<script src="js/pastas.js?v=32"></script>
-<script src="js/relatorio.js?v=32"></script>
-<script src="js/andamentos.js?v=32"></script>
-<script src="js/documentos.js?v=32"></script>
+<script src="js/core.js?v=33"></script>
+<script src="js/auth.js?v=33"></script>
+<script src="js/mappers.js?v=33"></script>
+<script src="js/dashboard.js?v=33"></script>
+<script src="js/nav.js?v=33"></script>
+<script src="js/atividades.js?v=33"></script>
+<script src="js/configuracoes.js?v=33"></script>
+<script src="js/agenda.js?v=33"></script>
+<script src="js/intimacoes.js?v=33"></script>
+<script src="js/prazos.js?v=33"></script>
+<script src="js/tarefas.js?v=33"></script>
+<script src="js/pastas.js?v=33"></script>
+<script src="js/relatorio.js?v=33"></script>
+<script src="js/andamentos.js?v=33"></script>
+<script src="js/documentos.js?v=33"></script>
 </body>
 </html>

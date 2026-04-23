@@ -2,7 +2,7 @@
 // CRUD — TAREFAS (modal completo)
 // ──────────────────────────────────────────────────────────────────────
 function popularSelectResponsaveisTarefa(valorAtual) {
-  popularRespCheckboxes('tarefaRespCheckboxes', valorAtual, state.usuarios);
+  popularRespPicker('tarefaRespPicker', valorAtual, state.usuarios);
 }
 
 function abrirModalNovaTarefa(id) {
@@ -50,7 +50,7 @@ document.getElementById('novaTarefaForm').addEventListener('submit', async e => 
     titulo:      document.getElementById('tTitulo').value.trim(),
     tipo:        document.getElementById('tTipo').value,
     prioridade:  document.getElementById('tPrioridade').value,
-    responsavel: getSelectedResps('tarefaRespCheckboxes'),
+    responsavel: getSelectedResps('tarefaRespPicker'),
     prazo:       document.getElementById('tPrazo').value || null,
     descricao:   document.getElementById('tDescricao').value.trim() || null,
     status:      document.getElementById('tStatus').value || 'pendente',

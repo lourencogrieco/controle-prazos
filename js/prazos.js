@@ -46,7 +46,7 @@ function abrirModalNovoPrazo(id) {
     : p?.status === 'Em andamento' ? 'em_andamento' : 'pendente';
   document.getElementById('prazoDescricao').value    = p?.descricao || '';
   popularSelectsPastas();
-  popularRespCheckboxes('prazoRespCheckboxes', p?.responsavel || '', state.usuarios);
+  popularRespPicker('prazoRespPicker', p?.responsavel || '', state.usuarios);
 
   // Controle de permissão para data fatal
   const podData = podeAlterarDataPrazo();
@@ -96,7 +96,7 @@ document.getElementById('novoPrazoForm').addEventListener('submit', async e => {
       cliente:      document.getElementById('prazoCliente').value.trim() || null,
       tipo,
       prazo,
-      responsavel:  getSelectedResps('prazoRespCheckboxes') || null,
+      responsavel:  getSelectedResps('prazoRespPicker') || null,
       status:       document.getElementById('prazoStatus').value || 'pendente',
       descricao:    document.getElementById('prazoDescricao').value.trim() || null,
       intimacao_id: document.getElementById('prazoIntimacaoId')?.value || null,

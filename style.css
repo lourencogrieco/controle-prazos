@@ -1092,42 +1092,66 @@ tbody td {
 
 .table-link:hover { text-decoration: underline; }
 
-/* ── Multi-responsável: checkboxes ──────────────────────────────── */
-.resp-checkboxes {
+/* ── Responsável picker (chips + add select) ─────────────────── */
+.resp-picker {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  max-height: 130px;
-  overflow-y: auto;
+  gap: 6px;
+}
+.resp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-height: 0;
+}
+.resp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 6px 3px 4px;
+  background: var(--s1);
   border: 1px solid var(--br-strong);
+  border-radius: 99px;
+  font-size: .78rem;
+  color: var(--tx);
+  max-width: 200px;
+}
+.resp-chip-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.resp-chip-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--mu);
+  font-size: .9rem;
+  line-height: 1;
+  padding: 0 1px;
+  flex-shrink: 0;
+  transition: color .12s;
+}
+.resp-chip-remove:hover { color: var(--red); }
+.resp-add-select {
+  padding: 7px 10px;
+  border: 1px dashed var(--br-strong);
   border-radius: var(--r-sm);
   background: var(--bg);
-  padding: 3px;
-}
-.resp-checkbox-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: .82rem;
-  color: var(--tx);
-  user-select: none;
-}
-.resp-checkbox-item:hover { background: var(--s1); }
-.resp-checkbox-item input[type="checkbox"] {
-  accent-color: var(--ac);
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  cursor: pointer;
-}
-.resp-checkboxes-empty {
-  display: block;
-  padding: 6px 8px;
-  font-size: .78rem;
+  font: inherit;
+  font-size: var(--text-sm);
   color: var(--mu);
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.resp-add-select:focus {
+  outline: none;
+  border-color: var(--ac);
+  color: var(--tx);
+}
+.resp-add-select:hover {
+  border-color: var(--ac);
+  color: var(--tx);
 }
 
 /* ── Avatar group (múltiplos responsáveis) ─────────────────────── */

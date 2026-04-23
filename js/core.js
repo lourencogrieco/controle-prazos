@@ -69,25 +69,53 @@ function avatarGroup(responsavelStr, maxShow = 3) {
   </div>`;
 }
 
-function popularRespCheckboxes(containerId, currentRespStr, usuarios) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  const selected = (currentRespStr || '').split(';').map(n => n.trim()).filter(Boolean);
-  container.innerHTML = usuarios.length
-    ? usuarios.map(u => `
-      <label class="resp-checkbox-item">
-        <input type="checkbox" value="${u.nome}" ${selected.includes(u.nome) ? 'checked' : ''}>
-        <span class="avatar" style="width:20px;height:20px;font-size:.5rem;flex-shrink:0">${initials(u.nome)}</span>
-        <span>${u.nome}</span>
-      </label>`).join('')
-    : '<span class="resp-checkboxes-empty">Nenhum usuário cadastrado.</span>';
+function _respChipHTML(nome) {
+  return `<span class="resp-chip" data-nome="${nome}">
+    <span class="avatar" style="width:18px;height:18px;font-size:.48rem;flex-shrink:0">${initials(nome)}</span>
+    <span class="resp-chip-name">${nome}</span>
+    <button type="button" class="resp-chip-remove" title="Remover">×</button>
+  </span>`;
 }
 
-function getSelectedResps(containerId) {
-  const container = document.getElementById(containerId);
-  if (!container) return '';
-  return Array.from(container.querySelectorAll('input[type="checkbox"]:checked'))
-    .map(cb => cb.value).join(';');
+function popularRespPicker(pickerId, currentRespStr, usuarios) {
+  const picker = document.getElementById(pickerId);
+  if (!picker) return;
+  const selected = (currentRespStr || '').split(';').map(n => n.trim()).filter(Boolean);
+  const chipsEl = picker.querySelector('.resp-chips');
+  const addEl   = picker.querySelector('.resp-add-select');
+
+  chipsEl.innerHTML = selected.map(_respChipHTML).join('');
+
+  addEl.innerHTML = '<option value="">＋ Adicionar responsável</option>' +
+    usuarios.filter(u => !selected.includes(u.nome))
+      .map(u => `<option value="${u.nome}">${u.nome}</option>`).join('');
+
+  addEl.onchange = () => {
+    const nome = addEl.value;
+    if (!nome) return;
+    chipsEl.insertAdjacentHTML('beforeend', _respChipHTML(nome));
+    addEl.querySelector(`option[value="${CSS.escape(nome)}"]`)?.remove();
+    addEl.value = '';
+  };
+
+  chipsEl.onclick = e => {
+    const btn = e.target.closest('.resp-chip-remove');
+    if (!btn) return;
+    const chip = btn.closest('.resp-chip');
+    const nome = chip.dataset.nome;
+    chip.remove();
+    if (usuarios.find(u => u.nome === nome)) {
+      const opt = Object.assign(document.createElement('option'), { value: nome, textContent: nome });
+      addEl.appendChild(opt);
+    }
+  };
+}
+
+function getSelectedResps(pickerId) {
+  const picker = document.getElementById(pickerId);
+  if (!picker) return '';
+  return Array.from(picker.querySelectorAll('.resp-chip'))
+    .map(c => c.dataset.nome).join(';');
 }
 
 function currentTime() {

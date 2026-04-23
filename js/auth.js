@@ -44,6 +44,17 @@ function podeAcessar(view) {
   return !!(PERMISSOES[p] || PERMISSOES.estagiario)[view];
 }
 
+// ── Permissões de CRUD ─────────────────────────────────────────────────
+function podeAlterarDataPrazo() {
+  return ['socio','socio_fundador','admin','adm','controller'].includes(state.meuPerfil?.perfil || '');
+}
+function podeEditarRegistro() {
+  return ['socio','socio_fundador','admin','adm','controller','advogado'].includes(state.meuPerfil?.perfil || '');
+}
+function podeExcluirRegistro() {
+  return ['socio','socio_fundador','admin','adm'].includes(state.meuPerfil?.perfil || '');
+}
+
 function aplicarPermissoes() {
   const p = state.meuPerfil?.perfil || 'estagiario';
   const mapa = PERMISSOES[p] || PERMISSOES.estagiario;

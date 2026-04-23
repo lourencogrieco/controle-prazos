@@ -1032,6 +1032,69 @@ tbody td {
 }
 .btn-link-sm:hover { text-decoration: underline; }
 
+/* ── Botões de ação em linha (tabelas e cards) ───────────────────── */
+.row-actions { display: flex; gap: 3px; justify-content: flex-end; }
+
+.btn-icon {
+  width: 28px; height: 28px;
+  display: grid; place-items: center;
+  border-radius: 4px;
+  color: var(--mu);
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+.btn-icon:hover               { background: var(--s1); color: var(--tx); }
+.btn-icon--danger:hover       { background: var(--red-soft); color: var(--red); }
+.btn-icon svg                 { width: 14px; height: 14px; pointer-events: none; }
+
+/* Cabeçalho do card com ações */
+.tarefa-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.tarefa-card-header .tarefa-actions {
+  padding-top: 0;
+  border-top: none;
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
+/* Status select compacto nos cards de tarefa */
+.tarefa-status-sel {
+  font-size: .68rem;
+  font-family: "IBM Plex Mono", monospace;
+  padding: 2px 4px;
+  border: 1px solid var(--br);
+  border-radius: 3px;
+  background: var(--s1);
+  color: var(--tx);
+  cursor: pointer;
+  max-width: 120px;
+}
+.tarefa-actions {
+  display: flex; align-items: center; gap: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--br);
+  margin-top: 4px;
+}
+.tarefa-actions .tarefa-status-sel { flex: 1; }
+
+/* Aviso de permissão no modal */
+.field-note {
+  font-size: .74rem;
+  padding: 6px 10px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+.field-note--warn {
+  background: rgba(224,122,23,.1);
+  color: #b86000;
+  border-left: 3px solid #e07a17;
+}
+
 /* ─── RESPONSIVE ──────────────────────────────────────────────── */
 @media (max-width: 1400px) {
   .dashboard-grid { grid-template-columns: repeat(3, 1fr); }

@@ -12,6 +12,7 @@ function popularSelectResponsaveisTarefa(valorAtual) {
 
 function abrirModalNovaTarefa(id) {
   const t = id ? state.tarefas.find(x => x.id === id) : null;
+  document.querySelector('#modalNovaTarefa .modal-head h3').textContent = t ? 'Editar Tarefa' : 'Nova Tarefa';
   document.getElementById('tarefaId').value          = t?.id || '';
   document.getElementById('tTitulo').value           = t?.titulo || '';
   document.getElementById('tTipo').value             = t?.tipo || 'Outro';
@@ -19,6 +20,11 @@ function abrirModalNovaTarefa(id) {
   document.getElementById('tarefaPastaSelect').value = '';
   document.getElementById('tPrazo').value            = t?.dataLimite || '';
   document.getElementById('tDescricao').value        = t?.descricao || '';
+  const statusRaw = t?.status || 'Pendente';
+  document.getElementById('tStatus').value =
+    statusRaw === 'Concluída'    ? 'concluida'   :
+    statusRaw === 'Em andamento' ? 'em_andamento' : 'pendente';
+  document.getElementById('tarefaStatusField').style.display = t ? '' : 'none';
   popularSelectsPastas();
   popularSelectResponsaveisTarefa(t?.responsavel || '');
   document.getElementById('modalNovaTarefa').classList.add('open');
@@ -52,11 +58,7 @@ document.getElementById('novaTarefaForm').addEventListener('submit', async e => 
     responsavel: document.getElementById('tResponsavel').value.trim(),
     prazo:       document.getElementById('tPrazo').value || null,
     descricao:   document.getElementById('tDescricao').value.trim() || null,
-    status:      tarefaId
-      ? (state.tarefas.find(t => t.id === tarefaId)?.status === 'Concluída' ? 'concluida'
-        : state.tarefas.find(t => t.id === tarefaId)?.status === 'Em andamento' ? 'em_andamento'
-        : 'pendente')
-      : 'pendente',
+    status:      document.getElementById('tStatus').value || 'pendente',
   };
 
   const saveReq  = db.from('tarefas_lhub').upsert(obj).select();
@@ -75,6 +77,15 @@ async function excluirTarefa(id) {
   const { error } = await db.from('tarefas_lhub').delete().eq('id', id).eq('empresa_id', state.empresaId);
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
   toast('Tarefa excluída');
+  await carregarDados();
+}
+
+async function alterarStatusTarefa(id, novoStatus) {
+  const { error } = await db.from('tarefas_lhub')
+    .update({ status: novoStatus })
+    .eq('id', id)
+    .eq('empresa_id', state.empresaId);
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
   await carregarDados();
 }
 
@@ -99,10 +110,33 @@ function tarefaCard(t) {
                  : 'tarefa-card--normal';
   const tagInfo  = TIPO_TAG_TAREFA[t.tipo] ?? { cls:'tag--lembrete', label: t.tipo };
   const av       = initials(t.responsavel);
+
+  const statusVal = t.status === 'Concluída' ? 'concluida'
+    : t.status === 'Em andamento' ? 'em_andamento' : 'pendente';
+
+  const acoes = podeEditarRegistro() ? `
+    <div class="tarefa-actions">
+      <button class="btn-icon" title="Editar" onclick="event.stopPropagation();abrirModalNovaTarefa('${t.id}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+      </button>
+      ${podeExcluirRegistro() ? `<button class="btn-icon btn-icon--danger" title="Excluir" onclick="event.stopPropagation();excluirTarefa('${t.id}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+          <path d="M10 11v6M14 11v6M9 6V4h6v2"/>
+        </svg>
+      </button>` : ''}
+    </div>` : '';
+
   return `<article class="tarefa-card ${priorCls}">
-    <div class="tarefa-tags">
-      <span class="tag ${tagInfo.cls}">${tagInfo.label}</span>
-      ${t.prioridade === 'Alta' || t.prioridade === 'Urgente' ? '<span class="tag tag--urgent">Alta</span>' : ''}
+    <div class="tarefa-card-header">
+      <div class="tarefa-tags">
+        <span class="tag ${tagInfo.cls}">${tagInfo.label}</span>
+        ${t.prioridade === 'Alta' || t.prioridade === 'Urgente' ? '<span class="tag tag--urgent">Alta</span>' : ''}
+      </div>
+      ${acoes}
     </div>
     <p class="tarefa-titulo">${t.titulo}</p>
     <p class="tarefa-desc">${t.descricao}</p>
@@ -113,6 +147,11 @@ function tarefaCard(t) {
       </div>
       <span class="tarefa-prazo ${urgente ? 'tarefa-prazo--urgente' : ''}">⏱ ${t.dataLimite ? formatDate(t.dataLimite) : '—'}</span>
     </div>
+    ${podeEditarRegistro() ? `<select class="tarefa-status-sel" onchange="alterarStatusTarefa('${t.id}',this.value)">
+      <option value="pendente" ${statusVal==='pendente' ? 'selected' : ''}>Pendente</option>
+      <option value="em_andamento" ${statusVal==='em_andamento' ? 'selected' : ''}>Em andamento</option>
+      <option value="concluida" ${statusVal==='concluida' ? 'selected' : ''}>Concluída</option>
+    </select>` : ''}
   </article>`;
 }
 

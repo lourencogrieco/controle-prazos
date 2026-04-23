@@ -171,5 +171,6 @@ async function carregarDados() {
   renderPrazosAba();
   renderTarefasAba();
   renderIntimacoesAba();
+  renderCalendario();
   popularSelectsPastas();
 }

@@ -33,6 +33,7 @@ function navegarPara(view) {
   if (view === 'configuracoes') renderConfiguracoes();
   if (view === 'pipeline')      renderPipeline();
   if (view === 'atividades')    renderAtividades();
+  if (view === 'agenda')        renderCalendario();
 }
 
 // TOP NAV TABS
@@ -47,6 +48,7 @@ document.querySelectorAll('.nav-tab[data-view]').forEach(btn => {
     if (view) view.classList.add('is-active');
     if (target === 'pipeline')   renderPipeline();
     if (target === 'atividades') renderAtividades();
+    if (target === 'agenda')     renderCalendario();
   });
 });
 

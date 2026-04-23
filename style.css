@@ -720,9 +720,13 @@ h2 {
   background: var(--s0);
   border: 1px solid var(--br);
   border-radius: var(--r-md);
-  overflow: hidden;
+  padding: 10px 12px;
   box-shadow: var(--shadow-sm);
-  transition: box-shadow .15s, transform .15s;
+  cursor: grab;
+  transition: box-shadow .15s, transform .15s, opacity .15s;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 
 .req-card:hover {
@@ -730,14 +734,98 @@ h2 {
   transform: translateY(-1px);
 }
 
+.req-card.is-dragging {
+  opacity: .35;
+  cursor: grabbing;
+  transform: rotate(1deg) scale(.98);
+}
+
 .req-card--urgent {
   border-color: #f4a26a;
   box-shadow: 0 4px 16px rgba(224,122,23,.14);
 }
 
-.req-card--done { border-color: #bbe0cc; }
-
+.req-card--done  { border-color: #bbe0cc; }
 .req-card--refused { border-color: #f2b8b1; }
+
+/* drop target highlight */
+.board-col-body.drag-over {
+  background: rgba(8,80,93,.05);
+  outline: 2px dashed var(--ac);
+  outline-offset: -4px;
+  border-radius: 6px;
+}
+
+/* horizontal card rows */
+.req-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.req-tags-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.req-drag-handle {
+  color: var(--mu);
+  font-size: .9rem;
+  cursor: grab;
+  flex-shrink: 0;
+  user-select: none;
+  letter-spacing: 1px;
+}
+.req-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.req-client {
+  font-weight: 600;
+  font-size: .82rem;
+  color: var(--tx);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.req-tipo {
+  font-size: .72rem;
+  color: var(--mu);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.req-row-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding-top: 2px;
+  border-top: 1px solid var(--br);
+}
+.req-foot-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.req-resp-name {
+  font-size: .68rem;
+  color: var(--mu);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90px;
+}
+.req-days {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .68rem;
+  font-weight: 500;
+}
+.req-days--vencido  { color: #c0392b; }
+.req-days--urgente  { color: #e07217; }
+.req-days--aviso    { color: #b07d2a; }
+.req-days--ok       { color: var(--mu); }
 
 .req-body { padding: 16px 16px 12px; }
 

@@ -58,8 +58,10 @@ function dbParaPrazo(row) {
     descricao:   row.descricao || '',
     intimacaoId: row.intimacao_id || null,
     responsavel: row.responsavel || '',
-    status:      row.status === 'concluido' ? 'Concluído'
-               : row.status === 'atrasado'  ? 'Atrasado'
+    status:      row.status === 'concluido'    ? 'Concluído'
+               : row.status === 'atrasado'    ? 'Atrasado'
+               : row.status === 'em_andamento'? 'Em andamento'
+               : row.status === 'cancelado'   ? 'Cancelado'
                : 'Pendente',
     codigoSIA:   '-',
   };

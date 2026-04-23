@@ -1,6 +1,15 @@
 // ──────────────────────────────────────────────────────────────────────
 // CRUD — TAREFAS (modal completo)
 // ──────────────────────────────────────────────────────────────────────
+function popularSelectResponsaveisTarefa(valorAtual) {
+  const sel = document.getElementById('tResponsavel');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— sem responsável —</option>' +
+    state.usuarios.map(u =>
+      `<option value="${u.nome}" ${u.nome === valorAtual ? 'selected' : ''}>${u.nome}</option>`
+    ).join('');
+}
+
 function abrirModalNovaTarefa(id) {
   const t = id ? state.tarefas.find(x => x.id === id) : null;
   document.getElementById('tarefaId').value          = t?.id || '';
@@ -9,9 +18,9 @@ function abrirModalNovaTarefa(id) {
   document.getElementById('tPrioridade').value       = t?.prioridade?.toLowerCase() || 'normal';
   document.getElementById('tarefaPastaSelect').value = '';
   document.getElementById('tPrazo').value            = t?.dataLimite || '';
-  document.getElementById('tResponsavel').value      = t?.responsavel || '';
   document.getElementById('tDescricao').value        = t?.descricao || '';
   popularSelectsPastas();
+  popularSelectResponsaveisTarefa(t?.responsavel || '');
   document.getElementById('modalNovaTarefa').classList.add('open');
 }
 

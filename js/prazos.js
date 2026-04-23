@@ -98,10 +98,11 @@ document.getElementById('novoPrazoForm').addEventListener('submit', async e => {
       intimacao_id: document.getElementById('prazoIntimacaoId')?.value || null,
     };
 
-    console.log('[prazo] salvando:', obj);
-    const { data, error } = await db.from('prazos_lhub').upsert(obj).select();
-    console.log('[prazo] resultado:', data, error);
-    if (error) { toast('Erro ao salvar prazo: ' + error.message, 'error'); return; }
+    const saveReq  = db.from('prazos_lhub').upsert(obj).select();
+    const tOut     = new Promise((_, r) => setTimeout(() => r(new Error('Sem resposta do banco em 12s. Verifique as políticas RLS.')), 12000));
+    const { data, error } = await Promise.race([saveReq, tOut]);
+    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    if (!data?.length) { toast('Prazo não salvo: falta política INSERT no Supabase (execute o SQL de RLS).', 'error'); return; }
     fecharModalNovoPrazo();
     toast('Prazo salvo!');
     await carregarDados();

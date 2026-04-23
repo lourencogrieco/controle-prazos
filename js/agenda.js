@@ -179,8 +179,17 @@ document.getElementById('eventoForm').addEventListener('submit', async e => {
     responsavel: document.getElementById('evResponsavel').value,
     local:       document.getElementById('evLocal').value.trim() || null,
   };
-  const { data: salvo, error } = await db.from('agenda_eventos').insert(novo).select().single();
-  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  const saveReq  = db.from('agenda_eventos').insert(novo).select().single();
+  const tOut     = new Promise((_, r) => setTimeout(() => r(new Error('Sem resposta do banco em 12s. Verifique as políticas RLS.')), 12000));
+  const { data: salvo, error } = await Promise.race([saveReq, tOut]);
+  if (error) {
+    if (error.code === 'PGRST116' || error.message?.includes('0 rows')) {
+      toast('Evento não salvo: falta política INSERT no Supabase (execute o SQL de RLS).', 'error');
+    } else {
+      toast('Erro: ' + error.message, 'error');
+    }
+    return;
+  }
   agendaEventos.push({ ...novo, id: salvo.id });
   agendaEventos.sort((a, b) => a.data.localeCompare(b.data));
   document.getElementById('modalEvento').classList.remove('open');

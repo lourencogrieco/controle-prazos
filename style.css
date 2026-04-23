@@ -461,6 +461,87 @@ h2 {
   padding: 8px 0;
 }
 
+/* ── Dashboard panel row (3-column list panels) ─────────────────── */
+.dash-panel-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.dash-panel {
+  background: var(--s0);
+  border: 1px solid var(--br);
+  border-radius: var(--r-md);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 180px;
+}
+
+.dash-list {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.dash-list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--br);
+  min-width: 0;
+}
+.dash-list-item:last-child { border-bottom: none; }
+
+.dash-item-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dash-item-title {
+  flex: 1;
+  font-size: .8rem;
+  color: var(--tx);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.dash-item-meta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .67rem;
+  color: var(--mu);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.dash-item-days {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .7rem;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.dash-date-chip {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .67rem;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--s1);
+  border: 1px solid var(--br);
+  color: var(--mu);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .dash-time {
   font-family: "IBM Plex Mono", monospace;
   font-size: .62rem;
@@ -968,6 +1049,7 @@ tbody td {
   .board { grid-template-columns: repeat(2, minmax(260px, 1fr)); }
   .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
   .dash-card--wide { grid-column: span 2; }
+  .dash-panel-row { grid-template-columns: 1fr 1fr; }
   .agenda-layout { grid-template-columns: 1fr; }
   .agenda-aside { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
 }
@@ -980,6 +1062,7 @@ tbody td {
   .board { grid-template-columns: minmax(260px, 1fr); }
   .dashboard-grid { grid-template-columns: 1fr; }
   .dash-card--wide { grid-column: span 1; flex-direction: column; }
+  .dash-panel-row { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
   .metric-strip { flex-wrap: wrap; }
   .view-subbar { flex-direction: column; align-items: flex-start; }

@@ -2,19 +2,16 @@
 // DASHBOARD
 // ──────────────────────────────────────────────────────────────────────
 function renderDashboard() {
-  const agora = new Date();
-  const em7dias = new Date(agora); em7dias.setDate(em7dias.getDate() + 7);
-
   const tarefasPendentes = state.tarefas.filter(t => t.status === 'Pendente').length;
   const prazosSemana     = state.prazos.filter(p => {
     if (p.status === 'Concluído') return false;
     const d = daysUntil(p.prazoFatal);
     return d >= 0 && d <= 7;
   }).length;
-  const prazosVencidos   = state.prazos.filter(p =>
+  const prazosVencidos = state.prazos.filter(p =>
     p.status !== 'Concluído' && daysUntil(p.prazoFatal) < 0
   ).length;
-  const pastasAtivas     = state.pastas.filter(p => p.status === 'ativo').length;
+  const pastasAtivas = state.pastas.filter(p => p.status === 'ativo').length;
 
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   set('dashTarefasPendentes', tarefasPendentes);
@@ -24,25 +21,86 @@ function renderDashboard() {
   set('dashPastasAtivas',     pastasAtivas);
   set('dashClientes',         state.clientes.length);
 
-  // Próximos prazos (até 5)
+  // ── Próximos prazos ────────────────────────────────────────────────
   const proximos = state.prazos
     .filter(p => p.status !== 'Concluído' && daysUntil(p.prazoFatal) >= 0)
     .sort((a, b) => a.prazoFatal.localeCompare(b.prazoFatal))
-    .slice(0, 5);
+    .slice(0, 6);
 
-  const cont = document.getElementById('dashProximosPrazos');
-  if (cont) {
-    cont.innerHTML = proximos.length
+  const contPrazos = document.getElementById('dashProximosPrazos');
+  if (contPrazos) {
+    contPrazos.innerHTML = proximos.length
       ? proximos.map(p => {
-          const diff = daysUntil(p.prazoFatal);
-          const cls  = diff <= 3 ? 'color:#c0392b;font-weight:700' : diff <= 7 ? 'color:#e07a17;font-weight:600' : '';
-          return `<div style="display:flex;align-items:center;gap:10px;font-size:var(--text-sm)">
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:.7rem;${cls}">${formatDate(p.prazoFatal)}</span>
-            <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.cliente || p.pastaNr}</span>
-            <span style="color:var(--mu);font-size:.72rem">${p.tipoPrazo}</span>
-            <span style="${cls}">${diff === 0 ? 'Hoje' : diff + 'd'}</span>
+          const diff  = daysUntil(p.prazoFatal);
+          const cor   = diff <= 3 ? 'var(--red)' : diff <= 7 ? '#e07a17' : 'var(--mu)';
+          const label = diff === 0 ? 'Hoje' : diff + 'd';
+          return `<div class="dash-list-item">
+            <span class="dash-item-dot" style="background:${cor}"></span>
+            <span class="dash-item-title">${p.cliente || p.pastaNr || '—'}</span>
+            <span class="dash-item-meta">${p.tipoPrazo}</span>
+            <span class="dash-item-days" style="color:${cor}">${label}</span>
           </div>`;
         }).join('')
-      : '<div style="color:var(--mu);font-size:var(--text-sm)">Nenhum prazo próximo.</div>';
+      : '<div class="dash-empty">Nenhum prazo próximo.</div>';
+  }
+
+  // ── Tarefas pendentes ──────────────────────────────────────────────
+  const PRIOR_COR = { Urgente:'var(--red)', Alta:'#e07a17', Normal:'var(--ac)', Baixa:'var(--mu)' };
+  const PRIOR_ORD = { Urgente:0, Alta:1, Normal:2, Baixa:3 };
+
+  const tarefasLista = state.tarefas
+    .filter(t => t.status === 'Pendente')
+    .sort((a, b) => (PRIOR_ORD[a.prioridade] ?? 2) - (PRIOR_ORD[b.prioridade] ?? 2))
+    .slice(0, 6);
+
+  const contTarefas = document.getElementById('dashTarefasLista');
+  if (contTarefas) {
+    contTarefas.innerHTML = tarefasLista.length
+      ? tarefasLista.map(t => {
+          const cor  = PRIOR_COR[t.prioridade] || 'var(--mu)';
+          const dias = t.dataLimite
+            ? (() => { const d = daysUntil(t.dataLimite); return d < 0 ? ' · vencida' : d === 0 ? ' · hoje' : ` · ${d}d`; })()
+            : '';
+          return `<div class="dash-list-item">
+            <span class="dash-item-dot" style="background:${cor}"></span>
+            <span class="dash-item-title">${t.titulo}</span>
+            <span class="dash-item-meta">${t.tipo || '—'}${dias}</span>
+          </div>`;
+        }).join('')
+      : '<div class="dash-empty">Nenhuma tarefa pendente.</div>';
+  }
+
+  // ── Agenda da semana ───────────────────────────────────────────────
+  const hoje  = new Date();
+  const base  = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  const fim   = new Date(base); fim.setDate(fim.getDate() + 7);
+
+  const TIPO_COR_AG = {
+    'Prazo':      'var(--red)',
+    'Audiência':  '#1890d8',
+    'Reunião':    '#1d8b60',
+    'Diligência': '#e07a17',
+    'Lembrete':   'var(--mu)',
+  };
+
+  const eventosSemana = agendaEventos
+    .filter(e => { const d = new Date(e.data + 'T00:00:00'); return d >= base && d <= fim; })
+    .sort((a, b) => a.data.localeCompare(b.data))
+    .slice(0, 6);
+
+  const contAgenda = document.getElementById('dashAgendaSemana');
+  if (contAgenda) {
+    contAgenda.innerHTML = eventosSemana.length
+      ? eventosSemana.map(e => {
+          const [, mm, dd] = e.data.split('-');
+          const cor  = TIPO_COR_AG[e.tipo] || 'var(--mu)';
+          const hora = e.hora ? ` · ${e.hora}` : '';
+          return `<div class="dash-list-item">
+            <span class="dash-date-chip">${dd}/${mm}</span>
+            <span class="dash-item-title">${e.titulo}</span>
+            <span class="dash-item-meta" style="color:${cor}">${e.tipo}${hora}</span>
+          </div>`;
+        }).join('')
+      : '<div class="dash-empty">Nenhum evento esta semana.</div>';
   }
 }

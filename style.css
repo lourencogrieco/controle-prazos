@@ -1092,6 +1092,62 @@ tbody td {
 
 .table-link:hover { text-decoration: underline; }
 
+/* ── Multi-responsável: checkboxes ──────────────────────────────── */
+.resp-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 130px;
+  overflow-y: auto;
+  border: 1px solid var(--br-strong);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  padding: 3px;
+}
+.resp-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: .82rem;
+  color: var(--tx);
+  user-select: none;
+}
+.resp-checkbox-item:hover { background: var(--s1); }
+.resp-checkbox-item input[type="checkbox"] {
+  accent-color: var(--ac);
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.resp-checkboxes-empty {
+  display: block;
+  padding: 6px 8px;
+  font-size: .78rem;
+  color: var(--mu);
+}
+
+/* ── Avatar group (múltiplos responsáveis) ─────────────────────── */
+.avatar-group {
+  display: flex;
+  align-items: center;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+.avatar-group .avatar {
+  margin-left: -6px;
+  border: 2px solid var(--s0);
+}
+.avatar-group .avatar:first-child { margin-left: 0; }
+.avatar--more {
+  background: var(--s1);
+  color: var(--mu);
+  font-size: .58rem !important;
+}
+
 .status-pill {
   display: inline-flex;
   align-items: center;

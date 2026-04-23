@@ -2,12 +2,7 @@
 // CRUD — TAREFAS (modal completo)
 // ──────────────────────────────────────────────────────────────────────
 function popularSelectResponsaveisTarefa(valorAtual) {
-  const sel = document.getElementById('tResponsavel');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">— sem responsável —</option>' +
-    state.usuarios.map(u =>
-      `<option value="${u.nome}" ${u.nome === valorAtual ? 'selected' : ''}>${u.nome}</option>`
-    ).join('');
+  popularRespCheckboxes('tarefaRespCheckboxes', valorAtual, state.usuarios);
 }
 
 function abrirModalNovaTarefa(id) {
@@ -55,7 +50,7 @@ document.getElementById('novaTarefaForm').addEventListener('submit', async e => 
     titulo:      document.getElementById('tTitulo').value.trim(),
     tipo:        document.getElementById('tTipo').value,
     prioridade:  document.getElementById('tPrioridade').value,
-    responsavel: document.getElementById('tResponsavel').value.trim(),
+    responsavel: getSelectedResps('tarefaRespCheckboxes'),
     prazo:       document.getElementById('tPrazo').value || null,
     descricao:   document.getElementById('tDescricao').value.trim() || null,
     status:      document.getElementById('tStatus').value || 'pendente',
@@ -109,8 +104,6 @@ function tarefaCard(t) {
                  : t.prioridade === 'Média' ? 'tarefa-card--media'
                  : 'tarefa-card--normal';
   const tagInfo  = TIPO_TAG_TAREFA[t.tipo] ?? { cls:'tag--lembrete', label: t.tipo };
-  const av       = initials(t.responsavel);
-
   const statusVal = t.status === 'Concluída' ? 'concluida'
     : t.status === 'Em andamento' ? 'em_andamento' : 'pendente';
 
@@ -142,8 +135,7 @@ function tarefaCard(t) {
     <p class="tarefa-desc">${t.descricao}</p>
     <div class="tarefa-footer">
       <div class="tarefa-resp">
-        <span class="avatar" style="width:24px;height:24px;font-size:.58rem">${av}</span>
-        ${t.responsavel}
+        ${avatarGroup(t.responsavel)}
       </div>
       <span class="tarefa-prazo ${urgente ? 'tarefa-prazo--urgente' : ''}">⏱ ${t.dataLimite ? formatDate(t.dataLimite) : '—'}</span>
     </div>

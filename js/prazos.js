@@ -42,12 +42,11 @@ function abrirModalNovoPrazo(id) {
   document.getElementById('prazoCliente').value      = p?.cliente || '';
   document.getElementById('prazoTipo').value         = p?.tipoPrazo || '';
   document.getElementById('prazoFatal').value        = p?.prazoFatal || '';
-  document.getElementById('prazoResponsavel').value  = p?.responsavel || '';
   document.getElementById('prazoStatus').value       = p?.status === 'Concluído' ? 'concluido'
     : p?.status === 'Em andamento' ? 'em_andamento' : 'pendente';
   document.getElementById('prazoDescricao').value    = p?.descricao || '';
   popularSelectsPastas();
-  popularResponsaveisDatalist(null);
+  popularRespCheckboxes('prazoRespCheckboxes', p?.responsavel || '', state.usuarios);
 
   // Controle de permissão para data fatal
   const podData = podeAlterarDataPrazo();
@@ -75,9 +74,6 @@ document.getElementById('prazoPastaSelect').addEventListener('change', e => {
   const pasta   = state.pastas.find(p => p.id === pastaId);
   if (pasta) {
     document.getElementById('prazoCliente').value = pasta.cliente;
-    popularResponsaveisDatalist(pasta.areaId);
-  } else {
-    popularResponsaveisDatalist(null);
   }
 });
 
@@ -100,7 +96,7 @@ document.getElementById('novoPrazoForm').addEventListener('submit', async e => {
       cliente:      document.getElementById('prazoCliente').value.trim() || null,
       tipo,
       prazo,
-      responsavel:  document.getElementById('prazoResponsavel').value.trim() || null,
+      responsavel:  getSelectedResps('prazoRespCheckboxes') || null,
       status:       document.getElementById('prazoStatus').value || 'pendente',
       descricao:    document.getElementById('prazoDescricao').value.trim() || null,
       intimacao_id: document.getElementById('prazoIntimacaoId')?.value || null,
@@ -159,7 +155,8 @@ function renderPrazosAba() {
       (p.pastaNr || '').toLowerCase().includes(busca) ||
       (p.processo || '').toLowerCase().includes(busca) ||
       (p.cliente || '').toLowerCase().includes(busca);
-    return m && (!st || p.status === st) && (!resp || p.responsavel === resp);
+    const respMatch = !resp || (p.responsavel || '').split(';').map(n => n.trim()).includes(resp);
+    return m && (!st || p.status === st) && respMatch;
   });
 
   document.getElementById('prazosInfo').textContent = `${lista.length} registro${lista.length !== 1 ? 's' : ''}`;
@@ -203,7 +200,7 @@ function renderPrazosAba() {
           <td>${diasRestantesHtml(p.prazoFatal)}</td>
           <td style="max-width:200px;font-size:.76rem">${p.descricao}</td>
           <td>${intimData ? formatDate(intimData) : '—'}</td>
-          <td>${p.responsavel}</td>
+          <td>${avatarGroup(p.responsavel)}</td>
           <td><span class="status-pill ${statusClass(p.status)}">${p.status}</span></td>
           <td>${acoes}</td>
         </tr>`;

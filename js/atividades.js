@@ -16,7 +16,6 @@ function atividadeCard(item) {
   const done    = item.status === 'Concluído' || item.status === 'Concluída';
   const classes = ['req-card', urgent ? 'req-card--urgent' : '', done ? 'req-card--done' : ''].filter(Boolean).join(' ');
   const daysCls = diff < 0 ? 'req-days--vencido' : diff <= 3 ? 'req-days--urgente' : diff <= 10 ? 'req-days--aviso' : 'req-days--ok';
-  const av      = initials(item.responsavel || '?');
 
   return `<article class="${classes}" draggable="true" data-id="${item.id}">
     <div class="req-row-top">
@@ -34,8 +33,7 @@ function atividadeCard(item) {
     <div class="req-row-foot">
       <span class="req-days ${daysCls}">${item.dataFatal ? formatDate(item.dataFatal) : '—'}</span>
       <div class="req-foot-right">
-        ${item.responsavel ? `<span class="req-resp-name">${item.responsavel}</span>` : ''}
-        <span class="avatar" style="width:22px;height:22px;font-size:.52rem;flex-shrink:0">${av}</span>
+        ${avatarGroup(item.responsavel)}
       </div>
     </div>
   </article>`;
@@ -95,7 +93,8 @@ function filteredAtividades() {
       (item.cliente || '').toLowerCase().includes(busca) ||
       (item.processo || '').toLowerCase().includes(busca) ||
       (item.tipo || '').toLowerCase().includes(busca);
-    return match && (!resp || item.responsavel === resp);
+    const respMatch = !resp || (item.responsavel || '').split(';').map(n => n.trim()).includes(resp);
+    return match && respMatch;
   });
 }
 

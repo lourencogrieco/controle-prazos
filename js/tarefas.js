@@ -206,11 +206,17 @@ function renderTarefasAba() {
   const andamento  = lista.filter(t => t.status === 'Em andamento');
   const concluidas = lista.filter(t => t.status === 'Concluída');
 
-  // Reset limites quando filtros mudam (busca ativa = mostra tudo para não esconder resultados)
+  // Com filtro ativo: expande para mostrar todos os resultados sem truncar
+  // Sem filtro: garante mínimo de TAREFAS_POR_COLUNA para o "Mostrar mais" funcionar
   if (busca || tipo || status) {
-    _tarefasLimite.pendente  = pendentes.length;
-    _tarefasLimite.andamento = andamento.length;
-    _tarefasLimite.concluida = concluidas.length;
+    _tarefasLimite.pendente  = Math.max(pendentes.length,  TAREFAS_POR_COLUNA);
+    _tarefasLimite.andamento = Math.max(andamento.length,  TAREFAS_POR_COLUNA);
+    _tarefasLimite.concluida = Math.max(concluidas.length, TAREFAS_POR_COLUNA);
+  } else {
+    // Ao limpar filtro, não recolhe abaixo do mínimo
+    _tarefasLimite.pendente  = Math.max(_tarefasLimite.pendente,  TAREFAS_POR_COLUNA);
+    _tarefasLimite.andamento = Math.max(_tarefasLimite.andamento, TAREFAS_POR_COLUNA);
+    _tarefasLimite.concluida = Math.max(_tarefasLimite.concluida, TAREFAS_POR_COLUNA);
   }
 
   _renderColuna('colTarefasPendentes',  pendentes,  'pendente',  'Nenhuma tarefa pendente.');

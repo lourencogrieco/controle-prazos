@@ -79,7 +79,7 @@ async function onLogin(user) {
     .from('usuarios_empresa')
     .select('empresa_id, nome, perfil, area_id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle(); // .single() retornava 406 quando 0 linhas (PGRST116)
 
   if (!data) {
     toast('Usuário sem empresa vinculada. Contate o administrador.', 'error');

@@ -71,17 +71,23 @@ function renderPipeline() {
 }
 
 // ── Drag & Drop ───────────────────────────────────────────────────────
+// dragId e AbortController fora da função para evitar acúmulo de listeners
+let _pipelineDragId      = null;
+let _pipelineDragAbort   = null;
 
 function _initPipelineDrag() {
-  let dragId = null;
+  // Cancela listeners anteriores antes de re-registrar
+  if (_pipelineDragAbort) _pipelineDragAbort.abort();
+  _pipelineDragAbort = new AbortController();
+  const sig = { signal: _pipelineDragAbort.signal };
 
   document.querySelectorAll('#view-pipeline [data-opo-id]').forEach(card => {
     card.addEventListener('dragstart', e => {
-      dragId = card.dataset.opoId;
+      _pipelineDragId = card.dataset.opoId;
       setTimeout(() => card.classList.add('is-dragging'), 0);
       e.dataTransfer.effectAllowed = 'move';
-    });
-    card.addEventListener('dragend', () => card.classList.remove('is-dragging'));
+    }, sig);
+    card.addEventListener('dragend', () => card.classList.remove('is-dragging'), sig);
   });
 
   const statusMap = {};
@@ -92,17 +98,17 @@ function _initPipelineDrag() {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
       col.classList.add('drag-over');
-    });
+    }, sig);
     col.addEventListener('dragleave', e => {
       if (!col.contains(e.relatedTarget)) col.classList.remove('drag-over');
-    });
+    }, sig);
     col.addEventListener('drop', async e => {
       e.preventDefault();
       col.classList.remove('drag-over');
       const novoStatus = statusMap[col.id];
-      if (!dragId || !novoStatus) return;
-      const id = dragId;
-      dragId = null;
+      if (!_pipelineDragId || !novoStatus) return;
+      const id = _pipelineDragId;
+      _pipelineDragId = null;
 
       const { error } = await db.from('oportunidades_crm')
         .update({ status: novoStatus })
@@ -113,7 +119,7 @@ function _initPipelineDrag() {
       const item = state.oportunidades.find(o => o.id === id);
       if (item) item.status = novoStatus;
       renderPipeline();
-    });
+    }, sig);
   });
 }
 

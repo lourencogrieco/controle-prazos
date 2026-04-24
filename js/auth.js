@@ -97,6 +97,7 @@ async function onLogin(user) {
   esconderLogin();
   await carregarDados();
   aplicarPermissoes();
+  _iniciarRealtime();
 }
 
 function mostrarLogin() {
@@ -104,6 +105,7 @@ function mostrarLogin() {
 }
 
 async function fazerLogout() {
+  _pararRealtime();
   await db.auth.signOut();
   state.user = null;
   state.meuPerfil = null;

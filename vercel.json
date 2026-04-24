@@ -3,6 +3,10 @@
     {
       "path": "/api/pje-cron",
       "schedule": "0 11 * * 1-5"
+    },
+    {
+      "path": "/api/notificar-prazos-cron",
+      "schedule": "0 10 * * 1-5"
     }
   ]
 }

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=28">
+  <link rel="stylesheet" href="style.css?v=42">
 </head>
 <body>
 <div class="app">
@@ -857,122 +857,437 @@
           <span class="kicker">Gestão financeira</span>
           <h2 class="page-title">Financeiro</h2>
         </div>
-        <div class="page-bar-right">
-          <button class="btn-primary" onclick="abrirModalHonorario(null)">+ Novo lançamento</button>
+        <div class="page-bar-right" id="finActionBar">
+          <button class="btn-primary hidden" id="btnNovaCobranca" onclick="abrirModalCobranca(null)">+ Nova Cobrança</button>
+          <button class="btn-primary hidden" id="btnNovaContaPagar" onclick="abrirModalContaPagar(null)">+ Nova Conta</button>
+          <button class="btn-primary hidden" id="btnNovaDespesa" onclick="abrirModalDespesa(null)">+ Nova Despesa</button>
         </div>
       </div>
 
-      <!-- Cards resumo -->
-      <div class="fin-cards">
-        <div class="fin-card">
-          <span class="fin-card-label">A receber</span>
-          <span class="fin-card-value" id="finTotalReceber">R$ 0,00</span>
-          <span class="fin-card-sub">pendente em aberto</span>
+      <!-- Subtabs -->
+      <div class="subtabs" style="border-bottom:1px solid var(--br);margin-bottom:0">
+        <button class="subtab is-active" data-fin-tab="visaogeral">Visão Geral</button>
+        <button class="subtab" data-fin-tab="cobrancas">Cobranças</button>
+        <button class="subtab" data-fin-tab="contaspagar">Contas a Pagar</button>
+        <button class="subtab" data-fin-tab="despesas">Despesas Reembolsáveis</button>
+      </div>
+
+      <!-- ── Painel: Visão Geral ─────────────────────────────────── -->
+      <div id="fin-panel-visaogeral" class="fin-panel">
+        <div id="finAlertas"></div>
+        <p class="fin-section-label">MÊS ATUAL</p>
+        <div class="fin-cards fin-cards--6">
+          <div class="fin-card">
+            <span class="fin-card-label">Valor bruto</span>
+            <span class="fin-card-value" id="finMesValorBruto">R$ 0,00</span>
+            <span class="fin-card-sub" id="finMesValorBrutoSub">0 cobranças</span>
+          </div>
+          <div class="fin-card fin-card--info">
+            <span class="fin-card-label">A receber</span>
+            <span class="fin-card-value" id="finMesReceber">R$ 0,00</span>
+            <span class="fin-card-sub" id="finMesReceberSub">0 cobranças</span>
+          </div>
+          <div class="fin-card fin-card--success">
+            <span class="fin-card-label">Recebidas</span>
+            <span class="fin-card-value" id="finMesRecebidas">R$ 0,00</span>
+            <span class="fin-card-sub" id="finMesRecebidasSub">0 baixas</span>
+          </div>
+          <div class="fin-card fin-card--danger">
+            <span class="fin-card-label">A pagar</span>
+            <span class="fin-card-value" id="finMesPagar">R$ 0,00</span>
+            <span class="fin-card-sub" id="finMesPagarSub">0 contas</span>
+          </div>
+          <div class="fin-card">
+            <span class="fin-card-label">Já pagas</span>
+            <span class="fin-card-value" id="finMesPagas">R$ 0,00</span>
+            <span class="fin-card-sub" id="finMesPagasSub">0 contas</span>
+          </div>
+          <div class="fin-card fin-card--result">
+            <span class="fin-card-label">Resultado líquido</span>
+            <span class="fin-card-value" id="finMesResultado">R$ 0,00</span>
+            <span class="fin-card-sub" id="finMesResultadoSub">—</span>
+          </div>
         </div>
-        <div class="fin-card fin-card--danger">
-          <span class="fin-card-label">Atrasado</span>
-          <span class="fin-card-value" id="finTotalAtrasado">R$ 0,00</span>
-          <span class="fin-card-sub">vencidos não pagos</span>
+
+        <p class="fin-section-label" style="margin-top:24px">CONSOLIDADO</p>
+        <div class="fin-cards fin-cards--3">
+          <div class="fin-card">
+            <span class="fin-card-label">Total a receber</span>
+            <span class="fin-card-value" id="finConsolidadoReceber">R$ 0,00</span>
+            <span class="fin-card-sub" id="finConsolidadoReceberSub">0 cobranças</span>
+          </div>
+          <div class="fin-card fin-card--danger">
+            <span class="fin-card-label">Vencidas e não pagas</span>
+            <span class="fin-card-value" id="finConsolidadoVencidas">R$ 0,00</span>
+            <span class="fin-card-sub" id="finConsolidadoVencidasSub">0 cobranças</span>
+          </div>
+          <div class="fin-card fin-card--info">
+            <span class="fin-card-label">A vencer (7 dias)</span>
+            <span class="fin-card-value" id="finConsolidadoAVencer">R$ 0,00</span>
+            <span class="fin-card-sub" id="finConsolidadoAVencerSub">0 cobranças</span>
+          </div>
         </div>
-        <div class="fin-card fin-card--success">
-          <span class="fin-card-label">Recebido no mês</span>
-          <span class="fin-card-value" id="finTotalRecebido">R$ 0,00</span>
-          <span class="fin-card-sub">pagamentos confirmados</span>
+
+        <div class="fin-equation">
+          <div class="fin-eq-block">
+            <span class="fin-eq-label">A RECEBER (BRUTO)</span>
+            <span class="fin-eq-value" id="finEqReceber">R$ 0,00</span>
+            <span class="fin-eq-sub" id="finEqReceberSub">cobranças pendentes</span>
+          </div>
+          <span class="fin-eq-op">−</span>
+          <div class="fin-eq-block">
+            <span class="fin-eq-label">A PAGAR</span>
+            <span class="fin-eq-value fin-eq-value--red" id="finEqPagar">R$ 0,00</span>
+            <span class="fin-eq-sub" id="finEqPagarSub">contas pendentes</span>
+          </div>
+          <span class="fin-eq-op">=</span>
+          <div class="fin-eq-block fin-eq-block--result">
+            <span class="fin-eq-label">RESULTADO LÍQUIDO</span>
+            <span class="fin-eq-value" id="finEqResultado">R$ 0,00</span>
+            <span class="fin-eq-sub" id="finEqResultadoSub">resultado do período</span>
+          </div>
         </div>
-        <div class="fin-card fin-card--info">
-          <span class="fin-card-label">Vencendo este mês</span>
-          <span class="fin-card-value" id="finVencendoMes">R$ 0,00</span>
-          <span class="fin-card-sub">a vencer no mês atual</span>
+
+        <div class="fin-bottom-grid">
+          <div class="panel" style="padding:0">
+            <div style="padding:16px 20px;border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center">
+              <span style="font-weight:600;font-size:.82rem">Próximos Vencimentos</span>
+              <button class="btn-link-sm" onclick="finMudarAba('cobrancas')">Ver todas →</button>
+            </div>
+            <div id="finProximos" style="padding:8px 0"></div>
+          </div>
         </div>
       </div>
 
-      <!-- Filtros -->
-      <div class="table-toolbar" style="margin-top:20px">
-        <input type="text" id="buscaFinanceiro" class="search-input" placeholder="Buscar por pasta ou cliente…" style="flex:1;min-width:180px">
-        <select id="filtroFinStatus" style="min-width:140px">
-          <option value="">Todos os status</option>
-          <option value="pendente">Pendente</option>
-          <option value="pago">Pago</option>
-          <option value="atrasado">Atrasado</option>
-        </select>
-        <input type="month" id="filtroFinMes" style="min-width:140px">
+      <!-- ── Painel: Cobranças ──────────────────────────────────── -->
+      <div id="fin-panel-cobrancas" class="fin-panel hidden">
+        <div class="fin-resumo-bar">
+          <div class="fin-resumo-item fin-resumo-pend">
+            <span class="fin-resumo-label">A RECEBER EM <span id="finCobMesLabel"></span></span>
+            <strong class="fin-resumo-val" id="finCobPendente">R$ 0,00</strong>
+            <small id="finCobPendenteCount">0 cobranças pendentes</small>
+          </div>
+          <div class="fin-resumo-item fin-resumo-pago">
+            <span class="fin-resumo-label">✓ RECEBIDO EM <span id="finCobMesLabelPago"></span></span>
+            <strong class="fin-resumo-val fin-resumo-val--green" id="finCobPago">R$ 0,00</strong>
+            <small id="finCobPagoCount">0 baixas registradas</small>
+          </div>
+        </div>
+        <div class="table-toolbar" style="padding:10px 0 6px">
+          <input type="text" id="buscaCob" class="search-input" placeholder="Buscar descrição ou cliente…" style="flex:1;min-width:160px">
+          <select id="filtroFinCobStatus">
+            <option value="">Todos os status</option>
+            <option value="pendente">Pendente</option>
+            <option value="pago">Pago</option>
+            <option value="vencido">Vencido</option>
+          </select>
+          <select id="filtroFinCobCat">
+            <option value="">Todas as categorias</option>
+            <option>Honorários de Êxito</option>
+            <option>Honorários Mensais</option>
+            <option>Honorários Pro-Labore</option>
+            <option>Custas</option>
+            <option>Diligências</option>
+            <option>Impostos</option>
+            <option>Outros</option>
+          </select>
+          <input type="month" id="filtroFinCobMes">
+        </div>
+        <div class="table-wrap">
+          <table class="pasta-table">
+            <thead><tr>
+              <th>Descrição</th><th>Cliente</th><th>Categoria</th>
+              <th>Vencimento</th><th>Valor</th><th>Recorrência</th><th>Status</th><th>Ações</th>
+            </tr></thead>
+            <tbody id="finCobBody"><tr><td colspan="8" class="tbl-empty">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+        <div class="fin-table-foot">
+          <span id="finCobCount">0 registros</span>
+          <span>Pendente/Vencido: <strong id="finCobTotalPendente">R$ 0,00</strong></span>
+          <span>Pago (filtro): <strong id="finCobTotalPago">R$ 0,00</strong></span>
+        </div>
       </div>
 
-      <!-- Tabela -->
-      <div class="table-wrap" style="margin-top:12px">
-        <table class="pasta-table">
-          <thead>
-            <tr>
-              <th>Pasta</th>
-              <th>Cliente</th>
-              <th>Descrição</th>
-              <th>Valor</th>
-              <th>Vencimento</th>
-              <th>Status</th>
-              <th>Pgto</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="finTabelaBody">
-            <tr><td colspan="8" class="tbl-empty">Nenhum lançamento cadastrado.</td></tr>
-          </tbody>
-        </table>
-        <div class="table-foot" style="padding:10px 16px">
-          <span id="finCount" style="font-size:.75rem;color:var(--mu)">0 lançamentos</span>
+      <!-- ── Painel: Contas a Pagar ─────────────────────────────── -->
+      <div id="fin-panel-contaspagar" class="fin-panel hidden">
+        <div class="fin-resumo-bar">
+          <div class="fin-resumo-item fin-resumo-pend">
+            <span class="fin-resumo-label">A PAGAR EM <span id="finContMesLabel"></span></span>
+            <strong class="fin-resumo-val" id="finContPendente">R$ 0,00</strong>
+            <small id="finContPendenteCount">0 contas pendentes</small>
+          </div>
+          <div class="fin-resumo-item fin-resumo-pago">
+            <span class="fin-resumo-label">✓ PAGO EM <span id="finContMesLabelPago"></span></span>
+            <strong class="fin-resumo-val fin-resumo-val--green" id="finContPago">R$ 0,00</strong>
+            <small id="finContPagoCount">0 baixas registradas</small>
+          </div>
+        </div>
+        <div class="table-toolbar" style="padding:10px 0 6px">
+          <input type="text" id="buscaCont" class="search-input" placeholder="Buscar descrição…" style="flex:1;min-width:160px">
+          <select id="filtroFinContStatus">
+            <option value="">Todos os status</option>
+            <option value="pendente">Pendente</option>
+            <option value="pago">Pago</option>
+            <option value="vencido">Vencido</option>
+          </select>
+          <select id="filtroFinContTipo">
+            <option value="">Todos os tipos</option>
+            <option>Tributos / Impostos</option>
+            <option>Prestadores de Serviço</option>
+            <option>Folha de Pagamento</option>
+            <option>Outros</option>
+          </select>
+          <input type="month" id="filtroFinContMes">
+        </div>
+        <div class="table-wrap">
+          <table class="pasta-table">
+            <thead><tr>
+              <th>Descrição</th><th>Tipo</th><th>Vencimento</th>
+              <th>Valor</th><th>Recorrência</th><th>Status</th><th>Ações</th>
+            </tr></thead>
+            <tbody id="finContBody"><tr><td colspan="7" class="tbl-empty">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+        <div class="fin-table-foot">
+          <span id="finContCount">0 registros</span>
+          <span>Pendente/Vencido: <strong id="finContTotalPendente">R$ 0,00</strong></span>
+          <span>Pago (filtro): <strong id="finContTotalPago">R$ 0,00</strong></span>
+        </div>
+      </div>
+
+      <!-- ── Painel: Despesas Reembolsáveis ─────────────────────── -->
+      <div id="fin-panel-despesas" class="fin-panel hidden">
+        <div class="table-toolbar" style="padding:10px 0 6px">
+          <input type="text" id="buscaDesp" class="search-input" placeholder="Buscar descrição ou cliente…" style="flex:1;min-width:160px">
+          <select id="filtroFinDespStatus">
+            <option value="">Todos os status</option>
+            <option value="pendente">Pendente</option>
+            <option value="reembolsado">Reembolsado</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table class="pasta-table">
+            <thead><tr>
+              <th>Descrição</th><th>Cliente</th><th>Categoria</th>
+              <th>Data</th><th>Valor</th><th>Status</th><th>Ações</th>
+            </tr></thead>
+            <tbody id="finDespBody"><tr><td colspan="7" class="tbl-empty">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+        <div class="fin-table-foot">
+          <span id="finDespCount">0 registros</span>
         </div>
       </div>
 
     </section>
 
-    <!-- Modal Honorário -->
-    <div class="modal-overlay" id="modalNovoHonorario">
-      <div class="modal" style="max-width:520px">
+    <!-- Modal Nova Cobrança -->
+    <div class="modal-overlay" id="modalCobranca">
+      <div class="modal" style="max-width:560px">
         <div class="modal-head">
-          <h3 id="modalHonorarioTitulo">Novo lançamento</h3>
-          <button type="button" class="modal-close" onclick="fecharModalHonorario()">×</button>
+          <h3 id="modalCobrancaTitulo">Nova Cobrança</h3>
+          <button type="button" class="modal-close" onclick="fecharModalCobranca()">×</button>
         </div>
         <div class="modal-body">
-          <form id="formHonorario">
-            <input type="hidden" id="honId">
+          <form id="formCobranca">
+            <input type="hidden" id="cobId">
             <div class="form-grid">
-              <div class="field" style="grid-column:1/-1">
-                <span class="field-label">Pasta vinculada</span>
-                <select id="honPastaSelect">
-                  <option value="">— sem pasta vinculada —</option>
-                </select>
+              <div class="field modal-full">
+                <span class="field-label">Cliente</span>
+                <input type="text" id="cobClienteNome" list="cobClientesList" placeholder="Nome do cliente…">
+                <datalist id="cobClientesList"></datalist>
               </div>
-              <div class="field" style="grid-column:1/-1">
+              <div class="field modal-full">
                 <span class="field-label">Descrição <span style="color:var(--red)">*</span></span>
-                <input type="text" id="honDescricao" required placeholder="Ex: Honorários mensais, Êxito, Consultoria…">
+                <input type="text" id="cobDescricao" required placeholder="Ex: Honorários mensais, Êxito…">
               </div>
               <div class="field">
                 <span class="field-label">Valor (R$) <span style="color:var(--red)">*</span></span>
-                <input type="number" id="honValor" required min="0" step="0.01" placeholder="0,00">
+                <input type="number" id="cobValor" required min="0" step="0.01" placeholder="0,00">
               </div>
               <div class="field">
-                <span class="field-label">Vencimento</span>
-                <input type="date" id="honVencimento">
+                <span class="field-label">Vencimento <span style="color:var(--red)">*</span></span>
+                <input type="date" id="cobVencimento" required>
               </div>
               <div class="field">
-                <span class="field-label">Status</span>
-                <select id="honStatus">
-                  <option value="pendente">Pendente</option>
-                  <option value="pago">Pago</option>
-                  <option value="atrasado">Atrasado</option>
+                <span class="field-label">Categoria</span>
+                <select id="cobCategoria">
+                  <option value="">Sem categoria</option>
+                  <option>Honorários de Êxito</option>
+                  <option>Honorários Mensais</option>
+                  <option>Honorários Pro-Labore</option>
+                  <option>Custas</option>
+                  <option>Diligências</option>
+                  <option>Impostos</option>
+                  <option>Outros</option>
                 </select>
               </div>
-              <div class="field" id="honDataPgtoField" style="display:none">
-                <span class="field-label">Data do pagamento</span>
-                <input type="date" id="honDataPagamento">
+              <div class="field">
+                <span class="field-label">Recorrência</span>
+                <select id="cobRecorrencia">
+                  <option value="nenhuma">Sem recorrência</option>
+                  <option value="semanal">Semanal</option>
+                  <option value="quinzenal">Quinzenal</option>
+                  <option value="mensal">Mensal</option>
+                  <option value="bimestral">Bimestral</option>
+                  <option value="trimestral">Trimestral</option>
+                  <option value="semestral">Semestral</option>
+                  <option value="anual">Anual</option>
+                </select>
               </div>
-              <div class="field" style="grid-column:1/-1">
-                <span class="field-label">Observação</span>
-                <textarea id="honObservacao" rows="2" placeholder="Observações adicionais…"></textarea>
+              <div class="field modal-full">
+                <span class="field-label">Observações</span>
+                <textarea id="cobObservacoes" rows="2" placeholder="Detalhes adicionais…"></textarea>
               </div>
             </div>
             <div class="form-foot" style="margin-top:20px">
-              <button type="button" class="btn-outline" onclick="fecharModalHonorario()">Cancelar</button>
-              <button type="submit" class="btn-primary" id="btnSalvarHonorario">Salvar</button>
+              <button type="button" class="btn-outline" onclick="fecharModalCobranca()">Cancelar</button>
+              <button type="submit" class="btn-primary" id="btnSalvarCobranca">Salvar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Nova Conta a Pagar -->
+    <div class="modal-overlay" id="modalContaPagar">
+      <div class="modal" style="max-width:560px">
+        <div class="modal-head">
+          <h3 id="modalContaTitulo">Nova Conta a Pagar</h3>
+          <button type="button" class="modal-close" onclick="fecharModalContaPagar()">×</button>
+        </div>
+        <div class="modal-body">
+          <form id="formContaPagar">
+            <input type="hidden" id="contId">
+            <div class="form-grid">
+              <div class="field modal-full">
+                <span class="field-label">Descrição <span style="color:var(--red)">*</span></span>
+                <input type="text" id="contDescricao" required placeholder="Ex: DARF pró-labore, Aluguel…">
+              </div>
+              <div class="field">
+                <span class="field-label">Tipo</span>
+                <select id="contTipo">
+                  <option value="">Sem tipo</option>
+                  <option>Tributos / Impostos</option>
+                  <option>Prestadores de Serviço</option>
+                  <option>Folha de Pagamento</option>
+                  <option>Outros</option>
+                </select>
+              </div>
+              <div class="field">
+                <span class="field-label">Valor (R$) <span style="color:var(--red)">*</span></span>
+                <input type="number" id="contValor" required min="0" step="0.01" placeholder="0,00">
+              </div>
+              <div class="field">
+                <span class="field-label">Vencimento <span style="color:var(--red)">*</span></span>
+                <input type="date" id="contVencimento" required>
+              </div>
+              <div class="field">
+                <span class="field-label">Recorrência</span>
+                <select id="contRecorrencia">
+                  <option value="nenhuma">Sem recorrência</option>
+                  <option value="semanal">Semanal</option>
+                  <option value="quinzenal">Quinzenal</option>
+                  <option value="mensal">Mensal</option>
+                  <option value="bimestral">Bimestral</option>
+                  <option value="trimestral">Trimestral</option>
+                  <option value="semestral">Semestral</option>
+                  <option value="anual">Anual</option>
+                </select>
+              </div>
+              <div class="field modal-full">
+                <span class="field-label">Observações</span>
+                <textarea id="contObservacoes" rows="2" placeholder="Detalhes adicionais…"></textarea>
+              </div>
+            </div>
+            <div class="form-foot" style="margin-top:20px">
+              <button type="button" class="btn-outline" onclick="fecharModalContaPagar()">Cancelar</button>
+              <button type="submit" class="btn-primary" id="btnSalvarConta">Salvar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Nova Despesa Reembolsável -->
+    <div class="modal-overlay" id="modalDespesa">
+      <div class="modal" style="max-width:520px">
+        <div class="modal-head">
+          <h3 id="modalDespesaTitulo">Nova Despesa Reembolsável</h3>
+          <button type="button" class="modal-close" onclick="fecharModalDespesa()">×</button>
+        </div>
+        <div class="modal-body">
+          <form id="formDespesa">
+            <input type="hidden" id="despId">
+            <div class="form-grid">
+              <div class="field modal-full">
+                <span class="field-label">Cliente</span>
+                <input type="text" id="despClienteNome" list="despClientesList" placeholder="Nome do cliente…">
+                <datalist id="despClientesList"></datalist>
+              </div>
+              <div class="field modal-full">
+                <span class="field-label">Descrição <span style="color:var(--red)">*</span></span>
+                <input type="text" id="despDescricao" required placeholder="Ex: Despesa com perícia, Transporte…">
+              </div>
+              <div class="field">
+                <span class="field-label">Valor (R$) <span style="color:var(--red)">*</span></span>
+                <input type="number" id="despValor" required min="0" step="0.01" placeholder="0,00">
+              </div>
+              <div class="field">
+                <span class="field-label">Data <span style="color:var(--red)">*</span></span>
+                <input type="date" id="despData" required>
+              </div>
+              <div class="field">
+                <span class="field-label">Categoria</span>
+                <select id="despCategoria">
+                  <option value="">Sem categoria</option>
+                  <option>Transporte</option>
+                  <option>Perícia</option>
+                  <option>Custas processuais</option>
+                  <option>Hospedagem</option>
+                  <option>Alimentação</option>
+                  <option>Outros</option>
+                </select>
+              </div>
+              <div class="field modal-full">
+                <span class="field-label">Observações</span>
+                <textarea id="despObservacoes" rows="2"></textarea>
+              </div>
+            </div>
+            <div class="form-foot" style="margin-top:20px">
+              <button type="button" class="btn-outline" onclick="fecharModalDespesa()">Cancelar</button>
+              <button type="submit" class="btn-primary" id="btnSalvarDespesa">Salvar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Dar Baixa -->
+    <div class="modal-overlay" id="modalDarBaixa">
+      <div class="modal" style="max-width:400px">
+        <div class="modal-head">
+          <h3>Registrar Pagamento</h3>
+          <button type="button" class="modal-close" onclick="document.getElementById('modalDarBaixa').classList.remove('open')">×</button>
+        </div>
+        <div class="modal-body">
+          <form id="formDarBaixa">
+            <input type="hidden" id="baixaId">
+            <input type="hidden" id="baixaTipo">
+            <div class="form-grid">
+              <div class="field modal-full">
+                <span class="field-label">Data do pagamento <span style="color:var(--red)">*</span></span>
+                <input type="date" id="baixaData" required>
+              </div>
+              <div class="field modal-full">
+                <span class="field-label">Valor pago (R$)</span>
+                <input type="number" id="baixaValor" min="0" step="0.01" placeholder="Deixe em branco para usar o valor original">
+              </div>
+            </div>
+            <div class="form-foot" style="margin-top:20px">
+              <button type="button" class="btn-outline" onclick="document.getElementById('modalDarBaixa').classList.remove('open')">Cancelar</button>
+              <button type="submit" class="btn-primary" id="btnConfirmarBaixa">Confirmar baixa</button>
             </div>
           </form>
         </div>
@@ -2437,21 +2752,21 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/core.js?v=41"></script>
-<script src="js/auth.js?v=41"></script>
-<script src="js/mappers.js?v=41"></script>
-<script src="js/dashboard.js?v=41"></script>
-<script src="js/nav.js?v=41"></script>
-<script src="js/atividades.js?v=41"></script>
-<script src="js/configuracoes.js?v=41"></script>
-<script src="js/agenda.js?v=41"></script>
-<script src="js/intimacoes.js?v=41"></script>
-<script src="js/prazos.js?v=41"></script>
-<script src="js/tarefas.js?v=41"></script>
-<script src="js/pastas.js?v=41"></script>
-<script src="js/relatorio.js?v=41"></script>
-<script src="js/andamentos.js?v=41"></script>
-<script src="js/documentos.js?v=41"></script>
-<script src="js/financeiro.js?v=41"></script>
+<script src="js/core.js?v=42"></script>
+<script src="js/auth.js?v=42"></script>
+<script src="js/mappers.js?v=42"></script>
+<script src="js/dashboard.js?v=42"></script>
+<script src="js/nav.js?v=42"></script>
+<script src="js/atividades.js?v=42"></script>
+<script src="js/configuracoes.js?v=42"></script>
+<script src="js/agenda.js?v=42"></script>
+<script src="js/intimacoes.js?v=42"></script>
+<script src="js/prazos.js?v=42"></script>
+<script src="js/tarefas.js?v=42"></script>
+<script src="js/pastas.js?v=42"></script>
+<script src="js/relatorio.js?v=42"></script>
+<script src="js/andamentos.js?v=42"></script>
+<script src="js/documentos.js?v=42"></script>
+<script src="js/financeiro.js?v=42"></script>
 </body>
 </html>

@@ -27,6 +27,9 @@ const state = {
   currentAndamento: null,
   usuarios:         [],
   honorarios:       [],
+  cobrancas:        [],
+  contasPagar:      [],
+  despesas:         [],
 };
 
 // Declarado aqui (core.js é carregado antes de agenda.js) para que

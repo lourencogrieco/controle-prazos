@@ -2099,13 +2099,170 @@ tbody td {
   .fin-cards { grid-template-columns: repeat(2, 1fr); }
 }
 
+.fin-cards--6 { grid-template-columns: repeat(6, 1fr); }
+.fin-cards--3 { grid-template-columns: repeat(3, 1fr); }
+.fin-card--result { border-left: 3px solid var(--ac); }
+.fin-card--result .fin-card-value { color: var(--ac); }
+
+.fin-panel { padding: 20px 0; }
+.fin-panel.hidden { display: none; }
+
+.fin-section-label {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: var(--mu);
+  text-transform: uppercase;
+  margin: 0 0 6px;
+}
+
+.fin-alerta {
+  background: rgba(235,87,87,.08);
+  border: 1px solid rgba(235,87,87,.25);
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: .8rem;
+  color: #eb5757;
+  margin-bottom: 16px;
+}
+
+/* ── Equation row ─────────────────────────────────────────────── */
+.fin-equation {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--s1);
+  border: 1px solid var(--br);
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-top: 24px;
+}
+.fin-eq-block {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.fin-eq-block--result { border-left: 2px solid var(--br); padding-left: 16px; }
+.fin-eq-label {
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--mu);
+}
+.fin-eq-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--fg);
+}
+.fin-eq-value--red { color: var(--red); }
+.fin-eq-sub { font-size: .68rem; color: var(--mu); }
+.fin-eq-op {
+  font-size: 1.6rem;
+  font-weight: 300;
+  color: var(--mu);
+  flex-shrink: 0;
+}
+
+/* ── Resumo bar ───────────────────────────────────────────────── */
+.fin-resumo-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.fin-resumo-item {
+  flex: 1;
+  background: var(--s1);
+  border: 1px solid var(--br);
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.fin-resumo-pend { border-left: 3px solid var(--ac); }
+.fin-resumo-pago { border-left: 3px solid #00c896; }
+.fin-resumo-label {
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--mu);
+}
+.fin-resumo-val {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--fg);
+}
+.fin-resumo-val--green { color: #00c896; }
+
+/* ── Table foot ───────────────────────────────────────────────── */
+.fin-table-foot {
+  display: flex;
+  gap: 24px;
+  padding: 10px 4px;
+  font-size: .75rem;
+  color: var(--mu);
+  border-top: 1px solid var(--br);
+}
+.fin-table-foot strong { color: var(--fg); }
+
+/* ── Bottom grid ──────────────────────────────────────────────── */
+.fin-bottom-grid {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+/* ── Badge recorrência ────────────────────────────────────────── */
+.badge-recorr {
+  display: inline-block;
+  font-size: .65rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  background: rgba(24,144,216,.1);
+  color: var(--ac);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+/* ── Próximos vencimentos ─────────────────────────────────────── */
+.prox-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--br);
+  cursor: pointer;
+  transition: background .12s;
+}
+.prox-item:last-child { border-bottom: none; }
+.prox-item:hover { background: var(--s2); }
+.prox-info { display: flex; flex-direction: column; gap: 2px; }
+.prox-desc { font-size: .8rem; font-weight: 600; color: var(--fg); }
+.prox-cliente { font-size: .72rem; color: var(--mu); text-transform: uppercase; }
+.prox-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.prox-valor { font-size: .82rem; font-weight: 700; font-family: 'IBM Plex Mono', monospace; }
+.prox-dias { font-size: .7rem; color: var(--mu); }
+.prox-dias--urgente { color: var(--red); font-weight: 700; }
+
+@media (max-width: 1100px) {
+  .fin-cards--6 { grid-template-columns: repeat(2, 1fr); }
+  .fin-cards--3 { grid-template-columns: repeat(2, 1fr); }
+  .fin-resumo-bar { flex-direction: column; }
+  .fin-equation { flex-direction: column; align-items: flex-start; }
+  .fin-eq-block--result { border-left: none; border-top: 1px solid var(--br); padding-left: 0; padding-top: 12px; }
+}
+
 @media (max-width: 1100px) {
   .rel-layout { grid-template-columns: 1fr; }
   .rel-filters { order: 2; }
   .rel-preview { order: 1; }
-  .fin-layout { grid-template-columns: 1fr; }
-  .fin-iframe { height: 500px; }
-  .fin-modules { grid-template-columns: 1fr; }
 }
 
 /* ─── AGENDA LAYOUT ───────────────────────────────────────────── */

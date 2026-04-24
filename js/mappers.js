@@ -130,6 +130,58 @@ function dbParaTarefa(row) {
   };
 }
 
+function dbParaCobranca(row) {
+  return {
+    id:            row.id,
+    clienteId:     row.cliente_id || null,
+    clienteNome:   row.cliente_nome || '',
+    descricao:     row.descricao,
+    valor:         Number(row.valor) || 0,
+    vencimento:    row.data_vencimento || null,
+    categoria:     row.categoria || '',
+    recorrencia:   row.recorrencia || 'nenhuma',
+    observacoes:   row.observacoes || '',
+    status:        row.status || 'pendente',
+    dataPagamento: row.data_pagamento || null,
+    valorPago:     Number(row.valor_pago) || 0,
+    grupoId:       row.grupo_id || null,
+    parcelaNum:    row.parcela_num || null,
+    parcelaTotal:  row.parcela_total || null,
+  };
+}
+
+function dbParaContaPagar(row) {
+  return {
+    id:            row.id,
+    descricao:     row.descricao,
+    tipo:          row.tipo || '',
+    valor:         Number(row.valor) || 0,
+    vencimento:    row.data_vencimento || null,
+    recorrencia:   row.recorrencia || 'nenhuma',
+    observacoes:   row.observacoes || '',
+    status:        row.status || 'pendente',
+    dataPagamento: row.data_pagamento || null,
+    valorPago:     Number(row.valor_pago) || 0,
+    grupoId:       row.grupo_id || null,
+    parcelaNum:    row.parcela_num || null,
+    parcelaTotal:  row.parcela_total || null,
+  };
+}
+
+function dbParaDespesa(row) {
+  return {
+    id:          row.id,
+    clienteId:   row.cliente_id || null,
+    clienteNome: row.cliente_nome || '',
+    descricao:   row.descricao,
+    data:        row.data || null,
+    valor:       Number(row.valor) || 0,
+    categoria:   row.categoria || '',
+    observacoes: row.observacoes || '',
+    status:      row.status || 'pendente',
+  };
+}
+
 function dbParaHonorario(row) {
   return {
     id:            row.id,
@@ -148,7 +200,7 @@ function dbParaHonorario(row) {
 // ──────────────────────────────────────────────────────────────────────
 async function carregarDados() {
   const eid = state.empresaId;
-  const [pr, pz, tf, tp, cl, ar, it, cfg, ev, us, hon] = await Promise.all([
+  const [pr, pz, tf, tp, cl, ar, it, cfg, ev, us, hon, cob, ctp, dep] = await Promise.all([
     db.from('pastas').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
     db.from('prazos_lhub').select('*').eq('empresa_id', eid).order('prazo'),
     db.from('tarefas_lhub').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
@@ -160,6 +212,9 @@ async function carregarDados() {
     db.from('agenda_eventos').select('*').eq('empresa_id', eid).order('data'),
     db.from('usuarios_empresa').select('id,nome,perfil,area_id').eq('empresa_id', eid).order('nome'),
     db.from('honorarios').select('*').eq('empresa_id', eid).order('vencimento'),
+    db.from('cobrancas').select('*').eq('empresa_id', eid).order('data_vencimento'),
+    db.from('contas_pagar').select('*').eq('empresa_id', eid).order('data_vencimento'),
+    db.from('despesas').select('*').eq('empresa_id', eid).order('data', { ascending: false }),
   ]);
   state.pastas     = (pr.data || []).map(dbParaPasta);
   state.prazos     = (pz.data || []).map(dbParaPrazo);
@@ -174,7 +229,10 @@ async function carregarDados() {
   state.intimacoes = (it.data || []).map(dbParaIntimacao);
   state.pjeConfig  = cfg.data || null;
   state.usuarios   = (us.data || []);
-  state.honorarios = (hon.data || []).map(dbParaHonorario);
+  state.honorarios  = (hon.data || []).map(dbParaHonorario);
+  state.cobrancas   = (cob.data || []).map(dbParaCobranca);
+  state.contasPagar = (ctp.data || []).map(dbParaContaPagar);
+  state.despesas    = (dep.data || []).map(dbParaDespesa);
   // Carrega eventos da agenda no array local
   agendaEventos.length = 0;
   (ev.data || []).forEach(e => agendaEventos.push({

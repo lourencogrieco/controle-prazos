@@ -154,6 +154,34 @@ function rowClassPrazo(iso) {
   return '';
 }
 
+// ── Estado de paginação ───────────────────────────────────────────────
+let prazoPagAtual = 1;
+let prazoLinhas   = 10;
+
+function _prazosPaginacaoAtualizar(total) {
+  const pages  = Math.max(1, Math.ceil(total / prazoLinhas));
+  prazoPagAtual = Math.min(prazoPagAtual, pages);
+
+  const inicio = (prazoPagAtual - 1) * prazoLinhas + 1;
+  const fim    = Math.min(prazoPagAtual * prazoLinhas, total);
+  document.getElementById('prazosInfo').textContent =
+    total ? `Exibindo ${inicio}–${fim} de ${total}` : '0 registros';
+
+  const pgSel = document.getElementById('prazosPagina');
+  if (pgSel) {
+    pgSel.innerHTML = Array.from({ length: pages }, (_, i) =>
+      `<option value="${i + 1}" ${i + 1 === prazoPagAtual ? 'selected' : ''}>${i + 1}</option>`
+    ).join('');
+  }
+  const totalEl = document.getElementById('prazosTotalPaginas');
+  if (totalEl) totalEl.textContent = `de ${pages}`;
+
+  const btnAnt = document.getElementById('prazosPgAnterior');
+  const btnPrx = document.getElementById('prazosPgProxima');
+  if (btnAnt) btnAnt.disabled = prazoPagAtual <= 1;
+  if (btnPrx) btnPrx.disabled = prazoPagAtual >= pages;
+}
+
 function renderPrazosAba() {
   const busca = (document.getElementById('buscaPrazosAba')?.value ?? '').toLowerCase();
   const st    = document.getElementById('filtroPrazosStatus')?.value ?? '';
@@ -168,9 +196,12 @@ function renderPrazosAba() {
     return m && (!st || p.status === st) && respMatch;
   });
 
-  document.getElementById('prazosInfo').textContent = `${lista.length} registro${lista.length !== 1 ? 's' : ''}`;
-  document.getElementById('tabelaPrazosAba').innerHTML = lista.length
-    ? lista.map(p => {
+  _prazosPaginacaoAtualizar(lista.length);
+  const inicio = (prazoPagAtual - 1) * prazoLinhas;
+  const slice  = lista.slice(inicio, inicio + prazoLinhas);
+
+  document.getElementById('tabelaPrazosAba').innerHTML = slice.length
+    ? slice.map(p => {
         // 1. link direto por ID
       let intimData = p.intimacaoId
         ? (state.intimacoes.find(i => i.id === p.intimacaoId)?.dataPublicacao || null)
@@ -226,6 +257,23 @@ function irParaIntimacao(id) {
   renderIntimacoesAba();
 }
 
-document.getElementById('buscaPrazosAba')?.addEventListener('input', renderPrazosAba);
-document.getElementById('filtroPrazosStatus')?.addEventListener('change', renderPrazosAba);
-document.getElementById('filtroPrazosResponsavel')?.addEventListener('change', renderPrazosAba);
+document.getElementById('buscaPrazosAba')?.addEventListener('input', () => { prazoPagAtual = 1; renderPrazosAba(); });
+document.getElementById('filtroPrazosStatus')?.addEventListener('change', () => { prazoPagAtual = 1; renderPrazosAba(); });
+document.getElementById('filtroPrazosResponsavel')?.addEventListener('change', () => { prazoPagAtual = 1; renderPrazosAba(); });
+
+document.getElementById('prazosLinhas')?.addEventListener('change', e => {
+  prazoLinhas   = Number(e.target.value);
+  prazoPagAtual = 1;
+  renderPrazosAba();
+});
+document.getElementById('prazosPagina')?.addEventListener('change', e => {
+  prazoPagAtual = Number(e.target.value);
+  renderPrazosAba();
+});
+document.getElementById('prazosPgAnterior')?.addEventListener('click', () => {
+  if (prazoPagAtual > 1) { prazoPagAtual--; renderPrazosAba(); }
+});
+document.getElementById('prazosPgProxima')?.addEventListener('click', () => {
+  prazoPagAtual++;
+  renderPrazosAba();
+});

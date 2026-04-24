@@ -165,6 +165,33 @@ function tarefaCard(t) {
   </article>`;
 }
 
+// Limite visível por coluna; expandido com "Mostrar mais"
+const TAREFAS_POR_COLUNA = 10;
+const _tarefasLimite = { pendente: TAREFAS_POR_COLUNA, andamento: TAREFAS_POR_COLUNA, concluida: TAREFAS_POR_COLUNA };
+
+function _renderColuna(colId, items, limiteKey, emptyMsg) {
+  const lim    = _tarefasLimite[limiteKey];
+  const slice  = items.slice(0, lim);
+  const resto  = items.length - slice.length;
+  const botao  = resto > 0
+    ? `<button class="btn-mostrar-mais" onclick="_expandirColuna('${limiteKey}',${items.length})">Mostrar mais ${resto} tarefa${resto !== 1 ? 's' : ''} ↓</button>`
+    : (items.length > TAREFAS_POR_COLUNA
+        ? `<button class="btn-mostrar-mais btn-mostrar-mais--recolher" onclick="_recolherColuna('${limiteKey}')">Recolher ↑</button>`
+        : '');
+  document.getElementById(colId).innerHTML =
+    (slice.length ? slice.map(tarefaCard).join('') : `<div class="empty-state">${emptyMsg}</div>`) + botao;
+}
+
+function _expandirColuna(key, total) {
+  _tarefasLimite[key] = total;
+  renderTarefasAba();
+}
+
+function _recolherColuna(key) {
+  _tarefasLimite[key] = TAREFAS_POR_COLUNA;
+  renderTarefasAba();
+}
+
 function renderTarefasAba() {
   const busca  = (document.getElementById('buscaTarefas')?.value ?? '').toLowerCase();
   const tipo   = document.getElementById('filtroTarefasTipo')?.value ?? '';
@@ -179,9 +206,16 @@ function renderTarefasAba() {
   const andamento  = lista.filter(t => t.status === 'Em andamento');
   const concluidas = lista.filter(t => t.status === 'Concluída');
 
-  document.getElementById('colTarefasPendentes').innerHTML  = pendentes.length  ? pendentes.map(tarefaCard).join('')  : '<div class="empty-state">Nenhuma tarefa pendente.</div>';
-  document.getElementById('colTarefasAndamento').innerHTML  = andamento.length  ? andamento.map(tarefaCard).join('')  : '<div class="empty-state">Nenhuma em andamento.</div>';
-  document.getElementById('colTarefasConcluidas').innerHTML = concluidas.length ? concluidas.map(tarefaCard).join('') : '<div class="empty-state">Nenhuma concluída.</div>';
+  // Reset limites quando filtros mudam (busca ativa = mostra tudo para não esconder resultados)
+  if (busca || tipo || status) {
+    _tarefasLimite.pendente  = pendentes.length;
+    _tarefasLimite.andamento = andamento.length;
+    _tarefasLimite.concluida = concluidas.length;
+  }
+
+  _renderColuna('colTarefasPendentes',  pendentes,  'pendente',  'Nenhuma tarefa pendente.');
+  _renderColuna('colTarefasAndamento',  andamento,  'andamento', 'Nenhuma em andamento.');
+  _renderColuna('colTarefasConcluidas', concluidas, 'concluida', 'Nenhuma concluída.');
 
   document.getElementById('countTarefasPendentes').textContent  = pendentes.length;
   document.getElementById('countTarefasAndamento').textContent  = andamento.length;

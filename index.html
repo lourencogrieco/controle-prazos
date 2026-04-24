@@ -401,10 +401,22 @@
           <div class="tbl-pagination">
             <div class="tbl-pg-left">
               <span>Linhas por página:</span>
-              <label class="select-field"><select id="prazosLinhas"><option>10</option><option>25</option><option>50</option></select></label>
+              <label class="select-field">
+                <select id="prazosLinhas">
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                </select>
+              </label>
             </div>
             <div class="tbl-pg-right">
               <span id="prazosInfo">Exibindo 0 registros</span>
+              <label class="select-field">
+                <select id="prazosPagina"><option value="1">1</option></select>
+              </label>
+              <span id="prazosTotalPaginas">de 1</span>
+              <button class="btn-pg" id="prazosPgAnterior" disabled>←</button>
+              <button class="btn-pg" id="prazosPgProxima">→</button>
             </div>
           </div>
         </div>
@@ -2920,8 +2932,8 @@
 <script src="js/configuracoes.js?v=52"></script>
 <script src="js/agenda.js?v=50"></script>
 <script src="js/intimacoes.js?v=52"></script>
-<script src="js/prazos.js?v=52"></script>
-<script src="js/tarefas.js?v=52"></script>
+<script src="js/prazos.js?v=53"></script>
+<script src="js/tarefas.js?v=53"></script>
 <script src="js/pastas.js?v=52"></script>
 <script src="js/relatorio.js?v=50"></script>
 <script src="js/andamentos.js?v=50"></script>

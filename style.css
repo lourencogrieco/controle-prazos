@@ -2107,6 +2107,12 @@ tbody td {
 .fin-panel { padding: 20px 16px; }
 .fin-panel.hidden { display: none; }
 
+#view-financeiro .page-bar,
+#view-financeiro .subtabs {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
 .fin-section-label {
   font-size: .68rem;
   font-weight: 700;

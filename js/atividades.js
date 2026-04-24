@@ -157,19 +157,7 @@ function filteredOportunidades() {
   );
 }
 
-function renderPipeline() {
-  const lista    = filteredOportunidades();
-  const recusado = lista.filter(i => i.status === 'Recusado');
-  const aceite   = lista.filter(i => i.status === 'Aguardando aceite');
-  const empty = label => `<div class="empty-state">${label}</div>`;
-
-  document.getElementById('colunaOportunidades').innerHTML = recusado.length ? recusado.map(oportunidadeCard).join('') : empty('Nenhuma oportunidade.');
-  document.getElementById('colunaAceite').innerHTML        = aceite.length   ? aceite.map(oportunidadeCard).join('')   : empty('Nenhum aguardando aceite.');
-  document.getElementById('countOportunidades').textContent = recusado.length;
-  document.getElementById('countAceite').textContent        = aceite.length;
-  document.getElementById('countValidacao').textContent     = '0';
-  document.getElementById('countAssinado').textContent      = '0';
-}
+// renderPipeline movido para prospeccao.js
 
 // ──────────────────────────────────────────────────────────────────────
 // KANBAN DRAG-AND-DROP
@@ -224,4 +212,4 @@ function initKanbanDrag() {
 // ──────────────────────────────────────────────────────────────────────
 document.getElementById('buscaPainel')?.addEventListener('input', renderAtividades);
 document.getElementById('filtroResponsavel')?.addEventListener('change', renderAtividades);
-document.getElementById('buscaPipeline')?.addEventListener('input', renderPipeline);
+// buscaPipeline listener moved to prospeccao.js

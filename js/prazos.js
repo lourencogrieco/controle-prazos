@@ -195,7 +195,7 @@ function renderPrazosAba() {
                 <path d="M10 11v6M14 11v6M9 6V4h6v2"/>
               </svg></button>` : ''}
           </div>` : '';
-        return `<tr class="${rowClassPrazo(p.prazoFatal)}">
+        return `<tr class="${rowClassPrazo(p.prazoFatal)}" data-prazo-id="${p.id}">
           <td>${pastaLink}</td>
           <td>${p.cliente}</td>
           <td style="font-family:'IBM Plex Mono',monospace;font-size:.72rem">${p.processo || '—'}</td>

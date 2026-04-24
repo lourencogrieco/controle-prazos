@@ -129,29 +129,6 @@
           <p class="dash-time" id="time3">Atualizado às --:--:--</p>
         </div>
 
-        <div class="dash-card">
-          <div class="dash-card-head">
-            <span class="dash-label">PASTAS ATIVAS</span>
-            <button class="dash-refresh" onclick="carregarDados()" title="Atualizar">↻</button>
-          </div>
-          <a href="#" class="dash-stat" onclick="document.querySelector('[data-view=pastas]').click()">
-            <strong id="dashPastasAtivas">—</strong>
-            <span>Processos em andamento</span>
-          </a>
-          <p class="dash-time" id="time4">Atualizado às --:--:--</p>
-        </div>
-
-        <div class="dash-card">
-          <div class="dash-card-head">
-            <span class="dash-label">CLIENTES</span>
-            <button class="dash-refresh" onclick="carregarDados()" title="Atualizar">↻</button>
-          </div>
-          <a href="#" class="dash-stat">
-            <strong id="dashClientes">—</strong>
-            <span>Clientes cadastrados</span>
-          </a>
-          <p class="dash-time" id="time5">Atualizado às --:--:--</p>
-        </div>
 
       </div>
 
@@ -552,7 +529,7 @@
       <div class="page-bar">
         <div class="page-bar-left">
           <span class="kicker">CRM</span>
-          <h1>Pipeline — Controle de vendas</h1>
+          <h1>Pipeline</h1>
         </div>
         <div class="page-bar-right">
           <label class="search-field">
@@ -566,7 +543,7 @@
           <label class="select-field">
             <select><option>Todos os usuários</option></select>
           </label>
-          <button class="btn-primary">+ Cadastrar oportunidade</button>
+          <button class="btn-primary" onclick="abrirModalOportunidade()">+ Cadastrar oportunidade</button>
           <button class="btn-outline">↓ Exportar relatório</button>
         </div>
       </div>
@@ -581,7 +558,7 @@
         </article>
         <article class="board-col">
           <header class="board-col-head">
-            <span>Aguardando validação da diretoria</span>
+            <span>Aguardando validação</span>
             <span class="col-count" id="countValidacao">0</span>
           </header>
           <div class="board-col-body" id="colunaValidacao">
@@ -951,13 +928,27 @@
           </div>
         </div>
 
-        <div class="fin-bottom-grid">
+        <div class="fin-bottom-grid" style="grid-template-columns:1fr 1fr 1fr">
           <div class="panel" style="padding:0">
             <div style="padding:16px 20px;border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center">
-              <span style="font-weight:600;font-size:.82rem">Próximos Vencimentos</span>
+              <span style="font-weight:600;font-size:.82rem">Cobranças — próximos 7 dias</span>
               <button class="btn-link-sm" onclick="finMudarAba('cobrancas')">Ver todas →</button>
             </div>
             <div id="finProximos" style="padding:8px 0"></div>
+          </div>
+          <div class="panel" style="padding:0">
+            <div style="padding:16px 20px;border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center">
+              <span style="font-weight:600;font-size:.82rem">Contas a Pagar — próximos 7 dias</span>
+              <button class="btn-link-sm" onclick="finMudarAba('contaspagar')">Ver todas →</button>
+            </div>
+            <div id="finProximosContas" style="padding:8px 0"></div>
+          </div>
+          <div class="panel" style="padding:0">
+            <div style="padding:16px 20px;border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center">
+              <span style="font-weight:600;font-size:.82rem">Despesas Reembolsáveis Pendentes</span>
+              <button class="btn-link-sm" onclick="finMudarAba('despesas')">Ver todas →</button>
+            </div>
+            <div id="finDespesasPendentes" style="padding:8px 0"></div>
           </div>
         </div>
       </div>
@@ -1378,6 +1369,71 @@
             <div class="form-foot" style="margin-top:20px">
               <button type="button" class="btn-outline" onclick="document.getElementById('modalDarBaixa').classList.remove('open')">Cancelar</button>
               <button type="submit" class="btn-primary" id="btnConfirmarBaixa">Confirmar baixa</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Oportunidade CRM -->
+    <div class="modal-overlay" id="modalOportunidade">
+      <div class="modal" style="max-width:560px">
+        <div class="modal-head">
+          <h3 id="modalOportunidadeTitulo">Nova Oportunidade</h3>
+          <button type="button" class="modal-close" onclick="fecharModalOportunidade()">×</button>
+        </div>
+        <div class="modal-body">
+          <form id="formOportunidade">
+            <input type="hidden" id="oportId">
+            <div class="form-grid">
+              <div class="field modal-full">
+                <span class="field-label">Título / Lead <span style="color:var(--red)">*</span></span>
+                <input type="text" id="oportTitulo" required placeholder="Ex: João Silva — Trabalhista">
+              </div>
+              <div class="field">
+                <span class="field-label">Área jurídica</span>
+                <select id="oportArea">
+                  <option value="">Selecione…</option>
+                  <option>Cível</option>
+                  <option>Trabalhista</option>
+                  <option>Tributário</option>
+                  <option>Societário</option>
+                  <option>Empresarial</option>
+                  <option>Outros</option>
+                </select>
+              </div>
+              <div class="field">
+                <span class="field-label">Tipo de serviço</span>
+                <input type="text" id="oportTipo" placeholder="Ex: Consultoria, Contencioso…">
+              </div>
+              <div class="field">
+                <span class="field-label">Valor estimado (R$)</span>
+                <input type="number" id="oportValor" min="0" step="0.01" placeholder="0,00">
+              </div>
+              <div class="field">
+                <span class="field-label">Data</span>
+                <input type="date" id="oportData">
+              </div>
+              <div class="field modal-full">
+                <span class="field-label">Responsável</span>
+                <input type="text" id="oportResponsavel" placeholder="Nome do responsável…">
+              </div>
+              <div class="field modal-full">
+                <span class="field-label">Tese / Briefing</span>
+                <textarea id="oportTese" rows="2" placeholder="Descreva o caso ou briefing…"></textarea>
+              </div>
+              <div class="field modal-full">
+                <span class="field-label">Observações</span>
+                <textarea id="oportObservacoes" rows="2" placeholder="Notas adicionais…"></textarea>
+              </div>
+              <div class="field modal-full" id="oportMotivoWrap" style="display:none">
+                <span class="field-label">Motivo da recusa</span>
+                <input type="text" id="oportMotivo" placeholder="Descreva o motivo…">
+              </div>
+            </div>
+            <div class="form-foot" style="margin-top:20px">
+              <button type="button" class="btn-outline" onclick="fecharModalOportunidade()">Cancelar</button>
+              <button type="submit" class="btn-primary" id="btnSalvarOportunidade">Salvar</button>
             </div>
           </form>
         </div>
@@ -2842,21 +2898,22 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/core.js?v=49"></script>
-<script src="js/auth.js?v=49"></script>
-<script src="js/mappers.js?v=49"></script>
-<script src="js/dashboard.js?v=49"></script>
-<script src="js/nav.js?v=49"></script>
-<script src="js/atividades.js?v=49"></script>
-<script src="js/configuracoes.js?v=49"></script>
-<script src="js/agenda.js?v=49"></script>
-<script src="js/intimacoes.js?v=49"></script>
-<script src="js/prazos.js?v=49"></script>
-<script src="js/tarefas.js?v=49"></script>
-<script src="js/pastas.js?v=49"></script>
-<script src="js/relatorio.js?v=49"></script>
-<script src="js/andamentos.js?v=49"></script>
-<script src="js/documentos.js?v=49"></script>
-<script src="js/financeiro.js?v=49"></script>
+<script src="js/core.js?v=50"></script>
+<script src="js/auth.js?v=50"></script>
+<script src="js/mappers.js?v=50"></script>
+<script src="js/dashboard.js?v=50"></script>
+<script src="js/nav.js?v=50"></script>
+<script src="js/atividades.js?v=50"></script>
+<script src="js/prospeccao.js?v=50"></script>
+<script src="js/configuracoes.js?v=50"></script>
+<script src="js/agenda.js?v=50"></script>
+<script src="js/intimacoes.js?v=50"></script>
+<script src="js/prazos.js?v=50"></script>
+<script src="js/tarefas.js?v=50"></script>
+<script src="js/pastas.js?v=50"></script>
+<script src="js/relatorio.js?v=50"></script>
+<script src="js/andamentos.js?v=50"></script>
+<script src="js/documentos.js?v=50"></script>
+<script src="js/financeiro.js?v=50"></script>
 </body>
 </html>

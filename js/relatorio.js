@@ -180,3 +180,43 @@ document.getElementById('btnExportarExcel').addEventListener('click', () => {
   a.download = `relatorio_legal_hub_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
 });
+
+document.getElementById('btnExportarPdf').addEventListener('click', () => {
+  const empresa = state.meuPerfil?.empresa_nome || 'Escritório';
+  const thead   = document.getElementById('relTabela')?.querySelector('thead');
+  const tbody   = document.getElementById('relTabelaBody');
+  if (!thead || !tbody) return;
+  const rows = tbody.querySelectorAll('tr:not(.tbl-empty)');
+  if (!rows.length) { toast('Nenhum dado para exportar.', 'error'); return; }
+
+  const headers = [...thead.querySelectorAll('th')].map(th => `<th>${th.textContent.trim()}</th>`).join('');
+  const bodyRows = [...rows].map(tr =>
+    `<tr>${[...tr.querySelectorAll('td')].map(td =>
+      `<td>${td.textContent.trim().replace(/\s+/g, ' ')}</td>`
+    ).join('')}</tr>`
+  ).join('');
+
+  const count = document.getElementById('relCount')?.textContent || '';
+  const html = `<!DOCTYPE html><html lang="pt-BR">
+<head><meta charset="UTF-8"><title>Relatório de Andamentos</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #222; margin: 20px; }
+  h1 { font-size: 14px; margin: 0 0 4px; }
+  .sub { font-size: 10px; color: #666; margin: 0 0 12px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #f0f0f0; text-align: left; padding: 5px 8px; font-size: 9px; text-transform: uppercase; letter-spacing: .04em; border-bottom: 2px solid #ccc; }
+  td { padding: 5px 8px; border-bottom: 1px solid #eee; vertical-align: top; font-size: 10px; }
+  tr:last-child td { border-bottom: none; }
+  @media print { body { margin: 10px; } @page { margin: 15mm; } }
+</style></head>
+<body>
+<h1>Relatório de Andamentos</h1>
+<p class="sub">${empresa} · Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')} · ${count}</p>
+<table><thead><tr>${headers}</tr></thead><tbody>${bodyRows}</tbody></table>
+<script>window.print();<\/script>
+</body></html>`;
+
+  const w = window.open('', '_blank', 'width=1000,height=700');
+  if (w) { w.document.write(html); w.document.close(); }
+});

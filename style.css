@@ -1440,6 +1440,14 @@ tbody td {
   font-size: .82rem;
 }
 
+@keyframes highlightFade {
+  0%   { background: rgba(24,144,216,.18); }
+  100% { background: transparent; }
+}
+.highlight-row {
+  animation: highlightFade 2s ease forwards;
+}
+
 .tbl-count {
   font-size: .72rem;
   color: var(--mu);

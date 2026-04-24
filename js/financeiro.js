@@ -158,33 +158,84 @@ function renderFinVisaoGeral() {
   }
   _setText('finEqResultadoSub', eqResultado >= 0 ? 'resultado positivo' : 'resultado negativo');
 
-  // ── Próximos vencimentos ───────────────────────────────────────────
+  // ── Próximos vencimentos — cobranças (7 dias) ─────────────────────
   const proximos = cobs
-    .filter(c => _statusCob(c) !== 'pago' && c.vencimento >= hoje)
+    .filter(c => _statusCob(c) !== 'pago' && c.vencimento >= hoje && c.vencimento <= em7iso)
     .sort((a, b) => a.vencimento.localeCompare(b.vencimento))
     .slice(0, 8);
 
   const proxEl = document.getElementById('finProximos');
-  if (!proxEl) return;
-  if (!proximos.length) {
-    proxEl.innerHTML = `<p style="padding:16px 20px;color:var(--mu);font-size:.8rem">Nenhum vencimento próximo.</p>`;
-    return;
+  if (proxEl) {
+    proxEl.innerHTML = proximos.length
+      ? proximos.map(c => {
+          const dias = daysUntil(c.vencimento);
+          const urgente = dias <= 3;
+          const label = dias === 0 ? 'Hoje' : dias === 1 ? 'Amanhã' : `${dias}d`;
+          return `<div class="prox-item" onclick="finMudarAba('cobrancas')">
+            <div class="prox-info">
+              <span class="prox-desc">${c.descricao}</span>
+              <span class="prox-cliente">${c.clienteNome || '—'}</span>
+            </div>
+            <div class="prox-right">
+              <span class="prox-valor">${formatCurrency(c.valor)}</span>
+              <span class="prox-dias ${urgente ? 'prox-dias--urgente' : ''}">${label}</span>
+            </div>
+          </div>`;
+        }).join('')
+      : `<p style="padding:16px 20px;color:var(--mu);font-size:.8rem">Nenhum vencimento nos próximos 7 dias.</p>`;
   }
-  proxEl.innerHTML = proximos.map(c => {
-    const dias = daysUntil(c.vencimento);
-    const urgente = dias <= 3;
-    const label = dias === 0 ? 'Hoje' : dias === 1 ? 'Amanhã' : `${dias}d`;
-    return `<div class="prox-item" onclick="finMudarAba('cobrancas')">
-      <div class="prox-info">
-        <span class="prox-desc">${c.descricao}</span>
-        <span class="prox-cliente">${c.clienteNome || '—'}</span>
-      </div>
-      <div class="prox-right">
-        <span class="prox-valor">${formatCurrency(c.valor)}</span>
-        <span class="prox-dias ${urgente ? 'prox-dias--urgente' : ''}">${label}</span>
-      </div>
-    </div>`;
-  }).join('');
+
+  // ── Contas a pagar próximas (7 dias) ──────────────────────────────
+  const proximasContas = conts
+    .filter(c => _statusCont(c) !== 'pago' && c.vencimento >= hoje && c.vencimento <= em7iso)
+    .sort((a, b) => a.vencimento.localeCompare(b.vencimento))
+    .slice(0, 8);
+
+  const proxContEl = document.getElementById('finProximosContas');
+  if (proxContEl) {
+    proxContEl.innerHTML = proximasContas.length
+      ? proximasContas.map(c => {
+          const dias = daysUntil(c.vencimento);
+          const urgente = dias <= 3;
+          const label = dias === 0 ? 'Hoje' : dias === 1 ? 'Amanhã' : `${dias}d`;
+          return `<div class="prox-item" onclick="finMudarAba('contaspagar')">
+            <div class="prox-info">
+              <span class="prox-desc">${c.descricao}</span>
+              <span class="prox-cliente">${c.tipo || '—'}</span>
+            </div>
+            <div class="prox-right">
+              <span class="prox-valor">${formatCurrency(c.valor)}</span>
+              <span class="prox-dias ${urgente ? 'prox-dias--urgente' : ''}">${label}</span>
+            </div>
+          </div>`;
+        }).join('')
+      : `<p style="padding:16px 20px;color:var(--mu);font-size:.8rem">Nenhuma conta a pagar nos próximos 7 dias.</p>`;
+  }
+
+  // ── Despesas reembolsáveis pendentes ──────────────────────────────
+  const despPendentes = (state.despesas || [])
+    .filter(d => d.status !== 'reembolsado')
+    .sort((a, b) => (a.data || '').localeCompare(b.data || ''))
+    .slice(0, 8);
+
+  const despEl = document.getElementById('finDespesasPendentes');
+  if (despEl) {
+    despEl.innerHTML = despPendentes.length
+      ? despPendentes.map(d => {
+          const label = d.data ? formatDate(d.data) : '—';
+          return `<div class="prox-item" onclick="finMudarAba('despesas')">
+            <div class="prox-info">
+              <span class="prox-desc">${d.descricao}</span>
+              <span class="prox-cliente">${d.clienteNome || '—'}</span>
+            </div>
+            <div class="prox-right">
+              <span class="prox-valor">${formatCurrency(d.valor)}</span>
+              <span class="prox-dias">${label}</span>
+            </div>
+          </div>`;
+        }).join('')
+      : `<p style="padding:16px 20px;color:var(--mu);font-size:.8rem">Nenhuma despesa pendente.</p>`;
+  }
 
   // ── Alertas ────────────────────────────────────────────────────────
   const alertasEl = document.getElementById('finAlertas');

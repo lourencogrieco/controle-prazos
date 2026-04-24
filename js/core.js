@@ -30,6 +30,7 @@ const state = {
   cobrancas:        [],
   contasPagar:      [],
   despesas:         [],
+  oportunidades:    [],
 };
 
 // Declarado aqui (core.js é carregado antes de agenda.js) para que

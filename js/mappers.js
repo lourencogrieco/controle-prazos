@@ -182,6 +182,23 @@ function dbParaDespesa(row) {
   };
 }
 
+function dbParaOportunidade(row) {
+  return {
+    id:           row.id,
+    titulo:       row.titulo,
+    lead:         row.lead || '',
+    area:         row.area || '',
+    tipo:         row.tipo || '',
+    tese:         row.tese || '',
+    valor:        Number(row.valor) || 0,
+    status:       row.status || 'oportunidade',
+    responsavel:  row.responsavel || '',
+    observacoes:  row.observacoes || '',
+    data:         row.data || null,
+    motivoRecusa: row.motivo_recusa || '',
+  };
+}
+
 function dbParaHonorario(row) {
   return {
     id:            row.id,
@@ -200,7 +217,7 @@ function dbParaHonorario(row) {
 // ──────────────────────────────────────────────────────────────────────
 async function carregarDados() {
   const eid = state.empresaId;
-  const [pr, pz, tf, tp, cl, ar, it, cfg, ev, us, hon, cob, ctp, dep] = await Promise.all([
+  const [pr, pz, tf, tp, cl, ar, it, cfg, ev, us, hon, cob, ctp, dep, opo] = await Promise.all([
     db.from('pastas').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
     db.from('prazos_lhub').select('*').eq('empresa_id', eid).order('prazo'),
     db.from('tarefas_lhub').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
@@ -215,6 +232,7 @@ async function carregarDados() {
     db.from('cobrancas').select('*').eq('empresa_id', eid).order('data_vencimento'),
     db.from('contas_pagar').select('*').eq('empresa_id', eid).order('data_vencimento'),
     db.from('despesas').select('*').eq('empresa_id', eid).order('data', { ascending: false }),
+    db.from('oportunidades_crm').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
   ]);
   state.pastas     = (pr.data || []).map(dbParaPasta);
   state.prazos     = (pz.data || []).map(dbParaPrazo);
@@ -233,6 +251,7 @@ async function carregarDados() {
   state.cobrancas   = (cob.data || []).map(dbParaCobranca);
   state.contasPagar = (ctp.data || []).map(dbParaContaPagar);
   state.despesas    = (dep.data || []).map(dbParaDespesa);
+  state.oportunidades = (opo.data || []).map(dbParaOportunidade);
   // Carrega eventos da agenda no array local
   agendaEventos.length = 0;
   (ev.data || []).forEach(e => agendaEventos.push({

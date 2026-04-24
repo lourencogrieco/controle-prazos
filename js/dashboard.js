@@ -18,6 +18,27 @@ function renderNavBadges() {
 }
 
 // ──────────────────────────────────────────────────────────────────────
+// NAVEGAR PARA PRAZO ESPECÍFICO
+// ──────────────────────────────────────────────────────────────────────
+function navegarParaPrazo(prazoId) {
+  // Navega para atividades > aba prazos
+  navegarPara('atividades');
+  setTimeout(() => {
+    const btnPrazos = document.querySelector('.subtab[data-subtab="prazos"]');
+    if (btnPrazos) btnPrazos.click();
+    // Destaca o prazo na lista após render
+    setTimeout(() => {
+      const row = document.querySelector(`[data-prazo-id="${prazoId}"]`);
+      if (row) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        row.classList.add('highlight-row');
+        setTimeout(() => row.classList.remove('highlight-row'), 2000);
+      }
+    }, 200);
+  }, 100);
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // DASHBOARD
 // ──────────────────────────────────────────────────────────────────────
 function renderDashboard() {
@@ -37,8 +58,6 @@ function renderDashboard() {
   set('dashTarefasLabel',     `Tarefa${tarefasPendentes !== 1 ? 's' : ''} a fazer`);
   set('dashPrazosSemana',     prazosSemana);
   set('dashPrazosVencidos',   prazosVencidos);
-  set('dashPastasAtivas',     pastasAtivas);
-  set('dashClientes',         state.clientes.length);
 
   // ── Alertas de prazos urgentes ─────────────────────────────────────
   const alertas = state.prazos.filter(p => {
@@ -78,7 +97,7 @@ function renderDashboard() {
           const diff  = daysUntil(p.prazoFatal);
           const cor   = diff <= 3 ? 'var(--red)' : diff <= 7 ? '#e07a17' : 'var(--mu)';
           const label = diff === 0 ? 'Hoje' : diff + 'd';
-          return `<div class="dash-list-item">
+          return `<div class="dash-list-item" style="cursor:pointer" onclick="navegarParaPrazo('${p.id}')" title="Abrir prazo">
             <span class="dash-item-dot" style="background:${cor}"></span>
             <span class="dash-item-title">${p.cliente || p.pastaNr || '—'}</span>
             <span class="dash-item-meta">${p.tipoPrazo}</span>

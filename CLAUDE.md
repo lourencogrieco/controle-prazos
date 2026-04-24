@@ -146,3 +146,138 @@ Aja como:
 
 Seu objetivo não é apenas revisar.
 É transformar esse sistema em um SaaS jurídico de alto nível.
+
+ ---                                                                                                          
+  DIAGNÓSTICO GERAL                                                                                            
+                                                                                                               
+  O sistema é um SaaS jurídico funcional e bem estruturado com lógica de negócio sólida. Tem features que levam
+   tempo para construir: integração com PJe, ESAJ e CNJ, controle financeiro completo e sistema de permissões  
+  por perfil. Mas carrega dívida técnica significativa em segurança, escalabilidade e DevOps.                  
+                                                                                                               
+  ---                                                                                                          
+  ESTRUTURA DO PROJETO                                                                                         
+                                                                                                               
+  Controle de prazos/                                                                                          
+  ├── index.html            (2.862 linhas — shell da aplicação)                                                
+  ├── style.css             (3.455 linhas — sistema de design completo)                                        
+  ├── script.js             (4.625 linhas — ⚠️  DUPLICATA dos módulos em /js)                                   
+  ├── js/                   (14 módulos: core, auth, pastas, prazos, tarefas,                                  
+  │                          intimacoes, agenda, financeiro, relatorio, etc.)                                  
+  ├── api/                  (4 Vercel Edge Functions: pje-proxy, esaj-proxy,                                   
+  │                          cnj-proxy, pje-cron)                                                              
+  └── supabase/functions/   (Deno: sync-intimacoes)                                                            
+                                                                                                               
+  Stack: Vanilla JS + HTML/CSS + Supabase (PostgreSQL) + Vercel Edge Functions                                 
+                                                                                                               
+  ---                                                                                                        
+  PROBLEMAS CRÍTICOS (ordenados por risco)
+                                                                                                               
+  1. SEGURANÇA — URGENTE
+                                                                                                               
+  Credenciais hardcoded no código-fonte:                                                                       
+  // core.js e script.js (duplicado!)
+  const SUPA_URL = 'https://gcucadlnxttlxckravui.supabase.co';                                                 
+  const SUPA_KEY = 'sb_publishable_5i0somnwIAvyLNImLSWYxg_yogC3bCb';                                           
+  A chave sb_publishable_* é segura para o client-side, mas o projeto provavelmente está no GitHub — qualquer  
+  pessoa pode usar sua infraestrutura. Mover para .env / Vercel secrets é obrigatório.                         
+                                                                                                               
+  Proxies CORS sem proteção:                                                                                   
+  // api/pje-proxy.js                                                                                          
+  const CORS = { 'Access-Control-Allow-Origin': '*' };                                                       
+  // Sem rate limiting, sem autenticação                                                                       
+  Qualquer um pode usar seus proxies para spammar PJe/ESAJ e ter seu IP bloqueado.                             
+                                                                                                               
+  Sem timeout/refresh de sessão — a sessão fica viva indefinidamente.                                          
+                                                                                                               
+  ---                                                                                                          
+  2. DUPLICAÇÃO MASSIVA DE CÓDIGO                                                                              
+                                                                                                               
+  script.js (4.625 linhas) é praticamente uma cópia dos módulos em js/. Isso significa dois lugares para manter
+   a mesma lógica — bugs corrigidos em um lugar ficam no outro.                                                
+  
+  ---                                                                                                          
+  3. PERFORMANCE — CARREGAMENTO TOTAL A CADA ACESSO                                                          
+                                                                                                               
+  async function carregarDados() {
+    // 14+ queries paralelas ao Supabase toda vez que abre o app                                               
+    // Sem cache, sem delta sync, sem paginação                                                                
+  }                                                                                                            
+  Com 500+ pastas, isso vai travar. A busca de intimações é O(n) linear:                                       
+  function pastaDaIntimacao(numeroProcesso) {                                                                  
+    return state.pastas.find(p => p.processo && ...); // varre todo array                                    
+  }                                                                                                            
+                                                                                                               
+  ---
+  4. SEM TESTES, SEM CI/CD                                                                                     
+                                                                                                             
+  Zero testes. Zero pipeline de CI. Um bug em financeiro.js vai direto para produção sem nenhuma rede de
+  segurança.                                                                                                   
+  
+  ---                                                                                                          
+  5. FUNCIONALIDADES AUSENTES QUE QUALQUER CONCORRENTE TEM                                                   
+                                                                                                               
+  ┌─────────────────────────────────────────┬──────────────┐
+  │                 Feature                 │    Status    │                                                   
+  ├─────────────────────────────────────────┼──────────────┤                                                 
+  │ Notificações por email (prazo vencendo) │ ✗ Não existe │
+  ├─────────────────────────────────────────┼──────────────┤
+  │ Logs de auditoria (quem alterou o quê)  │ ✗ Não existe │                                                   
+  ├─────────────────────────────────────────┼──────────────┤                                                   
+  │ Soft delete (lixeira)                   │ ✗ Não existe │                                                   
+  ├─────────────────────────────────────────┼──────────────┤                                                   
+  │ Export PDF/Excel                        │ ✗ Não existe │                                                 
+  ├─────────────────────────────────────────┼──────────────┤                                                   
+  │ Sync calendário (Google/Outlook)        │ ✗ Não existe │                                                 
+  ├─────────────────────────────────────────┼──────────────┤                                                   
+  │ Modo mobile                             │ ✗ Não existe │
+  ├─────────────────────────────────────────┼──────────────┤                                                   
+  │ Real-time multi-usuário                 │ ✗ Não existe │                                                 
+  └─────────────────────────────────────────┴──────────────┘                                                   
+                                                                                                             
+  ---
+  PONTOS FORTES (não mexer)
+                                                                                                               
+  - Sistema de permissões por perfil (8 roles bem definidos)
+  - Multi-tenant com empresa_id em todas as tabelas                                                            
+  - Integração PJe + ESAJ + CNJ (isso é difícil de fazer — valor real)                                         
+  - Módulo financeiro (cobranças, contas a pagar, honorários, parcelamento)                                    
+  - UI moderna com componentes consistentes (modais, badges de prazo, kanban)                                  
+  - Cron diário às 07h para sync de intimações                                                                 
+  - Formatação correta de datas pt-BR com timezone                                                             
+                                                                                                               
+  ---                                                                                                          
+  MELHORIAS PRIORITÁRIAS (alto impacto)                                                                        
+                                                                                                             
+  SEMANA 1 — Segurança Básica
+                                                                                                               
+  1. Rotacionar credenciais Supabase (agora)
+  2. Mover para .env + Vercel secrets                                                                          
+  3. Adicionar autenticação nos proxies da API (verificar empresa_id no header)                                
+  4. Adicionar rate limiting nos edge functions                                                                
+  5. Verificar se todas as tabelas têm RLS ativo no Supabase                                                   
+                                                                                                               
+  MÊS 1 — Confiabilidade                                                                                       
+                                                                                                               
+  6. Deletar script.js ou eliminar a duplicação (unificar em js/)                                              
+  7. Email de notificação para prazos vencendo (via Resend ou SendGrid)                                      
+  8. Log de auditoria simples (tabela audit_log com user, ação, timestamp)                                     
+  9. Tratamento de erros no cron do PJe (falha silenciosa atualmente)                                          
+  10. Backup automático diário no Supabase                                                                     
+                                                                                                               
+  MÊS 2 — Escalabilidade                                                                                       
+                                                                                                             
+  11. Cache local com localStorage para dados que não mudam rápido (áreas, tipos)                              
+  12. Paginação nas listagens de pastas/prazos                                                               
+  13. Índice em memória por numero_processo (evitar O(n) nas intimações)                                       
+  14. Real-time via Supabase Realtime subscriptions para multi-usuário                                         
+  15. Export PDF do relatório financeiro                                                                       
+                                                                                                               
+  ---                                                                                                          
+  POSICIONAMENTO COMPETITIVO                                                                                 
+                                                                                                               
+  vs. ProJuris, Astrea, ADVBOX: o sistema está competitivo no core (prazo + tarefas + integração judicial), mas
+   falta mobile, email, auditoria e colaboração real-time para chegar no nível premium.                        
+                                                                                                             
+  Diferencial possível: IA para triagem automática de intimações (classificar urgência, sugerir prazo, detectar
+   tipo de ato) — nenhum concorrente faz bem ainda.                                                          
+                                                     

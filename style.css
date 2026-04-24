@@ -2104,7 +2104,7 @@ tbody td {
 .fin-card--result { border-left: 3px solid var(--ac); }
 .fin-card--result .fin-card-value { color: var(--ac); }
 
-.fin-panel { padding: 20px 4px; }
+.fin-panel { padding: 20px 16px; }
 .fin-panel.hidden { display: none; }
 
 .fin-section-label {
@@ -2270,11 +2270,11 @@ tbody td {
   background: var(--s1);
   padding: 10px 14px;
   text-align: left;
-  font-size: .67rem;
+  font-size: .72rem;
   font-weight: 700;
-  letter-spacing: .07em;
+  letter-spacing: .06em;
   text-transform: uppercase;
-  color: var(--mu);
+  color: var(--fg);
   border-bottom: 1px solid var(--br);
   white-space: nowrap;
   overflow: hidden;
@@ -2365,6 +2365,9 @@ tbody td {
 
 /* ── Icon action buttons ─── */
 .fin-actions {
+  white-space: nowrap;
+}
+.fin-actions-inner {
   display: flex;
   gap: 4px;
   align-items: center;
@@ -2377,7 +2380,7 @@ tbody td {
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  border: 1px solid var(--br);
+  border: 1px solid transparent;
   background: transparent;
   color: var(--mu);
   cursor: pointer;
@@ -2388,12 +2391,12 @@ tbody td {
 .fin-icon-btn:hover {
   background: var(--s2);
   color: var(--fg);
-  border-color: var(--ac);
+  border-color: var(--br);
 }
 
 .fin-icon-btn--pay {
   color: #00c896;
-  border-color: rgba(0,200,150,.3);
+  border-color: transparent;
 }
 
 .fin-icon-btn--pay:hover {

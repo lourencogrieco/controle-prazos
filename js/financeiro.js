@@ -33,16 +33,15 @@ function _badgeStatus(status) {
   return '<span class="status-pill status-pill--warn">Pendente</span>';
 }
 
-function _badgeRecorrencia(rec, vencimento) {
+function _badgeRecorrencia(rec, parcelaNum, parcelaTotal) {
   if (!rec || rec === 'nenhuma') return '<span style="color:var(--mu)">—</span>';
   const map = { semanal:'Semanal', quinzenal:'Quinzenal', mensal:'Mensal',
     bimestral:'Bimestral', trimestral:'Trimestral', semestral:'Semestral', anual:'Anual' };
   const label = map[rec] || rec;
-  if (!vencimento) return `<span class="badge-recorr">${label}</span>`;
-  const [y, m] = vencimento.split('-').map(Number);
-  const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const periodo = `${meses[m-1]}/${y}`;
-  return `<span class="badge-recorr">${label}</span><br><small style="color:var(--mu);font-size:.68rem">${periodo}</small>`;
+  if (parcelaNum && parcelaTotal) {
+    return `<span class="badge-recorr">${label}</span><br><small style="color:var(--mu);font-size:.68rem">${parcelaNum}/${parcelaTotal}</small>`;
+  }
+  return `<span class="badge-recorr">${label}</span>`;
 }
 
 // ── Tab switching ─────────────────────────────────────────────────────
@@ -249,19 +248,19 @@ function renderFinCobrancas() {
   }
   tbody.innerHTML = lista.map(c => {
     const st = _statusCob(c);
-    const parc = c.parcelaNum ? ` <span class="fin-parc">${c.parcelaNum}/${c.parcelaTotal}</span>` : '';
-    const subTxt = st === 'pago' && c.dataPagamento
-      ? `<span class="fin-row-sub fin-row-sub--pago">Pago em ${formatDate(c.dataPagamento)}</span>`
-      : `<span class="fin-row-sub">${c.clienteNome || ''}</span>`;
+    const parc = c.parcelaNum ? ` ${c.parcelaNum}/${c.parcelaTotal}` : '';
     return `<tr>
       <td>
-        <span class="fin-row-title">${c.descricao}${parc}</span>
-        ${subTxt}
+        <span class="fin-row-title">${c.clienteNome || '—'}</span>
+        <span class="fin-row-sub">${c.descricao}${parc}</span>
       </td>
-      <td>${_catBadge(c.categoria)}</td>
+      <td>
+        ${_catBadge(c.categoria)}
+        ${st === 'pago' && c.dataPagamento ? `<span class="fin-row-sub fin-row-sub--pago" style="display:block;margin-top:2px">Pago em ${formatDate(c.dataPagamento)}</span>` : ''}
+      </td>
       <td class="fin-cell-date">${c.vencimento ? formatDate(c.vencimento) : '—'}</td>
       <td class="fin-cell-mono">${formatCurrency(c.valor)}</td>
-      <td>${_badgeRecorrencia(c.recorrencia, c.vencimento)}</td>
+      <td>${_badgeRecorrencia(c.recorrencia, c.parcelaNum, c.parcelaTotal)}</td>
       <td>${_badgeStatus(st)}</td>
       <td class="fin-actions">
         ${st !== 'pago'
@@ -322,23 +321,23 @@ function renderFinContasPagar() {
   }
   tbody.innerHTML = lista.map(c => {
     const st = _statusCont(c);
-    const subTxt = st === 'pago' && c.dataPagamento
-      ? `<span class="fin-row-sub fin-row-sub--pago">Pago em ${formatDate(c.dataPagamento)}</span>`
-      : `<span class="fin-row-sub">${c.tipo || ''}</span>`;
     return `<tr>
       <td>
         <span class="fin-row-title">${c.descricao}</span>
-        ${subTxt}
+        <span class="fin-row-sub">${c.tipo || ''}</span>
       </td>
-      <td>${c.tipo || '—'}</td>
+      <td>
+        ${c.tipo ? `<span class="fin-cat">${c.tipo}</span>` : '<span style="color:var(--mu)">—</span>'}
+        ${st === 'pago' && c.dataPagamento ? `<span class="fin-row-sub fin-row-sub--pago" style="display:block;margin-top:2px">Pago em ${formatDate(c.dataPagamento)}</span>` : ''}
+      </td>
       <td class="fin-cell-date">${c.vencimento ? formatDate(c.vencimento) : '—'}</td>
       <td class="fin-cell-mono">${formatCurrency(c.valor)}</td>
-      <td>${_badgeRecorrencia(c.recorrencia, c.vencimento)}</td>
+      <td>${_badgeRecorrencia(c.recorrencia, c.parcelaNum, c.parcelaTotal)}</td>
       <td>${_badgeStatus(st)}</td>
       <td class="fin-actions">
         ${st !== 'pago'
           ? `<button class="fin-icon-btn fin-icon-btn--pay" title="Dar baixa" onclick="abrirDarBaixa('${c.id}','cont')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>`
-          : `<button class="fin-icon-btn" title="Ver" onclick=""><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>`}
+          : `<button class="fin-icon-btn" title="Gerar recibo" onclick="gerarRecibo(${JSON.stringify(c).replace(/"/g,'&quot;')},'cont')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>`}
         <button class="fin-icon-btn" title="Editar" onclick="abrirModalContaPagar('${c.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
         <button class="fin-icon-btn fin-icon-btn--del" title="Excluir" onclick="excluirContaPagar('${c.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
       </td>
@@ -366,16 +365,18 @@ function renderFinDespesas() {
   const tbody = document.getElementById('finDespBody');
   if (!tbody) return;
   if (!lista.length) {
-    tbody.innerHTML = `<tr><td colspan="7" class="tbl-empty">Nenhuma despesa encontrada.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="tbl-empty">Nenhuma despesa encontrada.</td></tr>`;
     return;
   }
   tbody.innerHTML = lista.map(d => `<tr>
     <td>
-      <span class="fin-row-title">${d.descricao}</span>
-      ${d.status === 'reembolsado' ? `<span class="fin-row-sub fin-row-sub--pago">Reembolsado${d.dataPagamento ? ' em ' + formatDate(d.dataPagamento) : ''}</span>` : ''}
+      <span class="fin-row-title">${d.clienteNome || '—'}</span>
+      <span class="fin-row-sub">${d.descricao}</span>
     </td>
-    <td><span class="fin-row-sub" style="font-size:.78rem;text-transform:uppercase">${d.clienteNome || '—'}</span></td>
-    <td>${d.categoria || '—'}</td>
+    <td>
+      ${_catBadge(d.categoria)}
+      ${d.status === 'reembolsado' ? `<span class="fin-row-sub fin-row-sub--pago" style="display:block;margin-top:2px">Reembolsado${d.dataPagamento ? ' em ' + formatDate(d.dataPagamento) : ''}</span>` : ''}
+    </td>
     <td class="fin-cell-date">${d.data ? formatDate(d.data) : '—'}</td>
     <td class="fin-cell-mono">${formatCurrency(d.valor)}</td>
     <td>${_badgeStatus(d.status)}</td>

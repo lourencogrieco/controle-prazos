@@ -449,6 +449,9 @@ async function renderConfiguracoes() {
       <td><button class="btn-icon-sm" onclick="editarPerfil('${u.id}','${u.perfil||''}','${(u.nome||'').replace(/'/g,'')}')">✎</button></td>
     </tr>`;
   }).join('');
+
+  // Carrega audit log (admins/socios apenas)
+  renderAuditLog();
 }
 
 async function salvarPjeConfig() {
@@ -512,4 +515,73 @@ async function salvarEdicaoPerfil() {
   document.getElementById('modalEditarPerfil').classList.remove('open');
   toast('Perfil atualizado!');
   renderConfiguracoes();
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// LOG DE AUDITORIA — visível apenas para perfis admin/socio
+// ──────────────────────────────────────────────────────────────────────
+const PERFIS_PODE_VER_AUDIT = new Set(['admin', 'adm', 'socio_fundador', 'socio', 'controller']);
+
+async function renderAuditLog() {
+  const container = document.getElementById('auditLogContainer');
+  if (!container) return;
+
+  const perfil = state.meuPerfil?.perfil || '';
+  if (!PERFIS_PODE_VER_AUDIT.has(perfil)) {
+    container.closest('.cfg-card').style.display = 'none';
+    return;
+  }
+  container.closest('.cfg-card').style.display = '';
+
+  container.innerHTML = '<p style="color:var(--mu);font-size:.8rem;padding:8px 0">Carregando…</p>';
+
+  const { data, error } = await db
+    .from('audit_log')
+    .select('acao,tabela,descricao,usuario_nome,criado_em')
+    .eq('empresa_id', state.empresaId)
+    .order('criado_em', { ascending: false })
+    .limit(100);
+
+  if (error) {
+    container.innerHTML = `<p style="color:var(--danger);font-size:.8rem">${error.message}</p>`;
+    return;
+  }
+  if (!data?.length) {
+    container.innerHTML = '<p style="color:var(--mu);font-size:.8rem;padding:8px 0">Nenhum registro ainda.</p>';
+    return;
+  }
+
+  const acaoBadge = a => {
+    const map = { criar: ['#dcfce7','#166534','Criar'], editar: ['#dbeafe','#1e3a8a','Editar'], excluir: ['#fee2e2','#7f1d1d','Excluir'] };
+    const [bg, cor, label] = map[a] || ['#f3f4f6','#374151', a];
+    return `<span style="display:inline-block;padding:1px 7px;border-radius:9999px;font-size:.68rem;font-weight:700;background:${bg};color:${cor}">${label}</span>`;
+  };
+
+  const tabelaLabel = t => ({ prazos_lhub: 'Prazo', tarefas_lhub: 'Tarefa', pastas: 'Pasta' }[t] || t);
+
+  container.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:.8rem">
+      <thead>
+        <tr style="border-bottom:1px solid var(--br)">
+          <th style="padding:6px 8px;text-align:left;color:var(--mu);font-size:.68rem;text-transform:uppercase">Quando</th>
+          <th style="padding:6px 8px;text-align:left;color:var(--mu);font-size:.68rem;text-transform:uppercase">Usuário</th>
+          <th style="padding:6px 8px;text-align:left;color:var(--mu);font-size:.68rem;text-transform:uppercase">Ação</th>
+          <th style="padding:6px 8px;text-align:left;color:var(--mu);font-size:.68rem;text-transform:uppercase">Módulo</th>
+          <th style="padding:6px 8px;text-align:left;color:var(--mu);font-size:.68rem;text-transform:uppercase">Descrição</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${data.map(r => {
+          const dt = new Date(r.criado_em);
+          const quando = dt.toLocaleDateString('pt-BR') + ' ' + dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          return `<tr style="border-bottom:1px solid var(--br)">
+            <td style="padding:7px 8px;white-space:nowrap;font-family:'IBM Plex Mono',monospace;color:var(--mu)">${quando}</td>
+            <td style="padding:7px 8px;font-weight:600">${r.usuario_nome || '—'}</td>
+            <td style="padding:7px 8px">${acaoBadge(r.acao)}</td>
+            <td style="padding:7px 8px;color:var(--mu)">${tabelaLabel(r.tabela)}</td>
+            <td style="padding:7px 8px;color:var(--fg)">${r.descricao || '—'}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
 }

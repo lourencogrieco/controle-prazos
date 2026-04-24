@@ -55,6 +55,25 @@ async function proxyFetch(url, options = {}) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
+// AUDIT LOG — fire-and-forget, não bloqueia o fluxo principal
+// ──────────────────────────────────────────────────────────────────────
+function logAuditoria(acao, tabela, registroId, descricao) {
+  if (!state.empresaId || !state.user) return;
+  const row = {
+    empresa_id:   state.empresaId,
+    user_id:      state.user.id,
+    usuario_nome: state.meuPerfil?.nome || state.user.email || '—',
+    acao,
+    tabela,
+    registro_id:  registroId || null,
+    descricao:    descricao  || null,
+  };
+  db.from('audit_log').insert(row).then(({ error }) => {
+    if (error) console.warn('[audit_log] falha ao registrar:', error.message);
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // UTILS
 // ──────────────────────────────────────────────────────────────────────
 function uid() {

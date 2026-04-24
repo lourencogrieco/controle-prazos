@@ -19,6 +19,7 @@ document.getElementById('prazoForm').addEventListener('submit', async e => {
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
   const novo = dbParaPrazo(data[0]); _enrichPrazo(novo);
   _stateUpsert(state.prazos, novo);
+  logAuditoria('criar', 'prazos_lhub', obj.id, `Prazo criado: ${obj.tipo} — ${obj.cliente || '—'}`);
   e.target.reset();
   toast('Prazo cadastrado');
   renderPrazosAba(); renderDashboard(); renderNavBadges();
@@ -111,6 +112,7 @@ document.getElementById('novoPrazoForm').addEventListener('submit', async e => {
     if (!data?.length) { toast('Prazo não salvo: falta política INSERT no Supabase (execute o SQL de RLS).', 'error'); return; }
     const novo = dbParaPrazo(data[0]); _enrichPrazo(novo);
     _stateUpsert(state.prazos, novo);
+    logAuditoria(prazoId ? 'editar' : 'criar', 'prazos_lhub', obj.id, `Prazo ${prazoId ? 'editado' : 'criado'}: ${obj.tipo} — ${obj.cliente || '—'}`);
     fecharModalNovoPrazo();
     toast('Prazo salvo!');
     renderPrazosAba(); renderDashboard(); renderNavBadges();
@@ -124,8 +126,10 @@ document.getElementById('novoPrazoForm').addEventListener('submit', async e => {
 
 async function excluirPrazo(id) {
   if (!confirm('Confirmar exclusão deste prazo?')) return;
+  const p = state.prazos.find(x => x.id === id);
   const { error } = await db.from('prazos_lhub').delete().eq('id', id).eq('empresa_id', state.empresaId);
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  logAuditoria('excluir', 'prazos_lhub', id, `Prazo excluído: ${p?.tipoPrazo || '—'} — ${p?.cliente || '—'}`);
   _stateRemove(state.prazos, id);
   toast('Prazo excluído');
   renderPrazosAba(); renderDashboard(); renderNavBadges();

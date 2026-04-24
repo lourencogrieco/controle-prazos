@@ -193,6 +193,7 @@ document.getElementById('novaPastaForm').addEventListener('submit', async e => {
 
     const { error } = await db.from('pastas').upsert(obj);
     if (error) { toast('Erro ao salvar: ' + error.message, 'error'); return; }
+    logAuditoria(pastaId ? 'editar' : 'criar', 'pastas', obj.id, `Pasta ${pastaId ? 'editada' : 'criada'}: ${numero} — ${clienteNome || '—'}`);
     fecharModalNovaPasta();
     toast('Pasta salva com sucesso');
     await carregarDados();
@@ -206,9 +207,11 @@ document.getElementById('novaPastaForm').addEventListener('submit', async e => {
 
 async function excluirPasta(id) {
   if (!confirm('Confirmar exclusão desta pasta?')) return;
+  const p = state.pastas.find(x => x.id === id);
   const { error } = await db.from('pastas').delete()
     .eq('id', id).eq('empresa_id', state.empresaId);
   if (error) { toast('Erro ao excluir: ' + error.message, 'error'); return; }
+  logAuditoria('excluir', 'pastas', id, `Pasta excluída: ${p?.numero || '—'} — ${p?.cliente || '—'}`);
   toast('Pasta excluída');
   document.getElementById('pastas-detail').classList.add('hidden');
   document.getElementById('pastas-list').classList.remove('hidden');

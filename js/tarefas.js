@@ -65,6 +65,7 @@ document.getElementById('novaTarefaForm').addEventListener('submit', async e => 
     if (!data?.length) { toast('Tarefa não salva: falta política INSERT no Supabase (execute o SQL de RLS).', 'error'); return; }
     const nova = dbParaTarefa(data[0]);
     _stateUpsert(state.tarefas, nova);
+    logAuditoria(tarefaId ? 'editar' : 'criar', 'tarefas_lhub', obj.id, `Tarefa ${tarefaId ? 'editada' : 'criada'}: ${obj.titulo}`);
     fecharModalNovaTarefa();
     toast('Tarefa salva');
     renderTarefasAba(); renderDashboard();
@@ -78,8 +79,10 @@ document.getElementById('novaTarefaForm').addEventListener('submit', async e => 
 
 async function excluirTarefa(id) {
   if (!confirm('Confirmar exclusão desta tarefa?')) return;
+  const t = state.tarefas.find(x => x.id === id);
   const { error } = await db.from('tarefas_lhub').delete().eq('id', id).eq('empresa_id', state.empresaId);
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  logAuditoria('excluir', 'tarefas_lhub', id, `Tarefa excluída: ${t?.titulo || '—'}`);
   _stateRemove(state.tarefas, id);
   toast('Tarefa excluída');
   renderTarefasAba(); renderDashboard();

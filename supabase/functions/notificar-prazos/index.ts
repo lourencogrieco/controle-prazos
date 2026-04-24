@@ -233,12 +233,13 @@ serve(async (req) => {
       if (!usuarios?.length) continue;
 
       for (const usuario of usuarios) {
-        // Resolve email: tenta usuarios_empresa.email primeiro, depois auth.users
-        let email: string | null = usuario.email ?? null;
-        if (!email && usuario.user_id) {
+        // Resolve email: Auth primeiro (email verificado), usuarios_empresa.email como fallback
+        let email: string | null = null;
+        if (usuario.user_id) {
           const { data: authUser } = await db.auth.admin.getUserById(usuario.user_id);
           email = authUser?.user?.email ?? null;
         }
+        if (!email) email = usuario.email ?? null;
         if (!email) continue;
 
         // Admins veem todos; outros só veem os seus

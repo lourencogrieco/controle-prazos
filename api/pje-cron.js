@@ -27,7 +27,7 @@ export default async function handler(req) {
   const supaAnonKey = process.env.SUPABASE_ANON_KEY || '';
 
   // ── Permite acionar manualmente com uma janela de datas via query string ──
-  const { searchParams } = new URL(req.url);
+  const { searchParams } = new URL(req.url, 'https://placeholder.invalid');
   const dataInicio = searchParams.get('dataInicio') || null;
   const dataFim    = searchParams.get('dataFim')    || null;
 

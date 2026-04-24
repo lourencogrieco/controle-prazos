@@ -15,11 +15,13 @@ document.getElementById('prazoForm').addEventListener('submit', async e => {
     descricao:   document.getElementById('descricao').value.trim() || null,
     status:      document.getElementById('status').value === 'Concluído' ? 'concluido' : 'pendente',
   };
-  const { error } = await db.from('prazos_lhub').insert(obj);
+  const { data, error } = await db.from('prazos_lhub').insert(obj).select();
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  const novo = dbParaPrazo(data[0]); _enrichPrazo(novo);
+  _stateUpsert(state.prazos, novo);
   e.target.reset();
   toast('Prazo cadastrado');
-  await carregarDados();
+  renderPrazosAba(); renderDashboard(); renderNavBadges();
 });
 
 // Preenche datalist de responsáveis filtrando pelo area_id da pasta
@@ -107,9 +109,11 @@ document.getElementById('novoPrazoForm').addEventListener('submit', async e => {
     const { data, error } = await Promise.race([saveReq, tOut]);
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
     if (!data?.length) { toast('Prazo não salvo: falta política INSERT no Supabase (execute o SQL de RLS).', 'error'); return; }
+    const novo = dbParaPrazo(data[0]); _enrichPrazo(novo);
+    _stateUpsert(state.prazos, novo);
     fecharModalNovoPrazo();
     toast('Prazo salvo!');
-    await carregarDados();
+    renderPrazosAba(); renderDashboard(); renderNavBadges();
   } catch (err) {
     toast('Erro inesperado: ' + err.message, 'error');
     console.error('[prazo] exception:', err);
@@ -122,8 +126,9 @@ async function excluirPrazo(id) {
   if (!confirm('Confirmar exclusão deste prazo?')) return;
   const { error } = await db.from('prazos_lhub').delete().eq('id', id).eq('empresa_id', state.empresaId);
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  _stateRemove(state.prazos, id);
   toast('Prazo excluído');
-  await carregarDados();
+  renderPrazosAba(); renderDashboard(); renderNavBadges();
 }
 
 // ──────────────────────────────────────────────────────────────────────

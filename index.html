@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=48">
+  <link rel="stylesheet" href="style.css?v=49">
 </head>
 <body>
 <div class="app">
@@ -28,7 +28,7 @@
     <nav class="hdr-nav" aria-label="Navegação principal">
       <button class="nav-tab active" data-view="painel">PAINEL</button>
       <button class="nav-tab" data-view="agenda">AGENDA</button>
-      <button class="nav-tab" data-view="atividades">MINHAS ATIVIDADES</button>
+      <button class="nav-tab" data-view="atividades">MINHAS ATIVIDADES <span class="nav-badge hidden" id="navBadgePrazos"></span></button>
       <button class="nav-tab" data-view="pastas">PASTAS</button>
       <button class="nav-tab" data-view="relatorios">RELATÓRIOS</button>
       <button class="nav-tab" data-view="pipeline">PROSPECÇÃO</button>
@@ -89,6 +89,8 @@
           <span class="sys-tag">Login: LOURENÇO.GRIECO &ensp;|&ensp; Perfil: SÓCIO</span>
         </div>
       </div>
+
+      <div id="dashAlertasPrazos" class="hidden"></div>
 
       <div class="dashboard-grid">
         <div class="dash-card">
@@ -1149,7 +1151,8 @@
           </select>
           <input type="month" id="relFinDe" class="fin-select" title="De">
           <input type="month" id="relFinAte" class="fin-select" title="Até">
-          <button class="btn-outline" onclick="relFinExportarCSV()" style="white-space:nowrap">⬇ Exportar CSV</button>
+          <button class="btn-outline" onclick="relFinExportarCSV()" style="white-space:nowrap">⬇ CSV</button>
+          <button class="btn-outline" onclick="relFinExportarPDF()" style="white-space:nowrap">🖨 PDF</button>
         </div>
         <!-- Totalizadores -->
         <div class="fin-bar-inline" id="relFinTotais" style="margin-bottom:12px"></div>
@@ -2839,21 +2842,21 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/core.js?v=48"></script>
-<script src="js/auth.js?v=48"></script>
-<script src="js/mappers.js?v=48"></script>
-<script src="js/dashboard.js?v=48"></script>
-<script src="js/nav.js?v=48"></script>
-<script src="js/atividades.js?v=48"></script>
-<script src="js/configuracoes.js?v=48"></script>
-<script src="js/agenda.js?v=48"></script>
-<script src="js/intimacoes.js?v=48"></script>
-<script src="js/prazos.js?v=48"></script>
-<script src="js/tarefas.js?v=48"></script>
-<script src="js/pastas.js?v=48"></script>
-<script src="js/relatorio.js?v=48"></script>
-<script src="js/andamentos.js?v=48"></script>
-<script src="js/documentos.js?v=48"></script>
-<script src="js/financeiro.js?v=48"></script>
+<script src="js/core.js?v=49"></script>
+<script src="js/auth.js?v=49"></script>
+<script src="js/mappers.js?v=49"></script>
+<script src="js/dashboard.js?v=49"></script>
+<script src="js/nav.js?v=49"></script>
+<script src="js/atividades.js?v=49"></script>
+<script src="js/configuracoes.js?v=49"></script>
+<script src="js/agenda.js?v=49"></script>
+<script src="js/intimacoes.js?v=49"></script>
+<script src="js/prazos.js?v=49"></script>
+<script src="js/tarefas.js?v=49"></script>
+<script src="js/pastas.js?v=49"></script>
+<script src="js/relatorio.js?v=49"></script>
+<script src="js/andamentos.js?v=49"></script>
+<script src="js/documentos.js?v=49"></script>
+<script src="js/financeiro.js?v=49"></script>
 </body>
 </html>

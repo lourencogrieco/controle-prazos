@@ -63,9 +63,11 @@ document.getElementById('novaTarefaForm').addEventListener('submit', async e => 
     const { data, error } = await Promise.race([saveReq, tOut]);
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
     if (!data?.length) { toast('Tarefa não salva: falta política INSERT no Supabase (execute o SQL de RLS).', 'error'); return; }
+    const nova = dbParaTarefa(data[0]);
+    _stateUpsert(state.tarefas, nova);
     fecharModalNovaTarefa();
     toast('Tarefa salva');
-    await carregarDados();
+    renderTarefasAba(); renderDashboard();
   } catch (err) {
     toast('Erro inesperado: ' + err.message, 'error');
     console.error('[tarefa] exception:', err);
@@ -78,8 +80,9 @@ async function excluirTarefa(id) {
   if (!confirm('Confirmar exclusão desta tarefa?')) return;
   const { error } = await db.from('tarefas_lhub').delete().eq('id', id).eq('empresa_id', state.empresaId);
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  _stateRemove(state.tarefas, id);
   toast('Tarefa excluída');
-  await carregarDados();
+  renderTarefasAba(); renderDashboard();
 }
 
 async function alterarStatusTarefa(id, novoStatus) {
@@ -88,7 +91,12 @@ async function alterarStatusTarefa(id, novoStatus) {
     .eq('id', id)
     .eq('empresa_id', state.empresaId);
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
-  await carregarDados();
+  const t = state.tarefas.find(x => x.id === id);
+  if (t) {
+    t.status = novoStatus === 'concluida' ? 'Concluída'
+             : novoStatus === 'em_andamento' ? 'Em andamento' : 'Pendente';
+  }
+  renderTarefasAba(); renderDashboard();
 }
 
 // ──────────────────────────────────────────────────────────────────────

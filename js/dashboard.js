@@ -1,4 +1,23 @@
 // ──────────────────────────────────────────────────────────────────────
+// NAV BADGES
+// ──────────────────────────────────────────────────────────────────────
+function renderNavBadges() {
+  const urgentes = state.prazos.filter(p => {
+    if (p.status === 'Concluído') return false;
+    return daysUntil(p.prazoFatal) <= 3;
+  }).length;
+  const badge = document.getElementById('navBadgePrazos');
+  if (!badge) return;
+  if (urgentes > 0) {
+    badge.textContent = urgentes;
+    badge.classList.remove('hidden');
+  } else {
+    badge.textContent = '';
+    badge.classList.add('hidden');
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // DASHBOARD
 // ──────────────────────────────────────────────────────────────────────
 function renderDashboard() {
@@ -20,6 +39,31 @@ function renderDashboard() {
   set('dashPrazosVencidos',   prazosVencidos);
   set('dashPastasAtivas',     pastasAtivas);
   set('dashClientes',         state.clientes.length);
+
+  // ── Alertas de prazos urgentes ─────────────────────────────────────
+  const alertas = state.prazos.filter(p => {
+    if (p.status === 'Concluído') return false;
+    return daysUntil(p.prazoFatal) <= 3;
+  }).sort((a, b) => a.prazoFatal.localeCompare(b.prazoFatal));
+
+  const alertaEl = document.getElementById('dashAlertasPrazos');
+  if (alertaEl) {
+    if (alertas.length > 0) {
+      alertaEl.innerHTML = `<div class="dash-alerta-strip">
+        <span class="dash-alerta-icon">⚠</span>
+        <span class="dash-alerta-msg"><strong>${alertas.length} prazo${alertas.length > 1 ? 's' : ''}</strong> vence${alertas.length > 1 ? 'm' : ''} nos próximos 3 dias:</span>
+        <span class="dash-alerta-list">${alertas.slice(0, 4).map(p => {
+          const d = daysUntil(p.prazoFatal);
+          const label = d < 0 ? 'Vencido' : d === 0 ? 'Hoje' : `${d}d`;
+          return `<span class="dash-alerta-item" onclick="document.querySelector('[data-view=atividades]').click();document.querySelector('[data-subtab=prazos]').click()" title="${p.tipoPrazo}">${p.cliente || p.pastaNr || '—'} (${label})</span>`;
+        }).join('')}${alertas.length > 4 ? `<span class="dash-alerta-item" style="color:var(--mu)">+${alertas.length - 4} mais</span>` : ''}</span>
+      </div>`;
+      alertaEl.classList.remove('hidden');
+    } else {
+      alertaEl.innerHTML = '';
+      alertaEl.classList.add('hidden');
+    }
+  }
 
   // ── Próximos prazos ────────────────────────────────────────────────
   const proximos = state.prazos

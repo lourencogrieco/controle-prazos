@@ -161,6 +161,54 @@ a { text-decoration: none; color: inherit; }
   background: rgba(255,255,255,.07);
 }
 
+/* Nav badge (prazos urgentes) */
+.nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #eb5757;
+  color: #fff;
+  font-size: .62rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+.nav-badge.hidden { display: none; }
+
+/* Dashboard alerta de prazos */
+.dash-alerta-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: #fff8f0;
+  border: 1px solid #f5a623;
+  border-left: 4px solid #f5a623;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  font-size: .8rem;
+}
+.dash-alerta-icon { font-size: 1rem; color: #f5a623; flex-shrink: 0; }
+.dash-alerta-msg { color: #7a4800; }
+.dash-alerta-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.dash-alerta-item {
+  background: #fff;
+  border: 1px solid #f5a623;
+  border-radius: 4px;
+  padding: 2px 8px;
+  color: #7a4800;
+  cursor: pointer;
+  font-size: .75rem;
+  white-space: nowrap;
+}
+.dash-alerta-item:hover { background: #fff3e0; }
+
 /* User block */
 .hdr-user {
   display: flex;

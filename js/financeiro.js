@@ -470,9 +470,11 @@ document.getElementById('formCobranca').addEventListener('submit', async e => {
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
     if (!data?.length) { toast('Não foi possível salvar. Verifique as permissões.', 'error'); return; }
 
+    const nova = dbParaCobranca(data[0]);
+    _stateUpsert(state.cobrancas, nova);
     fecharModalCobranca();
     toast(id ? 'Cobrança atualizada!' : 'Cobrança criada!');
-    await carregarDados();
+    renderFinCobrancas(); renderFinVisaoGeral();
   } catch (err) {
     toast('Erro inesperado: ' + err.message, 'error');
   } finally {
@@ -484,8 +486,9 @@ async function excluirCobranca(id) {
   if (!confirm('Excluir esta cobrança?')) return;
   const { error } = await db.from('cobrancas').delete().eq('id', id);
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  _stateRemove(state.cobrancas, id);
   toast('Cobrança excluída.');
-  await carregarDados();
+  renderFinCobrancas(); renderFinVisaoGeral();
 }
 
 // ── Modal Conta a Pagar ───────────────────────────────────────────────
@@ -532,9 +535,11 @@ document.getElementById('formContaPagar').addEventListener('submit', async e => 
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
     if (!data?.length) { toast('Não foi possível salvar. Verifique as permissões.', 'error'); return; }
 
+    const nova = dbParaContaPagar(data[0]);
+    _stateUpsert(state.contasPagar, nova);
     fecharModalContaPagar();
     toast(id ? 'Conta atualizada!' : 'Conta criada!');
-    await carregarDados();
+    renderFinContasPagar(); renderFinVisaoGeral();
   } catch (err) {
     toast('Erro inesperado: ' + err.message, 'error');
   } finally {
@@ -546,8 +551,9 @@ async function excluirContaPagar(id) {
   if (!confirm('Excluir esta conta a pagar?')) return;
   const { error } = await db.from('contas_pagar').delete().eq('id', id);
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  _stateRemove(state.contasPagar, id);
   toast('Conta excluída.');
-  await carregarDados();
+  renderFinContasPagar(); renderFinVisaoGeral();
 }
 
 // ── Modal Despesa ─────────────────────────────────────────────────────
@@ -598,9 +604,11 @@ document.getElementById('formDespesa').addEventListener('submit', async e => {
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
     if (!data?.length) { toast('Não foi possível salvar. Verifique as permissões.', 'error'); return; }
 
+    const nova = dbParaDespesa(data[0]);
+    _stateUpsert(state.despesas, nova);
     fecharModalDespesa();
     toast(id ? 'Despesa atualizada!' : 'Despesa criada!');
-    await carregarDados();
+    renderFinDespesas(); renderFinVisaoGeral();
   } catch (err) {
     toast('Erro inesperado: ' + err.message, 'error');
   } finally {
@@ -612,8 +620,9 @@ async function excluirDespesa(id) {
   if (!confirm('Excluir esta despesa?')) return;
   const { error } = await db.from('despesas').delete().eq('id', id);
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  _stateRemove(state.despesas, id);
   toast('Despesa excluída.');
-  await carregarDados();
+  renderFinDespesas(); renderFinVisaoGeral();
 }
 
 // ── Dar Baixa ─────────────────────────────────────────────────────────
@@ -660,7 +669,7 @@ document.getElementById('formDarBaixa').addEventListener('submit', async e => {
     document.getElementById('formDarBaixa').reset();
     toast('Baixa registrada!');
 
-    // Find item and offer recibo
+    // Update state locally
     let item = null;
     if (tipo === 'cob')  item = (state.cobrancas || []).find(x => x.id === id);
     if (tipo === 'cont') item = (state.contasPagar || []).find(x => x.id === id);
@@ -671,14 +680,14 @@ document.getElementById('formDarBaixa').addEventListener('submit', async e => {
       if (valor) item.valorPago = valor;
     }
 
-    await carregarDados();
+    if (tipo === 'cob')  { renderFinCobrancas(); }
+    if (tipo === 'cont') { renderFinContasPagar(); }
+    if (tipo === 'desp') { renderFinDespesas(); }
+    renderFinVisaoGeral();
 
     // Ask to generate recibo
     if (tipo !== 'cont' && confirm('Deseja gerar o recibo?')) {
-      const updated = tipo === 'cob'
-        ? (state.cobrancas || []).find(x => x.id === id)
-        : (state.despesas || []).find(x => x.id === id);
-      if (updated) gerarRecibo(updated, tipo);
+      if (item) gerarRecibo(item, tipo);
     }
   } catch (err) {
     toast('Erro inesperado: ' + err.message, 'error');
@@ -894,6 +903,55 @@ function relFinExportarCSV() {
   a.remove();
   URL.revokeObjectURL(url);
   toast('CSV exportado!');
+}
+
+function relFinExportarPDF() {
+  const tipo   = document.getElementById('relFinTipo')?.value || 'cobrancas';
+  const tipoLabel = { cobrancas: 'Cobranças', contaspagar: 'Contas a Pagar', despesas: 'Despesas Reembolsáveis' }[tipo] || tipo;
+  const empresa = state.meuPerfil?.empresa_nome || 'Escritório';
+  const thead = document.getElementById('relFinThead');
+  const tbody = document.getElementById('relFinBody');
+  if (!thead || !tbody) return;
+  const rows = tbody.querySelectorAll('tr:not(.tbl-empty)');
+  if (!rows.length) { toast('Nenhum dado para exportar.', 'error'); return; }
+
+  const headers = Array.from(thead.querySelectorAll('th'))
+    .map(th => `<th>${th.textContent.trim()}</th>`).join('');
+
+  const bodyRows = Array.from(rows).map(tr =>
+    `<tr>${Array.from(tr.querySelectorAll('td')).map(td =>
+      `<td>${td.textContent.trim().replace(/\s+/g, ' ')}</td>`
+    ).join('')}</tr>`
+  ).join('');
+
+  // Totais from DOM
+  const totEl = document.getElementById('relFinTotais');
+  const totTxt = totEl ? totEl.textContent.replace(/\s+/g, ' ').trim() : '';
+
+  const html = `<!DOCTYPE html><html lang="pt-BR">
+<head><meta charset="UTF-8"><title>Relatório ${tipoLabel}</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #222; margin: 20px; }
+  h1 { font-size: 14px; margin: 0 0 4px; }
+  .sub { font-size: 10px; color: #666; margin: 0 0 12px; }
+  .totais { background: #f4f4f4; border: 1px solid #ddd; border-radius: 4px; padding: 8px 12px; margin-bottom: 12px; font-size: 10px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #f0f0f0; text-align: left; padding: 5px 8px; font-size: 9px; text-transform: uppercase; letter-spacing: .04em; border-bottom: 2px solid #ccc; }
+  td { padding: 5px 8px; border-bottom: 1px solid #eee; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  @media print { body { margin: 10px; } @page { margin: 15mm; } }
+</style></head>
+<body>
+<h1>Relatório de ${tipoLabel}</h1>
+<p class="sub">${empresa} · Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
+${totTxt ? `<div class="totais">${totTxt}</div>` : ''}
+<table><thead><tr>${headers}</tr></thead><tbody>${bodyRows}</tbody></table>
+<script>window.print();<\/script>
+</body></html>`;
+
+  const w = window.open('', '_blank', 'width=900,height=700');
+  if (w) { w.document.write(html); w.document.close(); }
 }
 
 // ── Subtabs event listener ────────────────────────────────────────────

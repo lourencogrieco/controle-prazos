@@ -247,6 +247,7 @@ async function carregarDados() {
   }));
 
   renderDashboard();
+  renderNavBadges();
   renderPastaList();
   renderAtividades();
   renderPrazosAba();

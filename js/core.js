@@ -130,6 +130,24 @@ function currentTime() {
   return new Date().toLocaleTimeString('pt-BR');
 }
 
+// ── State helpers (local updates sem recarregar tudo) ─────────────────
+
+function _stateUpsert(array, novo) {
+  const idx = array.findIndex(x => x.id === novo.id);
+  if (idx >= 0) array[idx] = novo; else array.unshift(novo);
+}
+
+function _stateRemove(array, id) {
+  const idx = array.findIndex(x => x.id === id);
+  if (idx >= 0) array.splice(idx, 1);
+}
+
+function _enrichPrazo(p) {
+  const pa = state.pastas.find(x => x.id === p.pastaId);
+  if (pa) { p.pastaNr = pa.numero; p.processo = pa.processo; p.comarca = pa.comarca; }
+  return p;
+}
+
 function toast(msg, tipo = 'success') {
   const el = document.createElement('div');
   el.className = `toast toast--${tipo}`;

@@ -3510,63 +3510,98 @@ tbody td {
    ══════════════════════════════════════════════════════════════════════ */
 @media (max-width: 640px) {
 
-  /* ── Bottom nav bar — nav tabs descem para barra fixa na base ──────── */
+  /* ── Bottom nav bar com suporte a safe-area iOS ─────────────────────── */
   .hdr-nav {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 58px;
+    /* altura fixa + espaço para o chrome do Safari iOS */
+    height: calc(54px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     z-index: 200;
     background: var(--navy);
-    border-top: 1px solid rgba(255,255,255,.12);
+    border-top: 1px solid rgba(255,255,255,.14);
     border-bottom: none;
     overflow-x: auto;
     scrollbar-width: none;
     justify-content: flex-start;
+    /* momentum scroll iOS */
+    -webkit-overflow-scrolling: touch;
   }
   .hdr-nav::-webkit-scrollbar { display: none; }
 
+  /* Tabs: exibem data-short via ::after, texto original oculto */
   .nav-tab {
+    position: relative;
     flex-direction: column;
-    gap: 2px;
-    padding: 0 14px;
-    font-size: .56rem;
-    min-width: 64px;
+    gap: 0;
+    padding: 0 4px;
+    min-width: 58px;
+    max-width: 72px;
+    flex-shrink: 0;
     border-bottom: none;
     border-top: 3px solid transparent;
     justify-content: center;
     align-items: center;
+    /* esconde texto original */
+    font-size: 0;
+    letter-spacing: 0;
+    color: transparent;
   }
-  .nav-tab.active {
-    border-bottom: none;
-    border-top-color: var(--ac);
+  /* mostra o label abreviado via data-short */
+  .nav-tab::after {
+    content: attr(data-short);
+    display: block;
+    font-size: .6rem;
+    letter-spacing: .04em;
+    font-weight: 600;
+    color: rgba(255,255,255,.55);
+    white-space: nowrap;
+    font-family: "IBM Plex Mono", monospace;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+  .nav-tab.active::after { color: #fff; }
+  .nav-tab.active { border-top-color: var(--ac); }
+
+  /* badge dentro da tab continua visível */
+  .nav-tab .nav-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: .55rem;
   }
 
-  /* ── Header — compacto sem a nav ────────────────────────────────────── */
-  .app-header { height: 50px; }
-  .hdr-brand { padding: 0 14px; }
+  /* ── Header — compacto ───────────────────────────────────────────────── */
+  .app-header { height: 48px; }
+  .hdr-brand { padding: 0 12px; }
   .hdr-brand .brand-text { display: none; }
-  .hdr-right { gap: 4px; }
+  /* esconde nome e perfil do usuário — evita header abarrotado */
+  .user-info { display: none; }
+  .hdr-right { gap: 2px; }
   .hdr-btn { width: 34px; height: 34px; font-size: .85rem; }
-  .hdr-user-name { display: none; }
-  .hdr-user-avatar { width: 30px; height: 30px; font-size: .68rem; }
+  .hdr-user { padding: 0 8px; gap: 6px; }
+  .hdr-user-avatar { width: 28px; height: 28px; font-size: .62rem; }
 
-  /* ── App main — espaço para bottom nav ─────────────────────────────── */
-  .app-main { padding: 14px 12px 76px; }
+  /* ── App main — padding para não ficar sob bottom nav ───────────────── */
+  .app-main {
+    padding: 14px 12px;
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
 
-  /* ── Page bar ────────────────────────────────────────────────────────  */
-  .page-bar { flex-direction: column; align-items: flex-start; gap: 10px; }
+  /* ── Page bar ────────────────────────────────────────────────────────── */
+  .page-bar { flex-direction: column; align-items: flex-start; gap: 8px; }
   .page-bar-right { width: 100%; flex-wrap: wrap; gap: 6px; }
   .page-bar-right .btn-primary,
   .page-bar-right .btn-outline { flex: 1; justify-content: center; font-size: .75rem; }
+  .page-bar-right .sys-tag { display: none; }
   .search-field { width: 100%; }
   .search-field input { width: 100%; box-sizing: border-box; }
-  .page-title { font-size: 1.25rem; }
-  h1 { font-size: 1.25rem; }
+  h1 { font-size: 1.2rem; }
 
-  /* ── Touch targets mínimos 44px ────────────────────────────────────── */
-  .btn-primary, .btn-outline { min-height: 40px; }
+  /* ── Touch targets ───────────────────────────────────────────────────── */
+  .btn-primary, .btn-outline { min-height: 42px; }
   select, input[type="text"], input[type="date"],
   input[type="email"], input[type="password"],
   input[type="number"], textarea {
@@ -3574,60 +3609,86 @@ tbody td {
     min-height: 40px;
   }
 
-  /* ── Data tables — scroll horizontal ───────────────────────────────── */
+  /* ── Tables — scroll horizontal ─────────────────────────────────────── */
   .data-table, .pasta-table,
-  .tbl-wrap, .fin-table-wrap { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tbl-wrap, .fin-table-wrap {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 
-  /* ── Dashboard ───────────────────────────────────────────────────────  */
+  /* ── Dashboard ───────────────────────────────────────────────────────── */
   .dashboard-grid { grid-template-columns: 1fr; }
   .dash-card--wide { grid-column: span 1; flex-direction: column; }
   .dash-panel-row { grid-template-columns: 1fr; }
   .metric-strip { flex-wrap: wrap; gap: 8px; }
   .metric-strip > * { flex: 1 1 45%; }
-  .dash-prod-section { padding: 16px; }
+  .dash-prod-section { padding: 14px; }
+  .prod-table { font-size: .76rem; }
 
-  /* ── Kanban — scroll horizontal por grupo ──────────────────────────── */
+  /* ── Kanban — cada coluna ocupa ~85vw com scroll snap ───────────────── */
   .board, .board--3col {
     display: flex;
     flex-direction: row;
     overflow-x: auto;
-    gap: 12px;
+    gap: 10px;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 8px;
+    padding-bottom: 6px;
   }
   .board-col {
-    min-width: 82vw;
+    min-width: 85vw;
     flex-shrink: 0;
     scroll-snap-align: start;
   }
 
-  /* ── Agenda ──────────────────────────────────────────────────────────  */
+  /* ── Agenda ──────────────────────────────────────────────────────────── */
   .agenda-layout { grid-template-columns: 1fr; }
   .agenda-aside { display: flex; flex-direction: column; gap: 12px; }
-  .cal-day { min-height: 36px; }
+  .cal-day { min-height: 34px; }
 
-  /* ── Pastas ──────────────────────────────────────────────────────────  */
+  /* ── Pastas ──────────────────────────────────────────────────────────── */
   .pasta-layout { grid-template-columns: 1fr; }
   .pasta-sidebar { border-right: none; border-bottom: 1px solid var(--br); }
   .dados-grid { grid-template-columns: 1fr; }
 
-  /* ── Subtabs + filtros ───────────────────────────────────────────────  */
+  /* ── Subtabs ─────────────────────────────────────────────────────────── */
   .view-subbar { flex-direction: column; align-items: stretch; gap: 8px; }
-  .subtab-row, .subtabs { flex-wrap: wrap; gap: 4px; overflow-x: auto; }
-  .subtab { font-size: .7rem; padding: 5px 10px; white-space: nowrap; }
+  .subtabs {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    gap: 2px;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  .subtabs::-webkit-scrollbar { display: none; }
+  .subtab { font-size: .7rem; padding: 5px 10px; white-space: nowrap; flex-shrink: 0; }
   .intim-filters { flex-direction: column; gap: 8px; }
   .intim-filters > * { width: 100%; }
+  .progress-group { width: 100%; }
 
-  /* ── Financeiro tabs ─────────────────────────────────────────────────  */
-  .fin-tabs { overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; }
+  /* ── Financeiro ──────────────────────────────────────────────────────── */
+  .fin-tabs {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+    gap: 0;
+    -webkit-overflow-scrolling: touch;
+  }
   .fin-tabs::-webkit-scrollbar { display: none; }
-  [data-fin-tab] { white-space: nowrap; }
+  [data-fin-tab] { white-space: nowrap; flex-shrink: 0; font-size: .74rem; padding: 0 14px; }
+  .fin-bar { flex-wrap: wrap; gap: 8px; }
+  .fin-bar-block { flex: 1 1 45%; min-width: 130px; }
+  .fin-panel { padding: 0; }
+  /* tabelas financeiras — scroll */
+  .fin-table-wrap, table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
-  /* ── Configurações ───────────────────────────────────────────────────  */
+  /* ── Configurações ───────────────────────────────────────────────────── */
   .cfg-grid { grid-template-columns: 1fr; padding: 12px; }
 
-  /* ── Modais — bottom sheet ───────────────────────────────────────────  */
+  /* ── Modais — bottom sheet com safe area ─────────────────────────────── */
   .modal {
     margin: 0;
     border-radius: 16px 16px 0 0;
@@ -3635,15 +3696,14 @@ tbody td {
     width: 100%;
     max-height: 92dvh;
     overflow-y: auto;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   .modal-overlay { align-items: flex-end; padding: 0; }
   .form-grid { grid-template-columns: 1fr !important; }
   .modal-full { grid-column: span 1 !important; }
 
-  /* ── Demais grids ────────────────────────────────────────────────────  */
+  /* ── Demais grids ────────────────────────────────────────────────────── */
   .bottom-grid { grid-template-columns: 1fr; }
   .rel-controls { flex-wrap: wrap; gap: 8px; }
   .rel-controls > * { flex: 1 1 45%; }
-  .fin-bar { flex-wrap: wrap; gap: 8px; }
-  .fin-bar-block { flex: 1 1 45%; }
 }

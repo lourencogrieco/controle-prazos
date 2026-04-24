@@ -99,6 +99,14 @@ async function onLogin(user) {
   document.querySelector('.user-info strong').textContent = nome;
   document.querySelector('.user-info span').textContent   = perfilLabel;
 
+  // Avatar com iniciais do usuário no header
+  const partes = nome.trim().split(/\s+/);
+  const iniciais = partes.length >= 2
+    ? partes[0][0] + partes[partes.length - 1][0]
+    : partes[0].slice(0, 2);
+  const avatarEl = document.getElementById('hdrUserAvatar');
+  if (avatarEl) { avatarEl.textContent = iniciais; avatarEl.title = nome; }
+
   esconderLogin();
   await carregarDados();
   aplicarPermissoes();

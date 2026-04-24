@@ -241,6 +241,24 @@ a { text-decoration: none; color: inherit; }
   letter-spacing: .08em;
 }
 
+/* Avatar com iniciais do usuário */
+.hdr-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.15);
+  border: 1.5px solid rgba(255,255,255,.28);
+  display: grid;
+  place-items: center;
+  font-family: "Manrope", sans-serif;
+  font-size: .7rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: .04em;
+  flex-shrink: 0;
+  user-select: none;
+}
+
 .hdr-actions { display: flex; gap: 2px; }
 
 .hdr-btn {
@@ -3565,12 +3583,16 @@ tbody td {
   .nav-tab.active::after { color: #fff; }
   .nav-tab.active { border-top-color: var(--ac); }
 
-  /* badge dentro da tab continua visível */
+  /* badge dentro da tab: centralizado e mais baixo (próximo ao label) */
   .nav-tab .nav-badge {
     position: absolute;
-    top: 8px;
-    right: 8px;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(6px);
     font-size: .55rem;
+    margin-left: 0;
+    min-width: 14px;
+    height: 14px;
   }
 
   /* ── Header — compacto ───────────────────────────────────────────────── */
@@ -3645,7 +3667,22 @@ tbody td {
   /* ── Agenda ──────────────────────────────────────────────────────────── */
   .agenda-layout { grid-template-columns: 1fr; }
   .agenda-aside { display: flex; flex-direction: column; gap: 12px; }
-  .cal-day { min-height: 34px; }
+  /* Células do calendário: compactas mas funcionais */
+  .cal-day { min-height: 40px; padding: 4px 3px; }
+  .cal-day-num { width: 22px; height: 22px; font-size: .72rem; margin-bottom: 1px; }
+  .cal-grid { padding: 6px 8px 8px; gap: 2px; }
+  .cal-weekdays { padding: 0 8px; }
+  .cal-weekdays span { padding: 5px 0; font-size: .58rem; }
+  /* No mobile: substituir pills de evento por dots coloridos */
+  .cal-events { flex-direction: row; flex-wrap: wrap; gap: 2px; overflow: hidden; max-height: 12px; }
+  .cal-ev {
+    width: 6px; height: 6px; border-radius: 50%;
+    padding: 0; font-size: 0; overflow: hidden;
+    flex-shrink: 0;
+  }
+  .cal-ev--more { display: none; }
+  /* Dia "outro mês" menos transparente para não parecer célula vazia */
+  .cal-day--other { opacity: .25; }
 
   /* ── Pastas ──────────────────────────────────────────────────────────── */
   .pasta-layout { grid-template-columns: 1fr; }

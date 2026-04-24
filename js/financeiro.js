@@ -957,51 +957,170 @@ function relFinExportarCSV() {
 }
 
 function relFinExportarPDF() {
-  const tipo   = document.getElementById('relFinTipo')?.value || 'cobrancas';
+  const tipo      = document.getElementById('relFinTipo')?.value || 'cobrancas';
+  const busca     = (document.getElementById('relFinBusca')?.value || '').toLowerCase();
+  const fStatus   = document.getElementById('relFinStatus')?.value || '';
+  const fCat      = document.getElementById('relFinCategoria')?.value || '';
+  const fDe       = document.getElementById('relFinDe')?.value || '';
+  const fAte      = document.getElementById('relFinAte')?.value || '';
   const tipoLabel = { cobrancas: 'Cobranças', contaspagar: 'Contas a Pagar', despesas: 'Despesas Reembolsáveis' }[tipo] || tipo;
-  const empresa = state.meuPerfil?.empresa_nome || 'Escritório';
-  const thead = document.getElementById('relFinThead');
-  const tbody = document.getElementById('relFinBody');
-  if (!thead || !tbody) return;
-  const rows = tbody.querySelectorAll('tr:not(.tbl-empty)');
-  if (!rows.length) { toast('Nenhum dado para exportar.', 'error'); return; }
+  const empresa   = state.meuPerfil?.empresa_nome || 'Escritório';
 
-  const headers = Array.from(thead.querySelectorAll('th'))
-    .map(th => `<th>${th.textContent.trim()}</th>`).join('');
+  // Monta lista filtrada diretamente do state (não lê DOM)
+  let lista = [], theadCols = [], rowFn;
 
-  const bodyRows = Array.from(rows).map(tr =>
-    `<tr>${Array.from(tr.querySelectorAll('td')).map(td =>
-      `<td>${td.textContent.trim().replace(/\s+/g, ' ')}</td>`
-    ).join('')}</tr>`
-  ).join('');
+  if (tipo === 'cobrancas') {
+    lista = (state.cobrancas || []).filter(c => {
+      const st = _statusCob(c);
+      if (fStatus && st !== fStatus) return false;
+      if (fCat && c.categoria !== fCat) return false;
+      if (fDe  && (c.vencimento || '') < fDe)  return false;
+      if (fAte && (c.vencimento || '') > fAte + '-31') return false;
+      if (busca && !`${c.descricao} ${c.clienteNome}`.toLowerCase().includes(busca)) return false;
+      return true;
+    }).sort((a, b) => (a.vencimento || '').localeCompare(b.vencimento || ''));
 
-  // Totais from DOM
-  const totEl = document.getElementById('relFinTotais');
-  const totTxt = totEl ? totEl.textContent.replace(/\s+/g, ' ').trim() : '';
+    theadCols = ['Descrição', 'Cliente', 'Categoria', 'Vencimento', 'Valor', 'Status', 'Pago em'];
+    rowFn = c => {
+      const st = _statusCob(c);
+      const stLabel = st === 'pago' ? 'Pago' : st === 'vencido' ? 'Vencido' : 'Pendente';
+      const stColor = st === 'pago' ? '#1d8b60' : st === 'vencido' ? '#c0392b' : '#e07a17';
+      return [
+        c.descricao,
+        c.clienteNome || '—',
+        c.categoria || '—',
+        c.vencimento ? formatDate(c.vencimento) : '—',
+        formatCurrency(c.valor),
+        `<span style="color:${stColor};font-weight:600">${stLabel}</span>`,
+        c.dataPagamento ? formatDate(c.dataPagamento) : '—',
+      ];
+    };
+
+  } else if (tipo === 'contaspagar') {
+    lista = (state.contasPagar || []).filter(c => {
+      const st = _statusCont(c);
+      if (fStatus && st !== fStatus) return false;
+      if (fCat && c.tipo !== fCat) return false;
+      if (fDe  && (c.vencimento || '') < fDe)  return false;
+      if (fAte && (c.vencimento || '') > fAte + '-31') return false;
+      if (busca && !c.descricao.toLowerCase().includes(busca)) return false;
+      return true;
+    }).sort((a, b) => (a.vencimento || '').localeCompare(b.vencimento || ''));
+
+    theadCols = ['Descrição', 'Tipo', 'Vencimento', 'Valor', 'Status', 'Pago em'];
+    rowFn = c => {
+      const st = _statusCont(c);
+      const stLabel = st === 'pago' ? 'Pago' : st === 'vencido' ? 'Vencido' : 'Pendente';
+      const stColor = st === 'pago' ? '#1d8b60' : st === 'vencido' ? '#c0392b' : '#e07a17';
+      return [
+        c.descricao,
+        c.tipo || '—',
+        c.vencimento ? formatDate(c.vencimento) : '—',
+        formatCurrency(c.valor),
+        `<span style="color:${stColor};font-weight:600">${stLabel}</span>`,
+        c.dataPagamento ? formatDate(c.dataPagamento) : '—',
+      ];
+    };
+
+  } else {
+    lista = (state.despesas || []).filter(d => {
+      if (fStatus) { const stNorm = fStatus === 'pago' ? 'reembolsado' : fStatus; if (d.status !== stNorm) return false; }
+      if (fCat && d.categoria !== fCat) return false;
+      if (fDe  && (d.data || '') < fDe)  return false;
+      if (fAte && (d.data || '') > fAte + '-31') return false;
+      if (busca && !`${d.descricao} ${d.clienteNome}`.toLowerCase().includes(busca)) return false;
+      return true;
+    }).sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+
+    theadCols = ['Descrição', 'Cliente', 'Categoria', 'Data', 'Valor', 'Status'];
+    rowFn = d => {
+      const stLabel = d.status === 'reembolsado' ? 'Reembolsado' : 'Pendente';
+      const stColor = d.status === 'reembolsado' ? '#1d8b60' : '#e07a17';
+      return [
+        d.descricao,
+        d.clienteNome || '—',
+        d.categoria || '—',
+        d.data ? formatDate(d.data) : '—',
+        formatCurrency(d.valor),
+        `<span style="color:${stColor};font-weight:600">${stLabel}</span>`,
+      ];
+    };
+  }
+
+  if (!lista.length) { toast('Nenhum dado para exportar.', 'error'); return; }
+
+  // Totalizadores
+  const totalVal   = lista.reduce((s, r) => s + (r.valor || 0), 0);
+  const pagosList  = lista.filter(r => r.status === 'pago' || r.status === 'reembolsado');
+  const pendList   = lista.filter(r => r.status !== 'pago' && r.status !== 'reembolsado');
+  const pagoVal    = pagosList.reduce((s, r) => s + (r.valorPago || r.valor || 0), 0);
+  const pendVal    = pendList.reduce((s, r) => s + (r.valor || 0), 0);
+
+  // Contexto dos filtros aplicados
+  const filtros = [
+    fStatus && `Status: ${fStatus}`,
+    fCat    && `Categoria: ${fCat}`,
+    fDe     && `De: ${formatDate(fDe)}`,
+    fAte    && `Até: ${formatDate(fAte)}`,
+    busca   && `Busca: "${busca}"`,
+  ].filter(Boolean).join(' · ');
+
+  const thead = theadCols.map(c => `<th>${c}</th>`).join('');
+  const tbody = lista.map(r => {
+    const cells = rowFn(r);
+    return `<tr>${cells.map(c => `<td>${c}</td>`).join('')}</tr>`;
+  }).join('');
 
   const html = `<!DOCTYPE html><html lang="pt-BR">
 <head><meta charset="UTF-8"><title>Relatório ${tipoLabel}</title>
 <style>
   * { box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; font-size: 11px; color: #222; margin: 20px; }
-  h1 { font-size: 14px; margin: 0 0 4px; }
-  .sub { font-size: 10px; color: #666; margin: 0 0 12px; }
-  .totais { background: #f4f4f4; border: 1px solid #ddd; border-radius: 4px; padding: 8px 12px; margin-bottom: 12px; font-size: 10px; }
-  table { width: 100%; border-collapse: collapse; }
-  th { background: #f0f0f0; text-align: left; padding: 5px 8px; font-size: 9px; text-transform: uppercase; letter-spacing: .04em; border-bottom: 2px solid #ccc; }
-  td { padding: 5px 8px; border-bottom: 1px solid #eee; vertical-align: top; }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #222; margin: 24px; }
+  h1 { font-size: 15px; margin: 0 0 2px; font-weight: 700; }
+  .meta { font-size: 10px; color: #666; margin: 0 0 10px; }
+  .filtros { font-size: 9px; color: #888; margin-bottom: 10px; }
+  .totais { display: flex; gap: 0; margin-bottom: 14px; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; }
+  .tot-blk { flex: 1; padding: 8px 12px; background: #f9f9f9; border-right: 1px solid #ddd; }
+  .tot-blk:last-child { border-right: none; }
+  .tot-label { font-size: 8px; text-transform: uppercase; letter-spacing: .06em; color: #888; display: block; margin-bottom: 2px; }
+  .tot-value { font-size: 13px; font-weight: 700; display: block; }
+  .tot-count { font-size: 9px; color: #aaa; display: block; }
+  .green { color: #1d8b60; }
+  .orange { color: #e07a17; }
+  table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+  th { background: #f0f0f0; text-align: left; padding: 5px 8px; font-size: 9px; text-transform: uppercase;
+       letter-spacing: .04em; border-bottom: 2px solid #ccc; white-space: nowrap; }
+  td { padding: 5px 8px; border-bottom: 1px solid #eee; vertical-align: middle; font-size: 10px; }
+  tr:nth-child(even) td { background: #fafafa; }
   tr:last-child td { border-bottom: none; }
-  @media print { body { margin: 10px; } @page { margin: 15mm; } }
+  @media print { body { margin: 10px; } @page { size: A4 landscape; margin: 12mm; } }
 </style></head>
 <body>
 <h1>Relatório de ${tipoLabel}</h1>
-<p class="sub">${empresa} · Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
-${totTxt ? `<div class="totais">${totTxt}</div>` : ''}
-<table><thead><tr>${headers}</tr></thead><tbody>${bodyRows}</tbody></table>
+<p class="meta">${empresa} · Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')} · ${lista.length} registro${lista.length !== 1 ? 's' : ''}</p>
+${filtros ? `<p class="filtros">Filtros: ${filtros}</p>` : ''}
+<div class="totais">
+  <div class="tot-blk">
+    <span class="tot-label">Total</span>
+    <span class="tot-value">${formatCurrency(totalVal)}</span>
+    <span class="tot-count">${lista.length} registros</span>
+  </div>
+  <div class="tot-blk">
+    <span class="tot-label">Pago / Recebido</span>
+    <span class="tot-value green">${formatCurrency(pagoVal)}</span>
+    <span class="tot-count">${pagosList.length} baixa${pagosList.length !== 1 ? 's' : ''}</span>
+  </div>
+  <div class="tot-blk">
+    <span class="tot-label">Pendente</span>
+    <span class="tot-value orange">${formatCurrency(pendVal)}</span>
+    <span class="tot-count">${pendList.length} pendente${pendList.length !== 1 ? 's' : ''}</span>
+  </div>
+</div>
+<table><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>
 <script>window.print();<\/script>
 </body></html>`;
 
-  const w = window.open('', '_blank', 'width=900,height=700');
+  const w = window.open('', '_blank', 'width=1000,height=750');
   if (w) { w.document.write(html); w.document.close(); }
 }
 

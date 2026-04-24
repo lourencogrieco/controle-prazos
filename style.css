@@ -2099,12 +2099,12 @@ tbody td {
   .fin-cards { grid-template-columns: repeat(2, 1fr); }
 }
 
-.fin-cards--6 { grid-template-columns: repeat(6, 1fr); }
+.fin-cards--6 { grid-template-columns: repeat(3, 1fr); }
 .fin-cards--3 { grid-template-columns: repeat(3, 1fr); }
 .fin-card--result { border-left: 3px solid var(--ac); }
 .fin-card--result .fin-card-value { color: var(--ac); }
 
-.fin-panel { padding: 20px 0; }
+.fin-panel { padding: 20px 4px; }
 .fin-panel.hidden { display: none; }
 
 .fin-section-label {
@@ -2281,10 +2281,11 @@ tbody td {
 }
 
 .fin-table tbody td {
-  padding: 12px 14px;
+  padding: 10px 14px;
   vertical-align: middle;
   border-bottom: 1px solid var(--br);
   overflow: hidden;
+  height: 52px;
 }
 
 .fin-table tbody tr:last-child td { border-bottom: none; }

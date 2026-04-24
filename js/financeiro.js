@@ -33,11 +33,16 @@ function _badgeStatus(status) {
   return '<span class="status-pill status-pill--warn">Pendente</span>';
 }
 
-function _badgeRecorrencia(rec) {
-  if (!rec || rec === 'nenhuma') return '—';
+function _badgeRecorrencia(rec, vencimento) {
+  if (!rec || rec === 'nenhuma') return '<span style="color:var(--mu)">—</span>';
   const map = { semanal:'Semanal', quinzenal:'Quinzenal', mensal:'Mensal',
     bimestral:'Bimestral', trimestral:'Trimestral', semestral:'Semestral', anual:'Anual' };
-  return `<span class="badge-recorr">${map[rec] || rec}</span>`;
+  const label = map[rec] || rec;
+  if (!vencimento) return `<span class="badge-recorr">${label}</span>`;
+  const [y, m] = vencimento.split('-').map(Number);
+  const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const periodo = `${meses[m-1]}/${y}`;
+  return `<span class="badge-recorr">${label}</span><br><small style="color:var(--mu);font-size:.68rem">${periodo}</small>`;
 }
 
 // ── Tab switching ─────────────────────────────────────────────────────
@@ -61,6 +66,7 @@ function finMudarAba(tab) {
   if (tab === 'cobrancas')   renderFinCobrancas();
   if (tab === 'contaspagar') renderFinContasPagar();
   if (tab === 'despesas')    renderFinDespesas();
+  if (tab === 'relatorio')   renderFinRelatorio();
 }
 
 // ── Entry point ───────────────────────────────────────────────────────
@@ -244,20 +250,18 @@ function renderFinCobrancas() {
   tbody.innerHTML = lista.map(c => {
     const st = _statusCob(c);
     const parc = c.parcelaNum ? ` <span class="fin-parc">${c.parcelaNum}/${c.parcelaTotal}</span>` : '';
-    const sub = st === 'pago' && c.dataPagamento
+    const subTxt = st === 'pago' && c.dataPagamento
       ? `<span class="fin-row-sub fin-row-sub--pago">Pago em ${formatDate(c.dataPagamento)}</span>`
-      : c.clienteNome
-        ? `<span class="fin-row-sub">${c.clienteNome}</span>`
-        : '';
+      : `<span class="fin-row-sub">${c.clienteNome || ''}</span>`;
     return `<tr>
       <td>
         <span class="fin-row-title">${c.descricao}${parc}</span>
-        ${sub}
+        ${subTxt}
       </td>
       <td>${_catBadge(c.categoria)}</td>
       <td class="fin-cell-date">${c.vencimento ? formatDate(c.vencimento) : '—'}</td>
       <td class="fin-cell-mono">${formatCurrency(c.valor)}</td>
-      <td>${_badgeRecorrencia(c.recorrencia)}</td>
+      <td>${_badgeRecorrencia(c.recorrencia, c.vencimento)}</td>
       <td>${_badgeStatus(st)}</td>
       <td class="fin-actions">
         ${st !== 'pago'
@@ -318,20 +322,18 @@ function renderFinContasPagar() {
   }
   tbody.innerHTML = lista.map(c => {
     const st = _statusCont(c);
-    const sub = st === 'pago' && c.dataPagamento
+    const subTxt = st === 'pago' && c.dataPagamento
       ? `<span class="fin-row-sub fin-row-sub--pago">Pago em ${formatDate(c.dataPagamento)}</span>`
-      : c.tipo
-        ? `<span class="fin-row-sub">${c.tipo}</span>`
-        : '';
+      : `<span class="fin-row-sub">${c.tipo || ''}</span>`;
     return `<tr>
       <td>
         <span class="fin-row-title">${c.descricao}</span>
-        ${sub}
+        ${subTxt}
       </td>
       <td>${c.tipo || '—'}</td>
       <td class="fin-cell-date">${c.vencimento ? formatDate(c.vencimento) : '—'}</td>
       <td class="fin-cell-mono">${formatCurrency(c.valor)}</td>
-      <td>${_badgeRecorrencia(c.recorrencia)}</td>
+      <td>${_badgeRecorrencia(c.recorrencia, c.vencimento)}</td>
       <td>${_badgeStatus(st)}</td>
       <td class="fin-actions">
         ${st !== 'pago'
@@ -405,8 +407,7 @@ const _CAT_COLOR = {
 
 function _catBadge(cat) {
   if (!cat) return '<span style="color:var(--mu)">—</span>';
-  const color = _CAT_COLOR[cat] || '#9ca3af';
-  return `<span class="fin-cat"><span class="fin-cat-dot" style="background:${color}"></span>${cat}</span>`;
+  return `<span class="fin-cat">${cat}</span>`;
 }
 
 function _formatMes(ym) {
@@ -721,6 +722,179 @@ ${tipo !== 'cont' ? `<div class="rec-row"><span>Cliente</span><strong>${cliente}
   if (w) { w.document.write(html); w.document.close(); }
 }
 
+// ── Relatórios ────────────────────────────────────────────────────────
+
+function renderFinRelatorio() {
+  const tipo     = document.getElementById('relFinTipo')?.value || 'cobrancas';
+  const busca    = (document.getElementById('relFinBusca')?.value || '').toLowerCase();
+  const fStatus  = document.getElementById('relFinStatus')?.value || '';
+  const fCat     = document.getElementById('relFinCategoria')?.value || '';
+  const fDe      = document.getElementById('relFinDe')?.value || '';
+  const fAte     = document.getElementById('relFinAte')?.value || '';
+
+  let lista = [];
+  let thead = '';
+  let rowFn;
+
+  if (tipo === 'cobrancas') {
+    lista = (state.cobrancas || []).filter(c => {
+      const st = _statusCob(c);
+      const stMap = { pago: 'pago', vencido: 'vencido', pendente: 'pendente' };
+      if (fStatus) {
+        const mapped = fStatus === 'pago' ? 'pago' : fStatus;
+        if (st !== mapped) return false;
+      }
+      if (fCat && c.categoria !== fCat) return false;
+      if (fDe  && (c.vencimento || '') < fDe)  return false;
+      if (fAte && (c.vencimento || '') > fAte + '-31') return false;
+      if (busca && !`${c.descricao} ${c.clienteNome}`.toLowerCase().includes(busca)) return false;
+      return true;
+    }).sort((a, b) => (a.vencimento || '').localeCompare(b.vencimento || ''));
+
+    thead = `<tr>
+      <th style="width:26%">Descrição</th><th style="width:16%">Cliente</th>
+      <th style="width:13%">Categoria</th><th style="width:10%">Vencimento</th>
+      <th style="width:11%">Valor</th><th style="width:10%">Recorrência</th>
+      <th style="width:8%">Status</th><th style="width:6%">Pago em</th>
+    </tr>`;
+    rowFn = c => {
+      const st = _statusCob(c);
+      return `<tr>
+        <td><span class="fin-row-title">${c.descricao}</span></td>
+        <td><span class="fin-row-sub" style="color:var(--fg)">${c.clienteNome || '—'}</span></td>
+        <td>${_catBadge(c.categoria)}</td>
+        <td class="fin-cell-date">${c.vencimento ? formatDate(c.vencimento) : '—'}</td>
+        <td class="fin-cell-mono">${formatCurrency(c.valor)}</td>
+        <td>${_badgeRecorrencia(c.recorrencia, c.vencimento)}</td>
+        <td>${_badgeStatus(st)}</td>
+        <td class="fin-cell-date">${c.dataPagamento ? formatDate(c.dataPagamento) : '—'}</td>
+      </tr>`;
+    };
+
+  } else if (tipo === 'contaspagar') {
+    lista = (state.contasPagar || []).filter(c => {
+      const st = _statusCont(c);
+      if (fStatus && st !== fStatus) return false;
+      if (fCat && c.tipo !== fCat) return false;
+      if (fDe  && (c.vencimento || '') < fDe)  return false;
+      if (fAte && (c.vencimento || '') > fAte + '-31') return false;
+      if (busca && !c.descricao.toLowerCase().includes(busca)) return false;
+      return true;
+    }).sort((a, b) => (a.vencimento || '').localeCompare(b.vencimento || ''));
+
+    thead = `<tr>
+      <th style="width:34%">Descrição</th><th style="width:16%">Tipo</th>
+      <th style="width:12%">Vencimento</th><th style="width:12%">Valor</th>
+      <th style="width:11%">Recorrência</th><th style="width:9%">Status</th>
+      <th style="width:6%">Pago em</th>
+    </tr>`;
+    rowFn = c => {
+      const st = _statusCont(c);
+      return `<tr>
+        <td><span class="fin-row-title">${c.descricao}</span></td>
+        <td>${c.tipo || '—'}</td>
+        <td class="fin-cell-date">${c.vencimento ? formatDate(c.vencimento) : '—'}</td>
+        <td class="fin-cell-mono">${formatCurrency(c.valor)}</td>
+        <td>${_badgeRecorrencia(c.recorrencia, c.vencimento)}</td>
+        <td>${_badgeStatus(st)}</td>
+        <td class="fin-cell-date">${c.dataPagamento ? formatDate(c.dataPagamento) : '—'}</td>
+      </tr>`;
+    };
+
+  } else {
+    lista = (state.despesas || []).filter(d => {
+      if (fStatus) {
+        const stNorm = fStatus === 'pago' ? 'reembolsado' : fStatus;
+        if (d.status !== stNorm) return false;
+      }
+      if (fCat && d.categoria !== fCat) return false;
+      if (fDe  && (d.data || '') < fDe)  return false;
+      if (fAte && (d.data || '') > fAte + '-31') return false;
+      if (busca && !`${d.descricao} ${d.clienteNome}`.toLowerCase().includes(busca)) return false;
+      return true;
+    }).sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+
+    thead = `<tr>
+      <th style="width:30%">Descrição</th><th style="width:18%">Cliente</th>
+      <th style="width:14%">Categoria</th><th style="width:10%">Data</th>
+      <th style="width:12%">Valor</th><th style="width:10%">Status</th>
+    </tr>`;
+    rowFn = d => `<tr>
+      <td><span class="fin-row-title">${d.descricao}</span></td>
+      <td><span class="fin-row-sub" style="color:var(--fg)">${d.clienteNome || '—'}</span></td>
+      <td>${d.categoria || '—'}</td>
+      <td class="fin-cell-date">${d.data ? formatDate(d.data) : '—'}</td>
+      <td class="fin-cell-mono">${formatCurrency(d.valor)}</td>
+      <td>${_badgeStatus(d.status)}</td>
+    </tr>`;
+  }
+
+  // Totalizadores
+  const total    = lista.reduce((s, r) => s + (r.valor || 0), 0);
+  const pagos    = lista.filter(r => r.status === 'pago' || r.status === 'reembolsado');
+  const pendentes = lista.filter(r => r.status !== 'pago' && r.status !== 'reembolsado');
+  const totEl = document.getElementById('relFinTotais');
+  if (totEl) {
+    totEl.innerHTML = `
+      <div class="fin-bar-block fin-bar-block--pend" style="flex:none;min-width:200px">
+        <span class="fin-bar-label">TOTAL</span>
+        <span class="fin-bar-value">${formatCurrency(total)}</span>
+        <span class="fin-bar-count">${lista.length} registro${lista.length !== 1 ? 's' : ''}</span>
+      </div>
+      <div class="fin-bar-block fin-bar-block--pago" style="flex:none;min-width:200px">
+        <span class="fin-bar-label">PAGO / RECEBIDO</span>
+        <span class="fin-bar-value fin-bar-value--green">${formatCurrency(pagos.reduce((s,r) => s + (r.valorPago || r.valor || 0), 0))}</span>
+        <span class="fin-bar-count">${pagos.length} baixa${pagos.length !== 1 ? 's' : ''}</span>
+      </div>
+      <div class="fin-bar-block" style="flex:none;min-width:200px;border-left:3px solid var(--mu)">
+        <span class="fin-bar-label">PENDENTE</span>
+        <span class="fin-bar-value" style="color:var(--mu)">${formatCurrency(pendentes.reduce((s,r) => s + (r.valor || 0), 0))}</span>
+        <span class="fin-bar-count">${pendentes.length} pendente${pendentes.length !== 1 ? 's' : ''}</span>
+      </div>`;
+  }
+
+  _setText('relFinCount', `${lista.length} registro${lista.length !== 1 ? 's' : ''}`);
+  _setText('relFinTotal', formatCurrency(total));
+
+  document.getElementById('relFinThead').innerHTML = thead;
+  const tbody = document.getElementById('relFinBody');
+  tbody.innerHTML = lista.length
+    ? lista.map(rowFn).join('')
+    : `<tr><td colspan="8" class="tbl-empty">Nenhum registro encontrado para os filtros selecionados.</td></tr>`;
+}
+
+function relFinExportarCSV() {
+  const tipo  = document.getElementById('relFinTipo')?.value || 'cobrancas';
+  const tbody = document.getElementById('relFinBody');
+  if (!tbody) return;
+
+  const rows = Array.from(tbody.querySelectorAll('tr:not(.tbl-empty)'));
+  if (!rows.length) { toast('Nenhum dado para exportar.', 'error'); return; }
+
+  const headers = Array.from(document.getElementById('relFinThead').querySelectorAll('th'))
+    .map(th => `"${th.textContent.trim()}"`).join(';');
+
+  const lines = rows.map(tr =>
+    Array.from(tr.querySelectorAll('td')).map(td => {
+      const txt = td.textContent.trim().replace(/\s+/g, ' ').replace(/"/g, '""');
+      return `"${txt}"`;
+    }).join(';')
+  );
+
+  const csv = [headers, ...lines].join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), {
+    href: url,
+    download: `relatorio-${tipo}-${new Date().toISOString().slice(0,10)}.csv`,
+  });
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  toast('CSV exportado!');
+}
+
 // ── Subtabs event listener ────────────────────────────────────────────
 
 document.querySelectorAll('[data-fin-tab]').forEach(btn => {
@@ -740,4 +914,8 @@ document.querySelectorAll('[data-fin-tab]').forEach(btn => {
 ['buscaDesp','filtroFinDespStatus'].forEach(id => {
   document.getElementById(id)?.addEventListener('input', renderFinDespesas);
   document.getElementById(id)?.addEventListener('change', renderFinDespesas);
+});
+['relFinTipo','relFinBusca','relFinStatus','relFinCategoria','relFinDe','relFinAte'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input', renderFinRelatorio);
+  document.getElementById(id)?.addEventListener('change', renderFinRelatorio);
 });

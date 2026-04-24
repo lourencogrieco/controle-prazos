@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=44">
+  <link rel="stylesheet" href="style.css?v=45">
 </head>
 <body>
 <div class="app">
@@ -870,6 +870,7 @@
         <button class="subtab" data-fin-tab="cobrancas">Cobranças</button>
         <button class="subtab" data-fin-tab="contaspagar">Contas a Pagar</button>
         <button class="subtab" data-fin-tab="despesas">Despesas Reembolsáveis</button>
+        <button class="subtab" data-fin-tab="relatorio">Relatórios</button>
       </div>
 
       <!-- ── Painel: Visão Geral ─────────────────────────────────── -->
@@ -1114,6 +1115,55 @@
               <th>Data</th><th>Valor</th><th>Status</th><th>Ações</th>
             </tr></thead>
             <tbody id="finDespBody"><tr><td colspan="7" class="tbl-empty">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── Painel: Relatórios ──────────────────────────────────── -->
+      <div id="fin-panel-relatorio" class="fin-panel hidden">
+        <!-- Filtros -->
+        <div class="fin-toolbar" style="flex-wrap:wrap">
+          <select id="relFinTipo" class="fin-select">
+            <option value="cobrancas">Cobranças</option>
+            <option value="contaspagar">Contas a Pagar</option>
+            <option value="despesas">Despesas Reembolsáveis</option>
+          </select>
+          <input type="text" id="relFinBusca" class="fin-search" placeholder="🔍 Buscar descrição ou cliente…" style="flex:1;min-width:160px">
+          <select id="relFinStatus" class="fin-select">
+            <option value="">Todos os status</option>
+            <option value="pendente">Pendente</option>
+            <option value="pago">Pago / Reembolsado</option>
+            <option value="vencido">Vencido</option>
+          </select>
+          <select id="relFinCategoria" class="fin-select">
+            <option value="">Todas as categorias / tipos</option>
+            <option>Honorários de Êxito</option>
+            <option>Honorários Mensais</option>
+            <option>Honorários Pro-Labore</option>
+            <option>Custas</option>
+            <option>Diligências</option>
+            <option>Impostos</option>
+            <option>Tributos / Impostos</option>
+            <option>Prestadores de Serviço</option>
+            <option>Folha de Pagamento</option>
+            <option>Outros</option>
+          </select>
+          <input type="month" id="relFinDe" class="fin-select" title="De">
+          <input type="month" id="relFinAte" class="fin-select" title="Até">
+          <button class="btn-outline" onclick="relFinExportarCSV()" style="white-space:nowrap">⬇ Exportar CSV</button>
+        </div>
+        <!-- Totalizadores -->
+        <div class="fin-bar-inline" id="relFinTotais" style="margin-bottom:12px"></div>
+        <!-- Meta -->
+        <div class="fin-meta">
+          <span id="relFinCount">0 registros</span>
+          <span>Total filtrado: <strong id="relFinTotal" style="color:var(--ac)">R$ 0,00</strong></span>
+        </div>
+        <!-- Tabela -->
+        <div class="fin-table-wrap">
+          <table class="fin-table" id="relFinTable">
+            <thead id="relFinThead"><tr><th colspan="7">Selecione um tipo</th></tr></thead>
+            <tbody id="relFinBody"><tr><td colspan="7" class="tbl-empty">Escolha o tipo acima para gerar o relatório.</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -2790,21 +2840,21 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/core.js?v=44"></script>
-<script src="js/auth.js?v=44"></script>
-<script src="js/mappers.js?v=44"></script>
-<script src="js/dashboard.js?v=44"></script>
-<script src="js/nav.js?v=44"></script>
-<script src="js/atividades.js?v=44"></script>
-<script src="js/configuracoes.js?v=44"></script>
-<script src="js/agenda.js?v=44"></script>
-<script src="js/intimacoes.js?v=44"></script>
-<script src="js/prazos.js?v=44"></script>
-<script src="js/tarefas.js?v=44"></script>
-<script src="js/pastas.js?v=44"></script>
-<script src="js/relatorio.js?v=44"></script>
-<script src="js/andamentos.js?v=44"></script>
-<script src="js/documentos.js?v=44"></script>
-<script src="js/financeiro.js?v=44"></script>
+<script src="js/core.js?v=45"></script>
+<script src="js/auth.js?v=45"></script>
+<script src="js/mappers.js?v=45"></script>
+<script src="js/dashboard.js?v=45"></script>
+<script src="js/nav.js?v=45"></script>
+<script src="js/atividades.js?v=45"></script>
+<script src="js/configuracoes.js?v=45"></script>
+<script src="js/agenda.js?v=45"></script>
+<script src="js/intimacoes.js?v=45"></script>
+<script src="js/prazos.js?v=45"></script>
+<script src="js/tarefas.js?v=45"></script>
+<script src="js/pastas.js?v=45"></script>
+<script src="js/relatorio.js?v=45"></script>
+<script src="js/andamentos.js?v=45"></script>
+<script src="js/documentos.js?v=45"></script>
+<script src="js/financeiro.js?v=45"></script>
 </body>
 </html>

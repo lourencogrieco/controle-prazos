@@ -81,7 +81,7 @@ function _respChipHTML(nome) {
   </span>`;
 }
 
-function popularRespPicker(pickerId, currentRespStr, usuarios) {
+function popularRespPicker(pickerId, currentRespStr, usuarios, placeholder) {
   const picker = document.getElementById(pickerId);
   if (!picker) return;
   const selected = (currentRespStr || '').split(';').map(n => n.trim()).filter(Boolean);
@@ -90,7 +90,7 @@ function popularRespPicker(pickerId, currentRespStr, usuarios) {
 
   chipsEl.innerHTML = selected.map(_respChipHTML).join('');
 
-  addEl.innerHTML = '<option value="">＋ Adicionar responsável</option>' +
+  addEl.innerHTML = `<option value="">${placeholder || '＋ Adicionar responsável'}</option>` +
     usuarios.filter(u => !selected.includes(u.nome))
       .map(u => `<option value="${u.nome}">${u.nome}</option>`).join('');
 

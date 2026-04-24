@@ -53,7 +53,7 @@ function popularDropdownClientes() {
   if (!addSel) return;
   const chipsEl  = document.querySelector('#pastaClientePicker .resp-chips');
   const selected = Array.from(chipsEl?.querySelectorAll('.resp-chip') || []).map(c => c.dataset.nome);
-  addSel.innerHTML = '<option value="">＋ Adicionar cliente cadastrado…</option>' +
+  addSel.innerHTML = '<option value="">＋ Adicionar cliente</option>' +
     state.clientes
       .filter(c => !selected.includes(c.nome))
       .map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
@@ -99,7 +99,7 @@ function abrirModalNovaPasta(numero) {
   }
 
   // Picker de clientes (suporta múltiplos)
-  popularRespPicker('pastaClientePicker', p?.cliente || '', state.clientes);
+  popularRespPicker('pastaClientePicker', p?.cliente || '', state.clientes, '＋ Adicionar cliente');
 
   // Picker de advogados responsáveis
   popularRespPicker('pastaAdvPicker', p?.advogado || '', state.usuarios);
@@ -161,6 +161,9 @@ document.getElementById('novaPastaForm').addEventListener('submit', async e => {
     const clienteNome = [chipsNomes, manualNome].filter(Boolean).join(';') || null;
     if (!clienteNome) { toast('Informe ao menos um cliente.', 'error'); return; }
 
+    const advogado = getSelectedResps('pastaAdvPicker');
+    if (!advogado) { toast('Selecione ao menos um advogado responsável.', 'error'); return; }
+
     // ID do cliente principal (primeiro chip que estiver no cadastro)
     const primeiroNome  = chipsNomes.split(';')[0]?.trim();
     const clientePrinc  = state.clientes.find(c => c.nome === primeiroNome);
@@ -174,7 +177,7 @@ document.getElementById('novaPastaForm').addEventListener('submit', async e => {
       parteContraria:   uc(document.getElementById('pParteContraria')?.value) || '-',
       tipoServico:      uc(document.getElementById('pCategoria')?.value),
       servico:          uc(document.getElementById('pTipoAcao')?.value),
-      advogado:         getSelectedResps('pastaAdvPicker'),
+      advogado:         advogado,
       comarca:          uc(document.getElementById('pComarca')?.value),
       processo:         document.getElementById('pProcesso')?.value.trim() || '',
       valorCausa:       document.getElementById('pValorCausa')?.value.trim() || 'R$ 0,00',

@@ -243,21 +243,28 @@ function renderFinCobrancas() {
   }
   tbody.innerHTML = lista.map(c => {
     const st = _statusCob(c);
-    const pInfo = c.parcelaNum ? ` <small style="color:var(--mu)">(${c.parcelaNum}/${c.parcelaTotal})</small>` : '';
+    const parc = c.parcelaNum ? ` <span class="fin-parc">${c.parcelaNum}/${c.parcelaTotal}</span>` : '';
+    const sub = st === 'pago' && c.dataPagamento
+      ? `<span class="fin-row-sub fin-row-sub--pago">Pago em ${formatDate(c.dataPagamento)}</span>`
+      : c.clienteNome
+        ? `<span class="fin-row-sub">${c.clienteNome}</span>`
+        : '';
     return `<tr>
-      <td style="min-width:180px">
-        <span style="font-size:.82rem;font-weight:500">${c.descricao}${pInfo}</span>
-        ${c.clienteNome ? `<br><small style="color:var(--mu);text-transform:uppercase;letter-spacing:.03em">${c.clienteNome}</small>` : ''}
+      <td>
+        <span class="fin-row-title">${c.descricao}${parc}</span>
+        ${sub}
       </td>
-      <td>${c.categoria || '—'}</td>
-      <td style="white-space:nowrap">${c.vencimento ? formatDate(c.vencimento) : '—'}</td>
-      <td style="font-family:'IBM Plex Mono',monospace;font-weight:600">${formatCurrency(c.valor)}</td>
+      <td>${_catBadge(c.categoria)}</td>
+      <td class="fin-cell-date">${c.vencimento ? formatDate(c.vencimento) : '—'}</td>
+      <td class="fin-cell-mono">${formatCurrency(c.valor)}</td>
       <td>${_badgeRecorrencia(c.recorrencia)}</td>
       <td>${_badgeStatus(st)}</td>
-      <td style="white-space:nowrap">
-        ${st !== 'pago' ? `<button class="btn-link-sm" onclick="abrirDarBaixa('${c.id}','cob')">Baixa</button>` : `<button class="btn-link-sm" onclick="gerarRecibo(${JSON.stringify(c).replace(/"/g,'&quot;')},'cob')">Recibo</button>`}
-        <button class="btn-link-sm" onclick="abrirModalCobranca('${c.id}')" style="margin-left:4px">Editar</button>
-        <button class="btn-link-sm" style="color:var(--red);margin-left:4px" onclick="excluirCobranca('${c.id}')">Excluir</button>
+      <td class="fin-actions">
+        ${st !== 'pago'
+          ? `<button class="fin-icon-btn fin-icon-btn--pay" title="Dar baixa" onclick="abrirDarBaixa('${c.id}','cob')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>`
+          : `<button class="fin-icon-btn" title="Gerar recibo" onclick="gerarRecibo(${JSON.stringify(c).replace(/"/g,'&quot;')},'cob')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>`}
+        <button class="fin-icon-btn" title="Editar" onclick="abrirModalCobranca('${c.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <button class="fin-icon-btn fin-icon-btn--del" title="Excluir" onclick="excluirCobranca('${c.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
       </td>
     </tr>`;
   }).join('');
@@ -311,17 +318,27 @@ function renderFinContasPagar() {
   }
   tbody.innerHTML = lista.map(c => {
     const st = _statusCont(c);
+    const sub = st === 'pago' && c.dataPagamento
+      ? `<span class="fin-row-sub fin-row-sub--pago">Pago em ${formatDate(c.dataPagamento)}</span>`
+      : c.tipo
+        ? `<span class="fin-row-sub">${c.tipo}</span>`
+        : '';
     return `<tr>
-      <td>${c.descricao}</td>
+      <td>
+        <span class="fin-row-title">${c.descricao}</span>
+        ${sub}
+      </td>
       <td>${c.tipo || '—'}</td>
-      <td style="white-space:nowrap">${c.vencimento ? formatDate(c.vencimento) : '—'}</td>
-      <td style="font-family:'IBM Plex Mono',monospace;font-weight:600">${formatCurrency(c.valor)}</td>
+      <td class="fin-cell-date">${c.vencimento ? formatDate(c.vencimento) : '—'}</td>
+      <td class="fin-cell-mono">${formatCurrency(c.valor)}</td>
       <td>${_badgeRecorrencia(c.recorrencia)}</td>
       <td>${_badgeStatus(st)}</td>
-      <td style="white-space:nowrap">
-        ${st !== 'pago' ? `<button class="btn-link-sm" onclick="abrirDarBaixa('${c.id}','cont')">Baixa</button>` : `<button class="btn-link-sm" onclick="gerarRecibo(${JSON.stringify(c).replace(/"/g,'&quot;')},'cont')">Recibo</button>`}
-        <button class="btn-link-sm" onclick="abrirModalContaPagar('${c.id}')" style="margin-left:4px">Editar</button>
-        <button class="btn-link-sm" style="color:var(--red);margin-left:4px" onclick="excluirContaPagar('${c.id}')">Excluir</button>
+      <td class="fin-actions">
+        ${st !== 'pago'
+          ? `<button class="fin-icon-btn fin-icon-btn--pay" title="Dar baixa" onclick="abrirDarBaixa('${c.id}','cont')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>`
+          : `<button class="fin-icon-btn" title="Ver" onclick=""><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>`}
+        <button class="fin-icon-btn" title="Editar" onclick="abrirModalContaPagar('${c.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <button class="fin-icon-btn fin-icon-btn--del" title="Excluir" onclick="excluirContaPagar('${c.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
       </td>
     </tr>`;
   }).join('');
@@ -351,16 +368,21 @@ function renderFinDespesas() {
     return;
   }
   tbody.innerHTML = lista.map(d => `<tr>
-    <td>${d.descricao}</td>
-    <td style="font-size:.78rem;text-transform:uppercase">${d.clienteNome || '—'}</td>
+    <td>
+      <span class="fin-row-title">${d.descricao}</span>
+      ${d.status === 'reembolsado' ? `<span class="fin-row-sub fin-row-sub--pago">Reembolsado${d.dataPagamento ? ' em ' + formatDate(d.dataPagamento) : ''}</span>` : ''}
+    </td>
+    <td><span class="fin-row-sub" style="font-size:.78rem;text-transform:uppercase">${d.clienteNome || '—'}</span></td>
     <td>${d.categoria || '—'}</td>
-    <td style="white-space:nowrap">${d.data ? formatDate(d.data) : '—'}</td>
-    <td style="font-family:'IBM Plex Mono',monospace;font-weight:600">${formatCurrency(d.valor)}</td>
+    <td class="fin-cell-date">${d.data ? formatDate(d.data) : '—'}</td>
+    <td class="fin-cell-mono">${formatCurrency(d.valor)}</td>
     <td>${_badgeStatus(d.status)}</td>
-    <td style="white-space:nowrap">
-      ${d.status !== 'reembolsado' ? `<button class="btn-link-sm" onclick="abrirDarBaixa('${d.id}','desp')">Reembolsar</button>` : `<button class="btn-link-sm" onclick="gerarRecibo(${JSON.stringify(d).replace(/"/g,'&quot;')},'desp')">Recibo</button>`}
-      <button class="btn-link-sm" onclick="abrirModalDespesa('${d.id}')" style="margin-left:4px">Editar</button>
-      <button class="btn-link-sm" style="color:var(--red);margin-left:4px" onclick="excluirDespesa('${d.id}')">Excluir</button>
+    <td class="fin-actions">
+      ${d.status !== 'reembolsado'
+        ? `<button class="fin-icon-btn fin-icon-btn--pay" title="Registrar reembolso" onclick="abrirDarBaixa('${d.id}','desp')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>`
+        : `<button class="fin-icon-btn" title="Gerar recibo" onclick="gerarRecibo(${JSON.stringify(d).replace(/"/g,'&quot;')},'desp')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>`}
+      <button class="fin-icon-btn" title="Editar" onclick="abrirModalDespesa('${d.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+      <button class="fin-icon-btn fin-icon-btn--del" title="Excluir" onclick="excluirDespesa('${d.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
     </td>
   </tr>`).join('');
 
@@ -370,6 +392,22 @@ function renderFinDespesas() {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────
+
+const _CAT_COLOR = {
+  'Honorários de Êxito':    '#1d8b60',
+  'Honorários Mensais':     '#e07a17',
+  'Honorários Pro-Labore':  '#8b5cf6',
+  'Custas':                 '#1890d8',
+  'Diligências':            '#e74d3c',
+  'Impostos':               '#dc2626',
+  'Outros':                 '#9ca3af',
+};
+
+function _catBadge(cat) {
+  if (!cat) return '<span style="color:var(--mu)">—</span>';
+  const color = _CAT_COLOR[cat] || '#9ca3af';
+  return `<span class="fin-cat"><span class="fin-cat-dot" style="background:${color}"></span>${cat}</span>`;
+}
 
 function _formatMes(ym) {
   if (!ym) return '';

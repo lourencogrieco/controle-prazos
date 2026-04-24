@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=43">
+  <link rel="stylesheet" href="style.css?v=44">
 </head>
 <body>
 <div class="app">
@@ -961,27 +961,29 @@
 
       <!-- ── Painel: Cobranças ──────────────────────────────────── -->
       <div id="fin-panel-cobrancas" class="fin-panel hidden">
-        <div class="fin-resumo-bar">
-          <div class="fin-resumo-item fin-resumo-pend">
-            <span class="fin-resumo-label" id="finCobLabelPend">TOTAL A RECEBER</span>
-            <strong class="fin-resumo-val" id="finCobPendente">R$ 0,00</strong>
-            <small id="finCobPendenteCount">0 cobranças pendentes</small>
+        <!-- Resumo inline -->
+        <div class="fin-bar-inline">
+          <div class="fin-bar-block fin-bar-block--pend">
+            <span class="fin-bar-label" id="finCobLabelPend">TOTAL A RECEBER</span>
+            <span class="fin-bar-value" id="finCobPendente">R$ 0,00</span>
+            <span class="fin-bar-count" id="finCobPendenteCount">0 cobranças pendentes</span>
           </div>
-          <div class="fin-resumo-item fin-resumo-pago">
-            <span class="fin-resumo-label" id="finCobLabelPago">✓ TOTAL RECEBIDO</span>
-            <strong class="fin-resumo-val fin-resumo-val--green" id="finCobPago">R$ 0,00</strong>
-            <small id="finCobPagoCount">0 baixas registradas</small>
+          <div class="fin-bar-block fin-bar-block--pago">
+            <span class="fin-bar-label" id="finCobLabelPago">✓ TOTAL RECEBIDO</span>
+            <span class="fin-bar-value fin-bar-value--green" id="finCobPago">R$ 0,00</span>
+            <span class="fin-bar-count" id="finCobPagoCount">0 baixas registradas</span>
           </div>
         </div>
-        <div class="table-toolbar" style="padding:10px 0 6px">
-          <input type="text" id="buscaCob" class="search-input" placeholder="Buscar descrição ou cliente…" style="flex:1;min-width:160px">
-          <select id="filtroFinCobStatus">
+        <!-- Toolbar -->
+        <div class="fin-toolbar">
+          <input type="text" id="buscaCob" class="fin-search" placeholder="🔍 Buscar descrição ou cliente…">
+          <select id="filtroFinCobStatus" class="fin-select">
             <option value="">Todos os status</option>
             <option value="pendente">Pendente</option>
             <option value="pago">Pago</option>
             <option value="vencido">Vencido</option>
           </select>
-          <select id="filtroFinCobCat">
+          <select id="filtroFinCobCat" class="fin-select">
             <option value="">Todas as categorias</option>
             <option>Honorários de Êxito</option>
             <option>Honorários Mensais</option>
@@ -991,57 +993,86 @@
             <option>Impostos</option>
             <option>Outros</option>
           </select>
-          <input type="month" id="filtroFinCobMes">
+          <input type="month" id="filtroFinCobMes" class="fin-select">
         </div>
-        <div class="table-wrap">
-          <table class="pasta-table">
+        <!-- Meta -->
+        <div class="fin-meta">
+          <span id="finCobCount">0 registros</span>
+          <span>Pendente/Vencido: <strong id="finCobTotalPendente">R$ 0,00</strong></span>
+          <span>Recebido (filtro): <strong id="finCobTotalPago" style="color:#00c896">R$ 0,00</strong></span>
+        </div>
+        <!-- Table -->
+        <div class="fin-table-wrap">
+          <table class="fin-table">
+            <colgroup>
+              <col style="width:32%">
+              <col style="width:14%">
+              <col style="width:11%">
+              <col style="width:12%">
+              <col style="width:10%">
+              <col style="width:9%">
+              <col style="width:12%">
+            </colgroup>
             <thead><tr>
-              <th style="min-width:180px">Descrição / Cliente</th><th>Categoria</th>
+              <th>Descrição</th><th>Categoria</th>
               <th>Vencimento</th><th>Valor</th><th>Recorrência</th><th>Status</th><th>Ações</th>
             </tr></thead>
             <tbody id="finCobBody"><tr><td colspan="7" class="tbl-empty">Carregando…</td></tr></tbody>
           </table>
         </div>
-        <div class="fin-table-foot">
-          <span id="finCobCount">0 registros</span>
-          <span>Pendente/Vencido: <strong id="finCobTotalPendente">R$ 0,00</strong></span>
-          <span>Pago (filtro): <strong id="finCobTotalPago">R$ 0,00</strong></span>
-        </div>
       </div>
 
       <!-- ── Painel: Contas a Pagar ─────────────────────────────── -->
       <div id="fin-panel-contaspagar" class="fin-panel hidden">
-        <div class="fin-resumo-bar">
-          <div class="fin-resumo-item fin-resumo-pend">
-            <span class="fin-resumo-label" id="finContLabelPend">TOTAL A PAGAR</span>
-            <strong class="fin-resumo-val" id="finContPendente">R$ 0,00</strong>
-            <small id="finContPendenteCount">0 contas pendentes</small>
+        <!-- Resumo inline -->
+        <div class="fin-bar-inline">
+          <div class="fin-bar-block fin-bar-block--pend">
+            <span class="fin-bar-label" id="finContLabelPend">TOTAL A PAGAR</span>
+            <span class="fin-bar-value fin-bar-value--red" id="finContPendente">R$ 0,00</span>
+            <span class="fin-bar-count" id="finContPendenteCount">0 contas pendentes</span>
           </div>
-          <div class="fin-resumo-item fin-resumo-pago">
-            <span class="fin-resumo-label" id="finContLabelPago">✓ TOTAL PAGO</span>
-            <strong class="fin-resumo-val fin-resumo-val--green" id="finContPago">R$ 0,00</strong>
-            <small id="finContPagoCount">0 baixas registradas</small>
+          <div class="fin-bar-block fin-bar-block--pago">
+            <span class="fin-bar-label" id="finContLabelPago">✓ TOTAL PAGO</span>
+            <span class="fin-bar-value fin-bar-value--green" id="finContPago">R$ 0,00</span>
+            <span class="fin-bar-count" id="finContPagoCount">0 baixas registradas</span>
           </div>
         </div>
-        <div class="table-toolbar" style="padding:10px 0 6px">
-          <input type="text" id="buscaCont" class="search-input" placeholder="Buscar descrição…" style="flex:1;min-width:160px">
-          <select id="filtroFinContStatus">
+        <!-- Toolbar -->
+        <div class="fin-toolbar">
+          <input type="text" id="buscaCont" class="fin-search" placeholder="🔍 Buscar descrição…">
+          <select id="filtroFinContStatus" class="fin-select">
             <option value="">Todos os status</option>
             <option value="pendente">Pendente</option>
             <option value="pago">Pago</option>
             <option value="vencido">Vencido</option>
           </select>
-          <select id="filtroFinContTipo">
+          <select id="filtroFinContTipo" class="fin-select">
             <option value="">Todos os tipos</option>
             <option>Tributos / Impostos</option>
             <option>Prestadores de Serviço</option>
             <option>Folha de Pagamento</option>
             <option>Outros</option>
           </select>
-          <input type="month" id="filtroFinContMes">
+          <input type="month" id="filtroFinContMes" class="fin-select">
         </div>
-        <div class="table-wrap">
-          <table class="pasta-table">
+        <!-- Meta -->
+        <div class="fin-meta">
+          <span id="finContCount">0 registros</span>
+          <span>Pendente/Vencido: <strong id="finContTotalPendente">R$ 0,00</strong></span>
+          <span>Pago (filtro): <strong id="finContTotalPago" style="color:#00c896">R$ 0,00</strong></span>
+        </div>
+        <!-- Table -->
+        <div class="fin-table-wrap">
+          <table class="fin-table">
+            <colgroup>
+              <col style="width:36%">
+              <col style="width:16%">
+              <col style="width:11%">
+              <col style="width:12%">
+              <col style="width:10%">
+              <col style="width:9%">
+              <col style="width:6%">
+            </colgroup>
             <thead><tr>
               <th>Descrição</th><th>Tipo</th><th>Vencimento</th>
               <th>Valor</th><th>Recorrência</th><th>Status</th><th>Ações</th>
@@ -1049,34 +1080,41 @@
             <tbody id="finContBody"><tr><td colspan="7" class="tbl-empty">Carregando…</td></tr></tbody>
           </table>
         </div>
-        <div class="fin-table-foot">
-          <span id="finContCount">0 registros</span>
-          <span>Pendente/Vencido: <strong id="finContTotalPendente">R$ 0,00</strong></span>
-          <span>Pago (filtro): <strong id="finContTotalPago">R$ 0,00</strong></span>
-        </div>
       </div>
 
       <!-- ── Painel: Despesas Reembolsáveis ─────────────────────── -->
       <div id="fin-panel-despesas" class="fin-panel hidden">
-        <div class="table-toolbar" style="padding:10px 0 6px">
-          <input type="text" id="buscaDesp" class="search-input" placeholder="Buscar descrição ou cliente…" style="flex:1;min-width:160px">
-          <select id="filtroFinDespStatus">
+        <!-- Toolbar -->
+        <div class="fin-toolbar">
+          <input type="text" id="buscaDesp" class="fin-search" placeholder="🔍 Buscar descrição ou cliente…">
+          <select id="filtroFinDespStatus" class="fin-select">
             <option value="">Todos os status</option>
             <option value="pendente">Pendente</option>
             <option value="reembolsado">Reembolsado</option>
           </select>
         </div>
-        <div class="table-wrap">
-          <table class="pasta-table">
+        <!-- Meta -->
+        <div class="fin-meta">
+          <span id="finDespCount">0 registros</span>
+        </div>
+        <!-- Table -->
+        <div class="fin-table-wrap">
+          <table class="fin-table">
+            <colgroup>
+              <col style="width:30%">
+              <col style="width:16%">
+              <col style="width:14%">
+              <col style="width:10%">
+              <col style="width:12%">
+              <col style="width:9%">
+              <col style="width:9%">
+            </colgroup>
             <thead><tr>
               <th>Descrição</th><th>Cliente</th><th>Categoria</th>
               <th>Data</th><th>Valor</th><th>Status</th><th>Ações</th>
             </tr></thead>
             <tbody id="finDespBody"><tr><td colspan="7" class="tbl-empty">Carregando…</td></tr></tbody>
           </table>
-        </div>
-        <div class="fin-table-foot">
-          <span id="finDespCount">0 registros</span>
         </div>
       </div>
 
@@ -2752,21 +2790,21 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/core.js?v=43"></script>
-<script src="js/auth.js?v=43"></script>
-<script src="js/mappers.js?v=43"></script>
-<script src="js/dashboard.js?v=43"></script>
-<script src="js/nav.js?v=43"></script>
-<script src="js/atividades.js?v=43"></script>
-<script src="js/configuracoes.js?v=43"></script>
-<script src="js/agenda.js?v=43"></script>
-<script src="js/intimacoes.js?v=43"></script>
-<script src="js/prazos.js?v=43"></script>
-<script src="js/tarefas.js?v=43"></script>
-<script src="js/pastas.js?v=43"></script>
-<script src="js/relatorio.js?v=43"></script>
-<script src="js/andamentos.js?v=43"></script>
-<script src="js/documentos.js?v=43"></script>
-<script src="js/financeiro.js?v=43"></script>
+<script src="js/core.js?v=44"></script>
+<script src="js/auth.js?v=44"></script>
+<script src="js/mappers.js?v=44"></script>
+<script src="js/dashboard.js?v=44"></script>
+<script src="js/nav.js?v=44"></script>
+<script src="js/atividades.js?v=44"></script>
+<script src="js/configuracoes.js?v=44"></script>
+<script src="js/agenda.js?v=44"></script>
+<script src="js/intimacoes.js?v=44"></script>
+<script src="js/prazos.js?v=44"></script>
+<script src="js/tarefas.js?v=44"></script>
+<script src="js/pastas.js?v=44"></script>
+<script src="js/relatorio.js?v=44"></script>
+<script src="js/andamentos.js?v=44"></script>
+<script src="js/documentos.js?v=44"></script>
+<script src="js/financeiro.js?v=44"></script>
 </body>
 </html>

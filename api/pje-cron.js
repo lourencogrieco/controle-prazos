@@ -3,66 +3,58 @@
  * Schedule: 0 10 * * 1-5  →  07h BRT (10h UTC) em dias úteis (Seg-Sex)
  *
  * Env vars necessárias no Vercel:
- *   CRON_SECRET       — segredo para proteger o endpoint (gere com: openssl rand -hex 32)
+ *   CRON_SECRET       — segredo para proteger o endpoint
  *   SUPABASE_URL      — https://gcucadlnxttlxckravui.supabase.co
  *   SUPABASE_ANON_KEY — chave pública do projeto Supabase
  */
 
-export const config = { runtime: 'edge' };
-
-export default async function handler(req) {
-  // ── Proteção: só aceita chamadas do Vercel Cron ou com o segredo correto ──
+export default async function handler(req, res) {
+  // ── Proteção: só aceita chamadas autorizadas ──────────────────────
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret) {
-    const auth = req.headers.get('authorization') ?? '';
+    const auth = req.headers['authorization'] ?? '';
     if (auth !== `Bearer ${cronSecret}`) {
-      return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return res.status(401).json({ ok: false, error: 'Unauthorized' });
     }
   }
 
-  const supaUrl    = process.env.SUPABASE_URL      || 'https://gcucadlnxttlxckravui.supabase.co';
-  const supaAnonKey = process.env.SUPABASE_ANON_KEY || '';
+  const supaUrl     = process.env.SUPABASE_URL      ?? 'https://gcucadlnxttlxckravui.supabase.co';
+  const supaAnonKey = process.env.SUPABASE_ANON_KEY ?? '';
 
-  // ── Permite acionar manualmente com uma janela de datas via query string ──
-  const { searchParams } = new URL(req.url, 'https://placeholder.invalid');
-  const dataInicio = searchParams.get('dataInicio') || null;
-  const dataFim    = searchParams.get('dataFim')    || null;
-
-  const body = dataInicio ? JSON.stringify({ dataInicio, dataFim: dataFim || dataInicio }) : '{}';
+  // Permite acionar manualmente com datas específicas
+  const dataInicio = req.query?.dataInicio ?? null;
+  const dataFim    = req.query?.dataFim    ?? null;
+  const body       = dataInicio
+    ? JSON.stringify({ dataInicio, dataFim: dataFim || dataInicio })
+    : '{}';
 
   try {
-    const res = await fetch(`${supaUrl}/functions/v1/sync-intimacoes`, {
-      method:  'POST',
-      headers: {
-        'Authorization': `Bearer ${supaAnonKey}`,
-        'Content-Type':  'application/json',
-      },
-      body,
-    });
+    const response = await fetch(
+      `${supaUrl}/functions/v1/sync-intimacoes`,
+      {
+        method:  'POST',
+        headers: {
+          'Authorization': `Bearer ${supaAnonKey}`,
+          'Content-Type':  'application/json',
+        },
+        body,
+      }
+    );
 
-    const payload = await res.json().catch(() => ({}));
+    const text = await response.text();
+    let payload;
+    try { payload = JSON.parse(text); } catch { payload = { raw: text }; }
 
-    if (!res.ok) {
-      console.error('[pje-cron] Edge Function erro:', payload);
-      return new Response(JSON.stringify({ ok: false, status: res.status, ...payload }), {
-        status: 502,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    if (!response.ok) {
+      console.error('[pje-cron] Edge Function erro:', response.status, payload);
+      return res.status(502).json({ ok: false, status: response.status, ...payload });
     }
 
     console.log('[pje-cron] Sync concluído:', payload);
-    return new Response(JSON.stringify({ ok: true, ...payload }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return res.status(200).json({ ok: true, ...payload });
 
   } catch (err) {
-    console.error('[pje-cron] Erro inesperado:', err);
-    return new Response(JSON.stringify({ ok: false, error: String(err) }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    console.error('[pje-cron] Erro:', err);
+    return res.status(500).json({ ok: false, error: String(err) });
   }
 }

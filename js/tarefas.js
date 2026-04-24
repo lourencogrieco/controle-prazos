@@ -86,6 +86,7 @@ async function excluirTarefa(id) {
   _stateRemove(state.tarefas, id);
   toast('Tarefa excluída');
   renderTarefasAba(); renderDashboard();
+  if (typeof renderTarefasNaPasta === 'function') renderTarefasNaPasta();
 }
 
 async function alterarStatusTarefa(id, novoStatus) {
@@ -100,6 +101,8 @@ async function alterarStatusTarefa(id, novoStatus) {
              : novoStatus === 'em_andamento' ? 'Em andamento' : 'Pendente';
   }
   renderTarefasAba(); renderDashboard();
+  // Se o usuário está na aba de tarefas de uma pasta, atualiza aquele kanban também
+  if (typeof renderTarefasNaPasta === 'function') renderTarefasNaPasta();
 }
 
 // ──────────────────────────────────────────────────────────────────────

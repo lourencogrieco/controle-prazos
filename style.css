@@ -3140,7 +3140,28 @@ tbody td {
   .pasta-layout { grid-template-columns: 1fr; }
   .pasta-sidebar { border-right: none; border-bottom: 1px solid var(--br); }
   .dados-grid { grid-template-columns: 1fr; }
-  .board--3col { grid-template-columns: minmax(260px, 1fr); }
+}
+
+/* ── Kanban: scroll horizontal em telas ≤ 900px ─────────────────────── */
+@media (max-width: 900px) {
+  .board, .board--3col {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    width: 100%;
+    gap: 10px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+    /* remove propriedades de grid que sobram */
+    grid-template-columns: unset;
+  }
+  .board-col {
+    min-width: min(82vw, 300px);
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    min-height: 300px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3648,20 +3669,9 @@ tbody td {
   .dash-prod-section { padding: 14px; }
   .prod-table { font-size: .76rem; }
 
-  /* ── Kanban — cada coluna ocupa ~85vw com scroll snap ───────────────── */
-  .board, .board--3col {
-    display: flex;
-    flex-direction: row;
-    overflow-x: auto;
-    gap: 10px;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 6px;
-  }
+  /* ── Kanban — ajustes adicionais para telas muito pequenas ──────────── */
   .board-col {
-    min-width: 85vw;
-    flex-shrink: 0;
-    scroll-snap-align: start;
+    min-width: min(88vw, 280px);
   }
 
   /* ── Agenda ──────────────────────────────────────────────────────────── */

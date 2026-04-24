@@ -327,7 +327,15 @@ async function carregarDocumentosDetalhe(andamentoId) {
         <div style="font-size:.82rem">${d.nome}</div>
         <div style="font-size:.72rem;color:var(--mu)">${d.tipo ? d.tipo + ' · ' : ''}${tamanho}</div>
       </div>
-      <button class="btn-link-sm" onclick="baixarDocumento('${d.storage_path}','${d.nome}')">⬇ Baixar</button>
+      <div style="display:flex;align-items:center;gap:16px">
+        <button class="btn-link-sm" onclick="baixarDocumento('${d.storage_path}','${d.nome}')">⬇ Baixar</button>
+        <button class="btn-icon btn-icon--danger" title="Excluir documento" onclick="excluirDocumentoAndamento('${d.id}','${d.storage_path}','${state.currentAndamento?.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+            <path d="M10 11v6M14 11v6M9 6V4h6v2"/>
+          </svg>
+        </button>
+      </div>
     </div>`;
   }).join('');
 }

@@ -25,8 +25,13 @@ function abrirUploadDocAndamento() {
 
 async function carregarDocumentos(pastaId) {
   if (!pastaId) return;
+  // Aba geral exibe apenas docs sem vínculo a andamento (andamento_id IS NULL)
+  // Docs vinculados a andamentos ficam apenas no detalhe do andamento
   const { data } = await db.from('documentos_pasta')
-    .select('*').eq('pasta_id', pastaId).order('created_at', { ascending: false });
+    .select('*')
+    .eq('pasta_id', pastaId)
+    .is('andamento_id', null)
+    .order('created_at', { ascending: false });
   renderDocumentos(data || []);
 }
 
@@ -50,9 +55,14 @@ function renderDocumentos(docs) {
       <td>—</td>
       <td>${tamanho}</td>
       <td>${formatDate(d.created_at?.slice(0,10))}</td>
-      <td style="display:flex;gap:6px">
+      <td style="display:flex;align-items:center;gap:16px">
         <button class="btn-link-sm" onclick="baixarDocumento('${d.storage_path}','${d.nome}')">⬇ Baixar</button>
-        <button class="btn-link-sm" style="color:var(--red)" onclick="excluirDocumento('${d.id}','${d.storage_path}')">✕</button>
+        <button class="btn-icon btn-icon--danger" title="Excluir documento" onclick="excluirDocumento('${d.id}','${d.storage_path}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+            <path d="M10 11v6M14 11v6M9 6V4h6v2"/>
+          </svg>
+        </button>
       </td>
     </tr>`;
   }).join('');
@@ -120,4 +130,13 @@ async function excluirDocumento(id, path) {
   await db.from('documentos_pasta').delete().eq('id', id);
   toast('Documento excluído.');
   await carregarDocumentos(state.currentPastaId);
+}
+
+// Exclui documento vinculado a um andamento e recarrega a lista do detalhe
+async function excluirDocumentoAndamento(id, path, andamentoId) {
+  if (!confirm('Excluir este documento?')) return;
+  await db.storage.from('documentos').remove([path]);
+  await db.from('documentos_pasta').delete().eq('id', id);
+  toast('Documento excluído.');
+  if (andamentoId) await carregarDocumentosDetalhe(andamentoId);
 }

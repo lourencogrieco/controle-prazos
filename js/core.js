@@ -26,6 +26,7 @@ const state = {
   currentPastaId:   null,
   currentAndamento: null,
   usuarios:         [],
+  honorarios:       [],
 };
 
 // Declarado aqui (core.js é carregado antes de agenda.js) para que

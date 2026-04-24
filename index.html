@@ -850,15 +850,134 @@
     </section>
 
     <!-- ===== FINANCEIRO ===== -->
-    <section id="view-financeiro" class="view view--financeiro">
-      <iframe
-        id="finIframe"
-        src="https://financeiro-ng.onrender.com/"
-        class="fin-iframe"
-        title="Financeiro NG"
-        allow="same-origin"
-      ></iframe>
+    <section id="view-financeiro" class="view">
+
+      <div class="page-bar">
+        <div class="page-bar-left">
+          <span class="kicker">Gestão financeira</span>
+          <h2 class="page-title">Financeiro</h2>
+        </div>
+        <div class="page-bar-right">
+          <button class="btn-primary" onclick="abrirModalHonorario(null)">+ Novo lançamento</button>
+        </div>
+      </div>
+
+      <!-- Cards resumo -->
+      <div class="fin-cards">
+        <div class="fin-card">
+          <span class="fin-card-label">A receber</span>
+          <span class="fin-card-value" id="finTotalReceber">R$ 0,00</span>
+          <span class="fin-card-sub">pendente em aberto</span>
+        </div>
+        <div class="fin-card fin-card--danger">
+          <span class="fin-card-label">Atrasado</span>
+          <span class="fin-card-value" id="finTotalAtrasado">R$ 0,00</span>
+          <span class="fin-card-sub">vencidos não pagos</span>
+        </div>
+        <div class="fin-card fin-card--success">
+          <span class="fin-card-label">Recebido no mês</span>
+          <span class="fin-card-value" id="finTotalRecebido">R$ 0,00</span>
+          <span class="fin-card-sub">pagamentos confirmados</span>
+        </div>
+        <div class="fin-card fin-card--info">
+          <span class="fin-card-label">Vencendo este mês</span>
+          <span class="fin-card-value" id="finVencendoMes">R$ 0,00</span>
+          <span class="fin-card-sub">a vencer no mês atual</span>
+        </div>
+      </div>
+
+      <!-- Filtros -->
+      <div class="table-toolbar" style="margin-top:20px">
+        <input type="text" id="buscaFinanceiro" class="search-input" placeholder="Buscar por pasta ou cliente…" style="flex:1;min-width:180px">
+        <select id="filtroFinStatus" style="min-width:140px">
+          <option value="">Todos os status</option>
+          <option value="pendente">Pendente</option>
+          <option value="pago">Pago</option>
+          <option value="atrasado">Atrasado</option>
+        </select>
+        <input type="month" id="filtroFinMes" style="min-width:140px">
+      </div>
+
+      <!-- Tabela -->
+      <div class="table-wrap" style="margin-top:12px">
+        <table class="pasta-table">
+          <thead>
+            <tr>
+              <th>Pasta</th>
+              <th>Cliente</th>
+              <th>Descrição</th>
+              <th>Valor</th>
+              <th>Vencimento</th>
+              <th>Status</th>
+              <th>Pgto</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="finTabelaBody">
+            <tr><td colspan="8" class="tbl-empty">Nenhum lançamento cadastrado.</td></tr>
+          </tbody>
+        </table>
+        <div class="table-foot" style="padding:10px 16px">
+          <span id="finCount" style="font-size:.75rem;color:var(--mu)">0 lançamentos</span>
+        </div>
+      </div>
+
     </section>
+
+    <!-- Modal Honorário -->
+    <div class="modal-overlay" id="modalNovoHonorario">
+      <div class="modal" style="max-width:520px">
+        <div class="modal-head">
+          <h3 id="modalHonorarioTitulo">Novo lançamento</h3>
+          <button type="button" class="modal-close" onclick="fecharModalHonorario()">×</button>
+        </div>
+        <div class="modal-body">
+          <form id="formHonorario">
+            <input type="hidden" id="honId">
+            <div class="form-grid">
+              <div class="field" style="grid-column:1/-1">
+                <span class="field-label">Pasta vinculada</span>
+                <select id="honPastaSelect">
+                  <option value="">— sem pasta vinculada —</option>
+                </select>
+              </div>
+              <div class="field" style="grid-column:1/-1">
+                <span class="field-label">Descrição <span style="color:var(--red)">*</span></span>
+                <input type="text" id="honDescricao" required placeholder="Ex: Honorários mensais, Êxito, Consultoria…">
+              </div>
+              <div class="field">
+                <span class="field-label">Valor (R$) <span style="color:var(--red)">*</span></span>
+                <input type="number" id="honValor" required min="0" step="0.01" placeholder="0,00">
+              </div>
+              <div class="field">
+                <span class="field-label">Vencimento</span>
+                <input type="date" id="honVencimento">
+              </div>
+              <div class="field">
+                <span class="field-label">Status</span>
+                <select id="honStatus">
+                  <option value="pendente">Pendente</option>
+                  <option value="pago">Pago</option>
+                  <option value="atrasado">Atrasado</option>
+                </select>
+              </div>
+              <div class="field" id="honDataPgtoField" style="display:none">
+                <span class="field-label">Data do pagamento</span>
+                <input type="date" id="honDataPagamento">
+              </div>
+              <div class="field" style="grid-column:1/-1">
+                <span class="field-label">Observação</span>
+                <textarea id="honObservacao" rows="2" placeholder="Observações adicionais…"></textarea>
+              </div>
+            </div>
+            <div class="form-foot" style="margin-top:20px">
+              <button type="button" class="btn-outline" onclick="fecharModalHonorario()">Cancelar</button>
+              <button type="submit" class="btn-primary" id="btnSalvarHonorario">Salvar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
 
     <!-- ===== CONFIGURAÇÕES ===== -->
     <section id="view-configuracoes" class="view">
@@ -2312,20 +2431,21 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/core.js?v=38"></script>
-<script src="js/auth.js?v=38"></script>
-<script src="js/mappers.js?v=38"></script>
-<script src="js/dashboard.js?v=38"></script>
-<script src="js/nav.js?v=38"></script>
-<script src="js/atividades.js?v=38"></script>
-<script src="js/configuracoes.js?v=38"></script>
-<script src="js/agenda.js?v=38"></script>
-<script src="js/intimacoes.js?v=38"></script>
-<script src="js/prazos.js?v=38"></script>
-<script src="js/tarefas.js?v=38"></script>
-<script src="js/pastas.js?v=38"></script>
-<script src="js/relatorio.js?v=39"></script>
-<script src="js/andamentos.js?v=38"></script>
-<script src="js/documentos.js?v=38"></script>
+<script src="js/core.js?v=40"></script>
+<script src="js/auth.js?v=40"></script>
+<script src="js/mappers.js?v=40"></script>
+<script src="js/dashboard.js?v=40"></script>
+<script src="js/nav.js?v=40"></script>
+<script src="js/atividades.js?v=40"></script>
+<script src="js/configuracoes.js?v=40"></script>
+<script src="js/agenda.js?v=40"></script>
+<script src="js/intimacoes.js?v=40"></script>
+<script src="js/prazos.js?v=40"></script>
+<script src="js/tarefas.js?v=40"></script>
+<script src="js/pastas.js?v=40"></script>
+<script src="js/relatorio.js?v=40"></script>
+<script src="js/andamentos.js?v=40"></script>
+<script src="js/documentos.js?v=40"></script>
+<script src="js/financeiro.js?v=40"></script>
 </body>
 </html>

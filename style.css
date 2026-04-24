@@ -2043,16 +2043,60 @@ tbody td {
   max-width: 100%;
 }
 
-.view--financeiro {
-  flex-direction: column;
-  height: calc(100vh - 56px);
+/* ─── FINANCEIRO ──────────────────────────────────────────────── */
+.fin-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin: 24px 0 0;
 }
 
-.fin-iframe {
-  width: 100%;
-  flex: 1;
-  border: none;
-  background: #fff;
+.fin-card {
+  background: var(--s1);
+  border: 1px solid var(--br);
+  border-radius: 6px;
+  padding: 18px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fin-card--danger  { border-left: 3px solid var(--red); }
+.fin-card--success { border-left: 3px solid #00c896; }
+.fin-card--info    { border-left: 3px solid var(--ac); }
+
+.fin-card-label {
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--mu);
+}
+
+.fin-card-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--fg);
+  line-height: 1.2;
+}
+
+.fin-card--danger  .fin-card-value { color: var(--red); }
+.fin-card--success .fin-card-value { color: #00c896; }
+
+.fin-card-sub {
+  font-size: .68rem;
+  color: var(--mu);
+  margin-top: 2px;
+}
+
+.status-pill--danger {
+  background: rgba(235,87,87,.12);
+  color: #eb5757;
+}
+
+@media (max-width: 1100px) {
+  .fin-cards { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 1100px) {

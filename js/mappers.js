@@ -130,12 +130,25 @@ function dbParaTarefa(row) {
   };
 }
 
+function dbParaHonorario(row) {
+  return {
+    id:            row.id,
+    pastaId:       row.pasta_id || null,
+    descricao:     row.descricao,
+    valor:         Number(row.valor) || 0,
+    vencimento:    row.vencimento || null,
+    status:        row.status || 'pendente',
+    dataPagamento: row.data_pagamento || null,
+    observacao:    row.observacao || '',
+  };
+}
+
 // ──────────────────────────────────────────────────────────────────────
 // CARREGAR DADOS
 // ──────────────────────────────────────────────────────────────────────
 async function carregarDados() {
   const eid = state.empresaId;
-  const [pr, pz, tf, tp, cl, ar, it, cfg, ev, us] = await Promise.all([
+  const [pr, pz, tf, tp, cl, ar, it, cfg, ev, us, hon] = await Promise.all([
     db.from('pastas').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
     db.from('prazos_lhub').select('*').eq('empresa_id', eid).order('prazo'),
     db.from('tarefas_lhub').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
@@ -146,6 +159,7 @@ async function carregarDados() {
     db.from('pje_config').select('*').eq('empresa_id', eid).maybeSingle(),
     db.from('agenda_eventos').select('*').eq('empresa_id', eid).order('data'),
     db.from('usuarios_empresa').select('id,nome,perfil,area_id').eq('empresa_id', eid).order('nome'),
+    db.from('honorarios').select('*').eq('empresa_id', eid).order('vencimento'),
   ]);
   state.pastas     = (pr.data || []).map(dbParaPasta);
   state.prazos     = (pz.data || []).map(dbParaPrazo);
@@ -160,6 +174,7 @@ async function carregarDados() {
   state.intimacoes = (it.data || []).map(dbParaIntimacao);
   state.pjeConfig  = cfg.data || null;
   state.usuarios   = (us.data || []);
+  state.honorarios = (hon.data || []).map(dbParaHonorario);
   // Carrega eventos da agenda no array local
   agendaEventos.length = 0;
   (ev.data || []).forEach(e => agendaEventos.push({
@@ -174,5 +189,6 @@ async function carregarDados() {
   renderTarefasAba();
   renderIntimacoesAba();
   renderCalendario();
+  renderFinanceiro();
   popularSelectsPastas();
 }

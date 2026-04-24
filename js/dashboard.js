@@ -178,8 +178,7 @@ function renderDashProdutividade() {
   const secEl = document.getElementById('dashProdutividade');
   if (!secEl) return;
 
-  const perfisGerenciais = ['socio', 'socio_fundador', 'admin', 'adm', 'controller'];
-  if (!perfisGerenciais.includes(state.meuPerfil?.perfil || '')) {
+  if (!PERFIS_GESTAO.includes(state.meuPerfil?.perfil || '')) {
     secEl.style.display = 'none';
     return;
   }

@@ -524,7 +524,7 @@ async function salvarEdicaoPerfil() {
 // ──────────────────────────────────────────────────────────────────────
 // LOG DE AUDITORIA — visível apenas para perfis admin/socio
 // ──────────────────────────────────────────────────────────────────────
-const PERFIS_PODE_VER_AUDIT = new Set(['admin', 'adm', 'socio_fundador', 'socio', 'controller']);
+const PERFIS_PODE_VER_AUDIT = new Set(['socio_fundador', 'socio', 'controller', 'coordenador']);
 
 async function renderAuditLog() {
   const container = document.getElementById('auditLogContainer');

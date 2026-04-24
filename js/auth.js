@@ -20,6 +20,7 @@ async function inicializar() {
 const PERFIS_LABEL = {
   estagiario:     'Estagiário',
   advogado:       'Advogado',
+  coordenador:    'Coordenador',
   socio:          'Sócio',
   socio_fundador: 'Sócio Fundador',
   financeiro:     'Financeiro',
@@ -33,11 +34,15 @@ const PERMISSOES = {
   adm:            { painel:1, agenda:1, atividades:1, pastas:1, relatorios:1, pipeline:1, financeiro:1, configuracoes:1 },
   socio_fundador: { painel:1, agenda:1, atividades:1, pastas:1, relatorios:1, pipeline:1, financeiro:1, configuracoes:1 },
   socio:          { painel:1, agenda:1, atividades:1, pastas:1, relatorios:1, pipeline:1, financeiro:1, configuracoes:0 },
+  coordenador:    { painel:1, agenda:1, atividades:1, pastas:1, relatorios:1, pipeline:1, financeiro:0, configuracoes:0 },
   advogado:       { painel:1, agenda:1, atividades:1, pastas:1, relatorios:1, pipeline:1, financeiro:0, configuracoes:0 },
   estagiario:     { painel:1, agenda:1, atividades:1, pastas:1, relatorios:1, pipeline:0, financeiro:0, configuracoes:0 },
   financeiro:     { painel:1, agenda:1, atividades:1, pastas:1, relatorios:1, pipeline:1, financeiro:1, configuracoes:0 },
   controller:     { painel:1, agenda:1, atividades:1, pastas:1, relatorios:1, pipeline:0, financeiro:0, configuracoes:0 },
 };
+
+// Perfis com visibilidade de dados gerenciais (produtividade, auditoria)
+const PERFIS_GESTAO = ['socio', 'socio_fundador', 'controller', 'coordenador'];
 
 function podeAcessar(view) {
   const p = state.meuPerfil?.perfil || 'estagiario';
@@ -46,10 +51,10 @@ function podeAcessar(view) {
 
 // ── Permissões de CRUD ─────────────────────────────────────────────────
 function podeAlterarDataPrazo() {
-  return ['socio','socio_fundador','admin','adm','controller'].includes(state.meuPerfil?.perfil || '');
+  return ['socio','socio_fundador','controller','coordenador'].includes(state.meuPerfil?.perfil || '');
 }
 function podeEditarRegistro() {
-  return ['socio','socio_fundador','admin','adm','controller','advogado'].includes(state.meuPerfil?.perfil || '');
+  return ['socio','socio_fundador','admin','adm','controller','coordenador','advogado'].includes(state.meuPerfil?.perfil || '');
 }
 function podeExcluirRegistro() {
   return ['socio','socio_fundador','admin','adm'].includes(state.meuPerfil?.perfil || '');

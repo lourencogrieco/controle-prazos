@@ -87,8 +87,17 @@ document.getElementById('novoPrazoForm').addEventListener('submit', async e => {
   try {
     if (!state.empresaId) { toast('Sessão não iniciada. Recarregue a página.', 'error'); return; }
     const prazoId = document.getElementById('prazoId').value;
-    const tipo    = document.getElementById('prazoTipo').value;
-    const prazo   = document.getElementById('prazoFatal').value;
+    const podData = podeAlterarDataPrazo();
+
+    // Se está editando e não tem permissão, usa os valores originais do state
+    const prazoOriginal = prazoId ? state.prazos.find(x => x.id === prazoId) : null;
+    const tipo = podData
+      ? document.getElementById('prazoTipo').value
+      : (prazoOriginal?.tipoPrazo || document.getElementById('prazoTipo').value);
+    const prazo = podData
+      ? document.getElementById('prazoFatal').value
+      : (prazoOriginal?.prazoFatal || document.getElementById('prazoFatal').value);
+
     if (!tipo)  { toast('Selecione o tipo de prazo.', 'error'); return; }
     if (!prazo) { toast('Informe a data fatal.', 'error'); return; }
 

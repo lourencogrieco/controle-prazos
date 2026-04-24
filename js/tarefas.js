@@ -42,29 +42,36 @@ document.getElementById('novaTarefaForm').addEventListener('submit', async e => 
   const btn = document.getElementById('btnSalvarTarefa');
   btn.disabled = true; btn.textContent = 'Salvando…';
 
-  const tarefaId = document.getElementById('tarefaId').value;
-  const obj = {
-    id:          tarefaId || uid(),
-    empresa_id:  state.empresaId,
-    pasta_id:    document.getElementById('tarefaPastaSelect').value || null,
-    titulo:      document.getElementById('tTitulo').value.trim(),
-    tipo:        document.getElementById('tTipo').value,
-    prioridade:  document.getElementById('tPrioridade').value,
-    responsavel: getSelectedResps('tarefaRespPicker'),
-    prazo:       document.getElementById('tPrazo').value || null,
-    descricao:   document.getElementById('tDescricao').value.trim() || null,
-    status:      document.getElementById('tStatus').value || 'pendente',
-  };
+  try {
+    if (!state.empresaId) { toast('Sessão não iniciada. Recarregue a página.', 'error'); return; }
+    const tarefaId = document.getElementById('tarefaId').value;
+    const obj = {
+      id:          tarefaId || uid(),
+      empresa_id:  state.empresaId,
+      pasta_id:    document.getElementById('tarefaPastaSelect').value || null,
+      titulo:      document.getElementById('tTitulo').value.trim(),
+      tipo:        document.getElementById('tTipo').value,
+      prioridade:  document.getElementById('tPrioridade').value,
+      responsavel: getSelectedResps('tarefaRespPicker'),
+      prazo:       document.getElementById('tPrazo').value || null,
+      descricao:   document.getElementById('tDescricao').value.trim() || null,
+      status:      document.getElementById('tStatus').value || 'pendente',
+    };
 
-  const saveReq  = db.from('tarefas_lhub').upsert(obj).select();
-  const tOut     = new Promise((_, r) => setTimeout(() => r(new Error('Sem resposta do banco em 12s. Verifique as políticas RLS.')), 12000));
-  const { data, error } = await Promise.race([saveReq, tOut]);
-  btn.disabled = false; btn.textContent = 'Salvar Tarefa';
-  if (error) { toast('Erro: ' + error.message, 'error'); return; }
-  if (!data?.length) { toast('Tarefa não salva: falta política INSERT no Supabase (execute o SQL de RLS).', 'error'); return; }
-  fecharModalNovaTarefa();
-  toast('Tarefa salva');
-  await carregarDados();
+    const saveReq = db.from('tarefas_lhub').upsert(obj).select();
+    const tOut    = new Promise((_, r) => setTimeout(() => r(new Error('Sem resposta do banco em 12s. Verifique as políticas RLS.')), 12000));
+    const { data, error } = await Promise.race([saveReq, tOut]);
+    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    if (!data?.length) { toast('Tarefa não salva: falta política INSERT no Supabase (execute o SQL de RLS).', 'error'); return; }
+    fecharModalNovaTarefa();
+    toast('Tarefa salva');
+    await carregarDados();
+  } catch (err) {
+    toast('Erro inesperado: ' + err.message, 'error');
+    console.error('[tarefa] exception:', err);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Salvar Tarefa';
+  }
 });
 
 async function excluirTarefa(id) {
@@ -100,8 +107,8 @@ const TIPO_TAG_TAREFA = {
 function tarefaCard(t) {
   const diff     = t.dataLimite ? daysUntil(t.dataLimite) : null;
   const urgente  = diff !== null && diff <= 3;
-  const priorCls = t.prioridade === 'Alta' ? 'tarefa-card--alta'
-                 : t.prioridade === 'Média' ? 'tarefa-card--media'
+  const priorCls = t.prioridade === 'Alta' || t.prioridade === 'Urgente' ? 'tarefa-card--alta'
+                 : t.prioridade === 'Baixa' ? 'tarefa-card--normal'
                  : 'tarefa-card--normal';
   const tagInfo  = TIPO_TAG_TAREFA[t.tipo] ?? { cls:'tag--lembrete', label: t.tipo };
   const statusVal = t.status === 'Concluída' ? 'concluida'
@@ -127,7 +134,7 @@ function tarefaCard(t) {
     <div class="tarefa-card-header">
       <div class="tarefa-tags">
         <span class="tag ${tagInfo.cls}">${tagInfo.label}</span>
-        ${t.prioridade === 'Alta' || t.prioridade === 'Urgente' ? '<span class="tag tag--urgent">Alta</span>' : ''}
+        ${t.prioridade === 'Alta' || t.prioridade === 'Urgente' ? `<span class="tag tag--urgent">${t.prioridade}</span>` : ''}
       </div>
       ${acoes}
     </div>

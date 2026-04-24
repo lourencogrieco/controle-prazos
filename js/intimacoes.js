@@ -200,7 +200,7 @@ async function sincronizarPJeData() {
   const de  = document.getElementById('filtroIntimacoesDe')?.value;
   const ate = document.getElementById('filtroIntimacoesAte')?.value;
   if (!de) { toast('Selecione ao menos a data inicial.', 'error'); return; }
-  const btn = event?.target;
+  const btn = document.getElementById('btnBuscarData');
   if (btn) { btn.disabled = true; btn.textContent = 'Buscando…'; }
   try {
     const nomes = state.pjeConfig?.nomes ?? [];

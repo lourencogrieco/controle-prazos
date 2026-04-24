@@ -214,10 +214,11 @@ document.getElementById('novoClienteForm').addEventListener('submit', async e =>
       estado:      g('cEstado')?.value || null,
     };
 
-    const saveReq = db.from('clientes_lhub').upsert(obj);
-    const tOut    = new Promise((_, r) => setTimeout(() => r(new Error('Sem resposta do banco em 12s. Verifique as políticas RLS.')), 12000));
-    const { error } = await Promise.race([saveReq, tOut]);
+    const saveReq = db.from('clientes_lhub').upsert(obj).select();
+    const tOut    = new Promise((_, r) => setTimeout(() => r(new Error('Sem resposta do banco em 12s. Verifique as políticas RLS da tabela clientes_lhub.')), 12000));
+    const { data, error } = await Promise.race([saveReq, tOut]);
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    if (!data?.length) { toast('Cliente não salvo: falta política INSERT no Supabase (tabela clientes_lhub).', 'error'); return; }
 
     if (existingId) {
       const idx = state.clientes.findIndex(c => c.id === existingId);

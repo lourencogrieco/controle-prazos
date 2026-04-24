@@ -28,6 +28,10 @@ const state = {
   usuarios:         [],
 };
 
+// Declarado aqui (core.js é carregado antes de agenda.js) para que
+// carregarDados() em mappers.js possa acessar sem ReferenceError.
+const agendaEventos = [];
+
 // ──────────────────────────────────────────────────────────────────────
 // UTILS
 // ──────────────────────────────────────────────────────────────────────

@@ -3,7 +3,7 @@
 // ──────────────────────────────────────────────────────────────────────
 const TIPO_COR = { 'Prazo':'prazo', 'Audiência':'audiencia', 'Reunião':'reuniao', 'Diligência':'diligencia', 'Lembrete':'lembrete' };
 
-const agendaEventos = [];
+// agendaEventos é declarado em core.js (carregado antes deste arquivo)
 
 let calAno = 2026;
 let calMes = 3;

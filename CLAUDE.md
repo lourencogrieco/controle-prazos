@@ -279,5 +279,17 @@ Seu objetivo não é apenas revisar.
    falta mobile, email, auditoria e colaboração real-time para chegar no nível premium.                        
                                                                                                              
   Diferencial possível: IA para triagem automática de intimações (classificar urgência, sugerir prazo, detectar
-   tipo de ato) — nenhum concorrente faz bem ainda.                                                          
-                                                     
+   tipo de ato) — nenhum concorrente faz bem ainda.
+
+  ---
+  PENDÊNCIAS (retomar na próxima sessão)
+
+  1. FINALIZAR EMAIL DE NOTIFICAÇÃO DE PRAZOS
+     - Edge Function `notificar-prazos` já deployada e funcionando (encontra prazos e usuários corretamente)
+     - Bloqueio: domínio `ngadvogados.com.br` não verificado no Resend (erro 403)
+     - Causa: acesso ao Hostinger perdido (DNS do domínio está lá)
+     - Solução: recuperar acesso ao Hostinger → adicionar 3 registros DNS que o Resend exibe em Domains
+       · TXT resend._domainkey → valor DKIM
+       · MX send → feedback[...].ses.com (prioridade 10)
+       · TXT send → v=spf1 i[...]om ~all
+     - Após verificar: testar novamente a função e confirmar recebimento

@@ -1142,6 +1142,10 @@
           <h1>Agenda</h1>
         </div>
         <div class="page-bar-right">
+          <div class="toggle-group" id="agendaFiltroToggle">
+            <button class="toggle-btn is-active" data-filtro="todos">Todos</button>
+            <button class="toggle-btn" data-filtro="minha">Minha agenda</button>
+          </div>
           <button class="btn-outline" id="calHoje">Hoje</button>
           <button class="btn-primary" id="btnNovoEvento">+ Novo evento</button>
         </div>
@@ -1250,13 +1254,15 @@
               </label>
               <label class="field">
                 <span>Responsável</span>
-                <select id="evResponsavel">
-                  <option>Lourenço Grieco</option>
-                  <option>Controller</option>
-                  <option>Advogado</option>
-                  <option>Estagiário</option>
-                </select>
+                <select id="evResponsavel"></select>
               </label>
+              <div class="field modal-full">
+                <span class="field-label">Participantes</span>
+                <div class="resp-picker" id="evParticipantesPicker">
+                  <div class="resp-chips"></div>
+                  <select class="resp-add-select"></select>
+                </div>
+              </div>
               <label class="field modal-full">
                 <span>Local / Observações</span>
                 <input type="text" id="evLocal" placeholder="Ex.: 2ª Vara Cível — Fórum Central">
@@ -2431,21 +2437,21 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/core.js?v=40"></script>
-<script src="js/auth.js?v=40"></script>
-<script src="js/mappers.js?v=40"></script>
-<script src="js/dashboard.js?v=40"></script>
-<script src="js/nav.js?v=40"></script>
-<script src="js/atividades.js?v=40"></script>
-<script src="js/configuracoes.js?v=40"></script>
-<script src="js/agenda.js?v=40"></script>
-<script src="js/intimacoes.js?v=40"></script>
-<script src="js/prazos.js?v=40"></script>
-<script src="js/tarefas.js?v=40"></script>
-<script src="js/pastas.js?v=40"></script>
-<script src="js/relatorio.js?v=40"></script>
-<script src="js/andamentos.js?v=40"></script>
-<script src="js/documentos.js?v=40"></script>
-<script src="js/financeiro.js?v=40"></script>
+<script src="js/core.js?v=41"></script>
+<script src="js/auth.js?v=41"></script>
+<script src="js/mappers.js?v=41"></script>
+<script src="js/dashboard.js?v=41"></script>
+<script src="js/nav.js?v=41"></script>
+<script src="js/atividades.js?v=41"></script>
+<script src="js/configuracoes.js?v=41"></script>
+<script src="js/agenda.js?v=41"></script>
+<script src="js/intimacoes.js?v=41"></script>
+<script src="js/prazos.js?v=41"></script>
+<script src="js/tarefas.js?v=41"></script>
+<script src="js/pastas.js?v=41"></script>
+<script src="js/relatorio.js?v=41"></script>
+<script src="js/andamentos.js?v=41"></script>
+<script src="js/documentos.js?v=41"></script>
+<script src="js/financeiro.js?v=41"></script>
 </body>
 </html>

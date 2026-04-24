@@ -8,14 +8,33 @@ const TIPO_COR = { 'Prazo':'prazo', 'Audiência':'audiencia', 'Reunião':'reunia
 let calAno = 2026;
 let calMes = 3;
 let calDataSelecionada = null;
+let agendaFiltro = 'todos'; // 'todos' | 'minha'
+
 const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const DIAS_PT  = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
 
-function eventosNoDia(iso)     { return agendaEventos.filter(e => e.data === iso); }
+// Retorna true se o usuário atual está envolvido no evento
+function _euEnvolvidoEm(e) {
+  const meuNome = (state.meuPerfil?.nome || '').toLowerCase();
+  if (!meuNome) return true;
+  if ((e.responsavel || '').toLowerCase().includes(meuNome)) return true;
+  const parts = (e.participantes || '').split(';').map(n => n.trim().toLowerCase()).filter(Boolean);
+  return parts.includes(meuNome);
+}
+
+function _eventosFiltrados() {
+  if (agendaFiltro === 'minha') return agendaEventos.filter(_euEnvolvidoEm);
+  return agendaEventos;
+}
+
+function eventosNoDia(iso) {
+  return _eventosFiltrados().filter(e => e.data === iso);
+}
+
 function eventosPorTipoNoMes(ano, mes) {
   const prefix = `${ano}-${String(mes + 1).padStart(2, '0')}`;
   const tipos  = {};
-  agendaEventos.filter(e => e.data.startsWith(prefix)).forEach(e => {
+  _eventosFiltrados().filter(e => e.data.startsWith(prefix)).forEach(e => {
     tipos[e.tipo] = (tipos[e.tipo] || 0) + 1;
   });
   return tipos;
@@ -56,10 +75,10 @@ function renderCalendario() {
     const isUrgente = evs.some(e => e.tipo === 'Prazo');
     const classes  = ['cal-day', c.other ? 'cal-day--other' : '', isHoje ? 'cal-day--today' : '',
       isSel ? 'cal-day--selected' : '', isUrgente && !c.other ? 'cal-day--has-urgent' : ''].filter(Boolean).join(' ');
-    const maxEv    = 3;
-    const visible  = evs.slice(0, maxEv);
-    const extra    = evs.length - maxEv;
-    const evHtml   = visible.map(e =>
+    const maxEv  = 3;
+    const visible = evs.slice(0, maxEv);
+    const extra   = evs.length - maxEv;
+    const evHtml  = visible.map(e =>
       `<span class="cal-ev cal-ev--${TIPO_COR[e.tipo] || 'lembrete'}" title="${e.titulo}">${e.titulo}</span>`
     ).join('') + (extra > 0 ? `<span class="cal-ev cal-ev--more">+${extra} mais</span>` : '');
     return `<div class="${classes}" data-date="${iso}" role="button" tabindex="0">
@@ -85,24 +104,30 @@ function selecionarDia(iso) {
   const label = `${DIAS_PT[date.getDay()]}, ${d} de ${MESES_PT[m - 1]}`;
   document.getElementById('agendaDiaLabel').textContent  = `${d} de ${MESES_PT[m-1]}`;
   document.getElementById('agendaDiaTitulo').textContent = label;
-  const evs  = eventosNoDia(iso);
+  const evs   = eventosNoDia(iso);
   const lista = document.getElementById('agendaDiaLista');
   if (!evs.length) { lista.innerHTML = `<p class="agenda-aside-empty">Nenhum evento neste dia.</p>`; return; }
-  lista.innerHTML = evs.map(e => `
-    <div class="ev-item">
+  lista.innerHTML = evs.map(e => {
+    const parts = (e.participantes || '').split(';').map(n => n.trim()).filter(Boolean);
+    const partHtml = parts.length
+      ? `<p class="ev-meta ev-participantes">${avatarGroup(e.participantes, 5)} ${parts.join(', ')}</p>`
+      : '';
+    return `<div class="ev-item">
       <span class="ev-dot" style="background:${corDot(e.tipo)}"></span>
       <div class="ev-info">
         <p class="ev-titulo">${e.titulo}</p>
         <p class="ev-meta">${e.hora ? e.hora + ' · ' : ''}${e.responsavel}${e.local ? ' · ' + e.local : ''}</p>
+        ${partHtml}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function renderProximos() {
   const hoje   = new Date();
   const base   = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
   const limite = new Date(base); limite.setDate(limite.getDate() + 7);
-  const proximos = agendaEventos
+  const proximos = _eventosFiltrados()
     .filter(e => { const d = new Date(e.data + 'T00:00:00'); return d >= base && d <= limite; })
     .sort((a, b) => a.data.localeCompare(b.data));
   const el = document.getElementById('agendaProximos');
@@ -113,11 +138,13 @@ function renderProximos() {
     const [,m,d]   = e.data.split('-').map(Number);
     const label    = `${d}/${m}${e.hora ? ' · ' + e.hora : ''}`;
     const badgeCls = isHoje ? 'ev-date-badge--today' : (e.tipo === 'Prazo' ? 'ev-date-badge--urgent' : '');
+    const parts = (e.participantes || '').split(';').map(n => n.trim()).filter(Boolean);
+    const partMeta = parts.length ? ` · ${parts.length} participante${parts.length > 1 ? 's' : ''}` : '';
     return `<div class="ev-item">
       <span class="ev-dot" style="background:${corDot(e.tipo)}"></span>
       <div class="ev-info">
         <p class="ev-titulo">${e.titulo}</p>
-        <p class="ev-meta">${e.responsavel}</p>
+        <p class="ev-meta">${e.responsavel}${partMeta}</p>
       </div>
       <span class="ev-date-badge ${badgeCls}">${label}</span>
     </div>`;
@@ -144,6 +171,23 @@ function corDot(tipo) {
   return { Prazo:'#e74d3c', 'Audiência':'#1890d8', Reunião:'#1d8b60', Diligência:'#e07a17', Lembrete:'#aaa' }[tipo] || '#aaa';
 }
 
+// ── Abre modal de novo evento ──────────────────────────────────────────
+function abrirModalEvento() {
+  // Popula responsável dinamicamente com usuários da empresa
+  const sel = document.getElementById('evResponsavel');
+  const meuNome = state.meuPerfil?.nome || '';
+  sel.innerHTML = state.usuarios.map(u =>
+    `<option value="${u.nome}"${u.nome === meuNome ? ' selected' : ''}>${u.nome}</option>`
+  ).join('');
+
+  // Popula participantes picker
+  popularRespPicker('evParticipantesPicker', '', state.usuarios, '＋ Adicionar participante');
+
+  if (calDataSelecionada) document.getElementById('evData').value = calDataSelecionada;
+  document.getElementById('modalEvento').classList.add('open');
+}
+
+// ── Navegação ──────────────────────────────────────────────────────────
 document.getElementById('calPrev').addEventListener('click', () => {
   calMes--; if (calMes < 0) { calMes = 11; calAno--; } renderCalendario();
 });
@@ -156,10 +200,8 @@ document.getElementById('calHoje').addEventListener('click', () => {
   calDataSelecionada = iso; renderCalendario(); selecionarDia(iso);
 });
 
-document.getElementById('btnNovoEvento').addEventListener('click', () => {
-  document.getElementById('modalEvento').classList.add('open');
-  if (calDataSelecionada) document.getElementById('evData').value = calDataSelecionada;
-});
+document.getElementById('btnNovoEvento').addEventListener('click', abrirModalEvento);
+
 ['modalClose','modalCancelar'].forEach(id => {
   document.getElementById(id).addEventListener('click', () => {
     document.getElementById('modalEvento').classList.remove('open');
@@ -168,35 +210,53 @@ document.getElementById('btnNovoEvento').addEventListener('click', () => {
 document.getElementById('modalEvento').addEventListener('click', e => {
   if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
 });
-document.getElementById('eventoForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const novo = {
-    empresa_id:  state.empresaId,
-    data:        document.getElementById('evData').value,
-    titulo:      document.getElementById('evTitulo').value.trim(),
-    tipo:        document.getElementById('evTipo').value,
-    hora:        document.getElementById('evHora').value || null,
-    responsavel: document.getElementById('evResponsavel').value,
-    local:       document.getElementById('evLocal').value.trim() || null,
-  };
-  const saveReq  = db.from('agenda_eventos').insert(novo).select().single();
-  const tOut     = new Promise((_, r) => setTimeout(() => r(new Error('Sem resposta do banco em 12s. Verifique as políticas RLS.')), 12000));
-  const { data: salvo, error } = await Promise.race([saveReq, tOut]);
-  if (error) {
-    if (error.code === 'PGRST116' || error.message?.includes('0 rows')) {
-      toast('Evento não salvo: falta política INSERT no Supabase (execute o SQL de RLS).', 'error');
-    } else {
-      toast('Erro: ' + error.message, 'error');
-    }
-    return;
-  }
-  agendaEventos.push({ ...novo, id: salvo.id });
-  agendaEventos.sort((a, b) => a.data.localeCompare(b.data));
-  document.getElementById('modalEvento').classList.remove('open');
-  e.target.reset();
+
+// ── Toggle Todos / Minha agenda ────────────────────────────────────────
+document.getElementById('agendaFiltroToggle').addEventListener('click', e => {
+  const btn = e.target.closest('.toggle-btn');
+  if (!btn) return;
+  agendaFiltro = btn.dataset.filtro;
+  document.querySelectorAll('#agendaFiltroToggle .toggle-btn').forEach(b => b.classList.toggle('is-active', b === btn));
   renderCalendario();
   if (calDataSelecionada) selecionarDia(calDataSelecionada);
-  toast('Evento salvo!');
+});
+
+// ── Salvar evento ──────────────────────────────────────────────────────
+document.getElementById('eventoForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = e.target.querySelector('button[type="submit"]');
+  btn.disabled = true; btn.textContent = 'Salvando…';
+  try {
+    const participantes = getSelectedResps('evParticipantesPicker');
+    const novo = {
+      empresa_id:   state.empresaId,
+      data:         document.getElementById('evData').value,
+      titulo:       document.getElementById('evTitulo').value.trim(),
+      tipo:         document.getElementById('evTipo').value,
+      hora:         document.getElementById('evHora').value || null,
+      responsavel:  document.getElementById('evResponsavel').value,
+      local:        document.getElementById('evLocal').value.trim() || null,
+      participantes: participantes || null,
+    };
+    const saveReq = db.from('agenda_eventos').insert(novo).select().single();
+    const tOut    = new Promise((_, r) => setTimeout(() => r(new Error('Sem resposta do banco em 12s. Verifique as políticas RLS.')), 12000));
+    const { data: salvo, error } = await Promise.race([saveReq, tOut]);
+    if (error) {
+      toast('Erro: ' + error.message, 'error');
+      return;
+    }
+    agendaEventos.push({ ...novo, id: salvo.id });
+    agendaEventos.sort((a, b) => a.data.localeCompare(b.data));
+    document.getElementById('modalEvento').classList.remove('open');
+    e.target.reset();
+    renderCalendario();
+    if (calDataSelecionada) selecionarDia(calDataSelecionada);
+    toast('Evento salvo!');
+  } catch (err) {
+    toast('Erro inesperado: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Salvar evento';
+  }
 });
 
 // ──────────────────────────────────────────────────────────────────────

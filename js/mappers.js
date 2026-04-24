@@ -178,8 +178,14 @@ async function carregarDados() {
   // Carrega eventos da agenda no array local
   agendaEventos.length = 0;
   (ev.data || []).forEach(e => agendaEventos.push({
-    id: e.id, data: e.data, titulo: e.titulo,
-    tipo: e.tipo, hora: e.hora || '', responsavel: e.responsavel || '', local: e.local || '',
+    id:            e.id,
+    data:          e.data,
+    titulo:        e.titulo,
+    tipo:          e.tipo,
+    hora:          e.hora || '',
+    responsavel:   e.responsavel || '',
+    local:         e.local || '',
+    participantes: e.participantes || '',
   }));
 
   renderDashboard();

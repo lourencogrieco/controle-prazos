@@ -2328,6 +2328,29 @@ tbody td {
 
 .ev-item:last-child { border-bottom: none; }
 
+.ev-participantes { display:flex; align-items:center; gap:6px; margin-top:4px; font-family:inherit; }
+
+/* Toggle group (Todos / Minha agenda) */
+.toggle-group {
+  display: flex;
+  border: 1px solid var(--br);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.toggle-btn {
+  background: var(--bg);
+  border: none;
+  padding: 5px 12px;
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--mu);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  border-right: 1px solid var(--br);
+}
+.toggle-btn:last-child { border-right: none; }
+.toggle-btn.is-active  { background: var(--ac); color: #fff; }
+
 .ev-dot {
   width: 10px;
   height: 10px;

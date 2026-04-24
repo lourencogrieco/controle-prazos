@@ -3660,10 +3660,10 @@ tbody td {
   .nav-tab.active::after { color: #fff; }
   .nav-tab.active { border-top-color: var(--ac); }
 
-  /* badge de pendências: centralizado no topo da tab */
+  /* badge de pendências: centralizado, abaixo do label */
   .nav-tab .nav-badge {
     position: absolute;
-    top: 6px;
+    bottom: 8px;
     left: 50%;
     transform: translateX(-50%);
     font-size: .55rem;

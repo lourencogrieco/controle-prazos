@@ -18,8 +18,8 @@ export default async function handler(req, res) {
     }
   }
 
-  const supaUrl     = process.env.SUPABASE_URL      ?? 'https://gcucadlnxttlxckravui.supabase.co';
-  const supaAnonKey = process.env.SUPABASE_ANON_KEY ?? '';
+  const supaUrl     = (process.env.SUPABASE_URL      ?? 'https://gcucadlnxttlxckravui.supabase.co').trim();
+  const supaAnonKey = (process.env.SUPABASE_ANON_KEY ?? '').trim();
 
   // Permite acionar manualmente com datas específicas
   const dataInicio = req.query?.dataInicio ?? null;

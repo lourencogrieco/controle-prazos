@@ -235,8 +235,14 @@ document.getElementById('novoClienteForm').addEventListener('submit', async e =>
     toast(existingId ? 'Cliente atualizado' : 'Cliente cadastrado');
 
     if (ctx === 'pasta') {
-      document.getElementById('pClienteSelect').value = obj.id;
-      document.getElementById('pCliente').value = obj.nome;
+      // Adiciona o novo cliente como chip no picker da pasta
+      const chipsEl = document.querySelector('#pastaClientePicker .resp-chips');
+      if (chipsEl && !Array.from(chipsEl.querySelectorAll('.resp-chip')).some(c => c.dataset.nome === obj.nome)) {
+        chipsEl.insertAdjacentHTML('beforeend', _respChipHTML(obj.nome));
+      }
+      // Remove do dropdown para evitar duplicata
+      const addSel = document.querySelector('#pastaClientePicker .resp-add-select');
+      addSel?.querySelector(`option[value="${CSS.escape(obj.nome)}"]`)?.remove();
     } else if (ctx === 'gerenciar') {
       abrirModalGerenciarClientes();
     }

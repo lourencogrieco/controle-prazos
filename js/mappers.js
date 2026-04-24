@@ -7,6 +7,7 @@ function dbParaPasta(row) {
     areaId:           row.area_id || null,
     numero:           row.numero,
     codigoSIA:        row.codigo_lhub || '-',
+    clienteId:        row.cliente_id || null,
     cliente:          row.cliente,
     parteContraria:   row.parte_contraria || '-',
     tipoServico:      row.categoria,

@@ -48,12 +48,28 @@ function popularDropdownTipos() {
 }
 
 function popularDropdownClientes() {
-  const sel = document.getElementById('pClienteSelect');
-  const atual = sel.value;
-  sel.innerHTML = '<option value="">— digitar manualmente —</option>' +
-    state.clientes.map(c =>
-      `<option value="${c.id}" data-nome="${c.nome}" ${c.id === atual ? 'selected' : ''}>${c.nome}</option>`
-    ).join('');
+  // Atualiza o dropdown do picker de clientes mantendo os chips já selecionados
+  const addSel = document.querySelector('#pastaClientePicker .resp-add-select');
+  if (!addSel) return;
+  const chipsEl  = document.querySelector('#pastaClientePicker .resp-chips');
+  const selected = Array.from(chipsEl?.querySelectorAll('.resp-chip') || []).map(c => c.dataset.nome);
+  addSel.innerHTML = '<option value="">＋ Adicionar cliente cadastrado…</option>' +
+    state.clientes
+      .filter(c => !selected.includes(c.nome))
+      .map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
+}
+
+function adicionarNomeManualPastaCliente() {
+  const input  = document.getElementById('pClienteManual');
+  const nome   = (input?.value || '').trim().toUpperCase();
+  if (!nome) return;
+  const chipsEl = document.querySelector('#pastaClientePicker .resp-chips');
+  if (!chipsEl) return;
+  if (Array.from(chipsEl.querySelectorAll('.resp-chip')).some(c => c.dataset.nome === nome)) {
+    input.value = ''; return;
+  }
+  chipsEl.insertAdjacentHTML('beforeend', _respChipHTML(nome));
+  input.value = '';
 }
 
 function popularSelectsPastas() {
@@ -72,7 +88,6 @@ function abrirModalNovaPasta(numero) {
   document.getElementById('pAno').value    = new Date().getFullYear();
 
   popularDropdownAreas();
-  popularDropdownClientes();
 
   if (p) {
     document.getElementById('pAreaPasta').value = p.areaId || '';
@@ -83,12 +98,18 @@ function abrirModalNovaPasta(numero) {
     popularDropdownTipos();
   }
 
-  document.getElementById('pCliente').value        = p?.cliente || '';
-  document.getElementById('pClienteSelect').value  = p?.clienteId || '';
+  // Picker de clientes (suporta múltiplos)
+  popularRespPicker('pastaClientePicker', p?.cliente || '', state.clientes);
+
+  // Picker de advogados responsáveis
+  popularRespPicker('pastaAdvPicker', p?.advogado || '', state.usuarios);
+
+  if (document.getElementById('pClienteManual'))
+    document.getElementById('pClienteManual').value = '';
+
   document.getElementById('pParteContraria').value = (p?.parteContraria !== '-') ? (p?.parteContraria || '') : '';
   document.getElementById('pCategoria').value      = p?.tipoServico || '';
   document.getElementById('pTipoAcao').value       = p?.servico || '';
-  document.getElementById('pAdvogado').value       = p?.advogado || '';
   document.getElementById('pComarca').value        = p?.comarca || '';
   document.getElementById('pProcesso').value       = p?.processo || '';
   document.getElementById('pValorCausa').value     = p?.valorCausa || '';
@@ -117,20 +138,6 @@ document.getElementById('pAreaPasta').addEventListener('change', () => {
 document.getElementById('pTipoPasta').addEventListener('change', atualizarPreviewNumero);
 document.getElementById('pAno').addEventListener('input', atualizarPreviewNumero);
 
-document.getElementById('pClienteSelect').addEventListener('change', e => {
-  const sel = e.target;
-  const clienteId = sel.value;
-  const pCliente = document.getElementById('pCliente');
-  if (clienteId) {
-    const optText = sel.options[sel.selectedIndex].text;
-    const c = state.clientes.find(x => x.id === clienteId);
-    pCliente.value = c?.nome || optText || '';
-    pCliente.removeAttribute('required');
-  } else {
-    pCliente.value = '';
-    pCliente.setAttribute('required', '');
-  }
-});
 
 document.getElementById('novaPastaForm').addEventListener('submit', async e => {
   e.preventDefault();
@@ -148,21 +155,27 @@ document.getElementById('novaPastaForm').addEventListener('submit', async e => {
       ? document.getElementById('pastaNumeroValor').textContent
       : gerarNumeroPasta(codigoTipo, areaId, ano);
 
-    const selectedClienteId = document.getElementById('pClienteSelect')?.value || '';
-    const selectedCliente   = state.clientes.find(c => c.id === selectedClienteId);
-    const clienteNome = selectedCliente?.nome
-      || document.getElementById('pCliente')?.value.trim()
-      || 'N/A';
+    // Coleta clientes: chips do picker + nome digitado manualmente
+    const chipsNomes  = getSelectedResps('pastaClientePicker');
+    const manualNome  = (document.getElementById('pClienteManual')?.value || '').trim().toUpperCase();
+    const clienteNome = [chipsNomes, manualNome].filter(Boolean).join(';') || null;
+    if (!clienteNome) { toast('Informe ao menos um cliente.', 'error'); return; }
+
+    // ID do cliente principal (primeiro chip que estiver no cadastro)
+    const primeiroNome  = chipsNomes.split(';')[0]?.trim();
+    const clientePrinc  = state.clientes.find(c => c.nome === primeiroNome);
+
+    const uc = v => (v || '').trim().toUpperCase();
     const obj = pastaParaDb({
       id:               pastaId || uid(),
       numero,
       codigoSIA:        '-',
       cliente:          clienteNome,
-      parteContraria:   document.getElementById('pParteContraria')?.value.trim() || '-',
-      tipoServico:      document.getElementById('pCategoria').value,
-      servico:          document.getElementById('pTipoAcao')?.value.trim() || '',
-      advogado:         document.getElementById('pAdvogado')?.value.trim() || '',
-      comarca:          document.getElementById('pComarca')?.value.trim() || '',
+      parteContraria:   uc(document.getElementById('pParteContraria')?.value) || '-',
+      tipoServico:      uc(document.getElementById('pCategoria')?.value),
+      servico:          uc(document.getElementById('pTipoAcao')?.value),
+      advogado:         getSelectedResps('pastaAdvPicker'),
+      comarca:          uc(document.getElementById('pComarca')?.value),
       processo:         document.getElementById('pProcesso')?.value.trim() || '',
       valorCausa:       document.getElementById('pValorCausa')?.value.trim() || 'R$ 0,00',
       area:             areaNome,
@@ -173,7 +186,7 @@ document.getElementById('novaPastaForm').addEventListener('submit', async e => {
     });
     obj.codigo_tipo = codigoTipo ? Number(codigoTipo) : null;
     obj.area_id     = areaId || null;
-    obj.cliente_id  = document.getElementById('pClienteSelect')?.value || null;
+    obj.cliente_id  = clientePrinc?.id || null;
 
     const { error } = await db.from('pastas').upsert(obj);
     if (error) { toast('Erro ao salvar: ' + error.message, 'error'); return; }
@@ -267,11 +280,11 @@ function abrirPasta(numero) {
 
   const d = id => document.getElementById(id);
   d('pastaAreaBadge').textContent      = p.area || p.tipoServico || '—';
-  d('dtlCliente').textContent          = p.cliente || '—';
+  d('dtlCliente').textContent          = p.cliente ? p.cliente.replace(/;/g, ' · ') : '—';
   d('dtlTipoServico').textContent      = p.tipoServico || '—';
   d('dtlServico').textContent          = p.servico || '—';
   d('dtlParteContraria').textContent   = (p.parteContraria && p.parteContraria !== '-') ? p.parteContraria : '—';
-  d('dtlAdvogado').textContent         = p.advogado || '—';
+  d('dtlAdvogado').textContent         = p.advogado ? p.advogado.replace(/;/g, ' · ') : '—';
 
   if (d('dtlDescricao'))         d('dtlDescricao').value        = p.descricao || '';
   if (d('dtlDataDistribuicao'))  d('dtlDataDistribuicao').value = p.dataDistribuicao || '';

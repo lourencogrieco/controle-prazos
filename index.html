@@ -1740,18 +1740,17 @@
 
         <!-- CLIENTE -->
         <div class="modal-section-label" style="margin-top:16px">Cliente</div>
-        <div style="display:flex;gap:8px;align-items:flex-end">
-          <div class="field" style="flex:1;margin:0">
-            <span class="field-label">Selecionar cliente cadastrado</span>
-            <select id="pClienteSelect">
-              <option value="">— digitar manualmente —</option>
-            </select>
+        <div class="field">
+          <span class="field-label">Clientes *</span>
+          <div id="pastaClientePicker" class="resp-picker">
+            <div class="resp-chips"></div>
+            <select class="resp-add-select"><option value="">＋ Adicionar cliente cadastrado…</option></select>
           </div>
-          <button type="button" class="btn-icon-sm" id="btnNovoClientePasta" title="Cadastrar novo cliente">+</button>
         </div>
-        <div class="field" style="margin-top:8px">
-          <span class="field-label">Nome do cliente *</span>
-          <input type="text" id="pCliente" placeholder="Nome do cliente ou digitar manualmente">
+        <div style="display:flex;gap:6px;align-items:center;margin-top:4px">
+          <input type="text" id="pClienteManual" placeholder="Ou digitar nome manualmente…" style="flex:1;font-size:.8rem;padding:5px 8px;border:1px solid var(--br);border-radius:3px;background:var(--bg);color:inherit">
+          <button type="button" class="btn-outline" style="font-size:.75rem;padding:5px 12px;white-space:nowrap" onclick="adicionarNomeManualPastaCliente()">+ Nome</button>
+          <button type="button" class="btn-icon-sm" id="btnNovoClientePasta" title="Cadastrar novo cliente">+</button>
         </div>
 
         <!-- PROCESSO -->
@@ -1798,10 +1797,11 @@
 
         <!-- RESPONSÁVEL -->
         <div class="modal-section-label" style="margin-top:16px">Responsável</div>
-        <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:14px">
-          <div class="field">
-            <span class="field-label">Advogado responsável</span>
-            <input type="text" id="pAdvogado">
+        <div class="field">
+          <span class="field-label">Advogado(s) responsável(is)</span>
+          <div id="pastaAdvPicker" class="resp-picker">
+            <div class="resp-chips"></div>
+            <select class="resp-add-select"><option value="">＋ Adicionar advogado…</option></select>
           </div>
         </div>
         <div class="field">
@@ -2312,20 +2312,20 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/core.js?v=35"></script>
-<script src="js/auth.js?v=35"></script>
-<script src="js/mappers.js?v=35"></script>
-<script src="js/dashboard.js?v=35"></script>
-<script src="js/nav.js?v=35"></script>
-<script src="js/atividades.js?v=35"></script>
-<script src="js/configuracoes.js?v=35"></script>
-<script src="js/agenda.js?v=35"></script>
-<script src="js/intimacoes.js?v=35"></script>
-<script src="js/prazos.js?v=35"></script>
-<script src="js/tarefas.js?v=35"></script>
-<script src="js/pastas.js?v=35"></script>
-<script src="js/relatorio.js?v=35"></script>
-<script src="js/andamentos.js?v=35"></script>
-<script src="js/documentos.js?v=35"></script>
+<script src="js/core.js?v=37"></script>
+<script src="js/auth.js?v=37"></script>
+<script src="js/mappers.js?v=37"></script>
+<script src="js/dashboard.js?v=37"></script>
+<script src="js/nav.js?v=37"></script>
+<script src="js/atividades.js?v=37"></script>
+<script src="js/configuracoes.js?v=37"></script>
+<script src="js/agenda.js?v=37"></script>
+<script src="js/intimacoes.js?v=37"></script>
+<script src="js/prazos.js?v=37"></script>
+<script src="js/tarefas.js?v=37"></script>
+<script src="js/pastas.js?v=37"></script>
+<script src="js/relatorio.js?v=37"></script>
+<script src="js/andamentos.js?v=37"></script>
+<script src="js/documentos.js?v=37"></script>
 </body>
 </html>

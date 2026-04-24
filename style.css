@@ -1340,6 +1340,20 @@ tbody td {
 
 .pasta-table .pasta-client { color: var(--tx-strong); font-weight: 600; }
 
+/* ─── UPPERCASE DISPLAY — pastas ──────────────────────────────── */
+/* Tabela de pastas: cliente, parte contrária, categoria, tipo/serviço */
+.pasta-table .pasta-client,
+.pasta-table tbody td:nth-child(4),
+.pasta-table tbody td:nth-child(6),
+.pasta-table tbody td:nth-child(7) { text-transform: uppercase; }
+
+/* Detalhe da pasta */
+#dtlCliente, #dtlParteContraria, #dtlTipoServico,
+#dtlServico, #dtlAdvogado, #pastaAreaBadge { text-transform: uppercase; }
+
+/* Inputs do modal de pasta */
+#pParteContraria, #pTipoAcao, #pComarca, #pClienteManual { text-transform: uppercase; }
+
 .tbl-pagination, .tbl-pg-left, .tbl-pg-right {
   display: flex;
   align-items: center;

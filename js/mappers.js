@@ -217,13 +217,23 @@ function dbParaHonorario(row) {
 // ──────────────────────────────────────────────────────────────────────
 async function carregarDados() {
   const eid = state.empresaId;
-  const [pr, pz, tf, tp, cl, ar, it, cfg, ev, us, hon, cob, ctp, dep, opo] = await Promise.all([
+
+  // Chaves de cache por empresa
+  const cacheKeyAreas  = `lhub_areas_${eid}`;
+  const cacheKeyTipos  = `lhub_tipos_${eid}`;
+
+  // Queries que sempre vão ao banco (dados dinâmicos)
+  // Áreas e tipos vão ao banco só se cache expirou
+  const cachedAreas = _cacheGet(cacheKeyAreas);
+  const cachedTipos = _cacheGet(cacheKeyTipos);
+
+  const queries = [
     db.from('pastas').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
     db.from('prazos_lhub').select('*').eq('empresa_id', eid).order('prazo'),
     db.from('tarefas_lhub').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
-    db.from('tipos_pasta').select('*').eq('empresa_id', eid).order('codigo'),
+    cachedTipos ? Promise.resolve({ data: null }) : db.from('tipos_pasta').select('*').eq('empresa_id', eid).order('codigo'),
     db.from('clientes_lhub').select('*').eq('empresa_id', eid).order('nome'),
-    db.from('areas_juridicas').select('*').eq('empresa_id', eid).order('ordem'),
+    cachedAreas ? Promise.resolve({ data: null }) : db.from('areas_juridicas').select('*').eq('empresa_id', eid).order('ordem'),
     db.from('intimacoes_pje').select('*').eq('empresa_id', eid).order('data_disponibilizacao', { ascending: false }).limit(200),
     db.from('pje_config').select('*').eq('empresa_id', eid).maybeSingle(),
     db.from('agenda_eventos').select('*').eq('empresa_id', eid).order('data'),
@@ -233,17 +243,39 @@ async function carregarDados() {
     db.from('contas_pagar').select('*').eq('empresa_id', eid).order('data_vencimento'),
     db.from('despesas').select('*').eq('empresa_id', eid).order('data', { ascending: false }),
     db.from('oportunidades_crm').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
-  ]);
+  ];
+
+  const [pr, pz, tf, tp, cl, ar, it, cfg, ev, us, hon, cob, ctp, dep, opo] = await Promise.all(queries);
+
   state.pastas     = (pr.data || []).map(dbParaPasta);
+  _reconstruirIndicePastas();
+
+  // Mapa de pastas por ID para enriquecer prazos (O(1) em vez de find)
+  const _pastasPorId = new Map(state.pastas.map(p => [p.id, p]));
   state.prazos     = (pz.data || []).map(dbParaPrazo);
   state.prazos.forEach(p => {
-    const pa = state.pastas.find(x => x.id === p.pastaId);
+    const pa = _pastasPorId.get(p.pastaId);
     if (pa) { p.pastaNr = pa.numero; p.processo = pa.processo; p.comarca = pa.comarca; }
   });
+
   state.tarefas    = (tf.data || []).map(dbParaTarefa);
-  state.tiposPasta = (tp.data || []).map(dbParaTipoPasta);
+
+  // Tipos e áreas: usa cache se disponível, senão salva no cache
+  if (cachedTipos) {
+    state.tiposPasta = cachedTipos;
+  } else if (tp.data) {
+    state.tiposPasta = tp.data.map(dbParaTipoPasta);
+    _cacheSet(cacheKeyTipos, state.tiposPasta);
+  }
+
   state.clientes   = (cl.data || []).map(dbParaCliente);
-  state.areas      = (ar.data || []).map(dbParaArea);
+
+  if (cachedAreas) {
+    state.areas = cachedAreas;
+  } else if (ar.data) {
+    state.areas = ar.data.map(dbParaArea);
+    _cacheSet(cacheKeyAreas, state.areas);
+  }
   state.intimacoes = (it.data || []).map(dbParaIntimacao);
   state.pjeConfig  = cfg.data || null;
   state.usuarios   = (us.data || []);

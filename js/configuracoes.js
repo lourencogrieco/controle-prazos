@@ -45,6 +45,7 @@ document.getElementById('novaAreaForm').addEventListener('submit', async e => {
   const obj = { id: uid(), empresa_id: state.empresaId, nome, ordem: state.areas.length + 1 };
   const { error } = await db.from('areas_juridicas').insert(obj);
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  _cacheInvalidar(`lhub_areas_${state.empresaId}`);
   toast('Área adicionada');
   e.target.reset();
   state.areas.push(dbParaArea(obj));
@@ -61,6 +62,7 @@ async function excluirArea(id) {
   if (!confirm('Excluir esta área?')) return;
   const { error } = await db.from('areas_juridicas').delete().eq('id', id).eq('empresa_id', state.empresaId);
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  _cacheInvalidar(`lhub_areas_${state.empresaId}`);
   state.areas = state.areas.filter(a => a.id !== id);
   renderListaAreas();
   popularDropdownAreas();
@@ -134,6 +136,7 @@ document.getElementById('novoTipoForm').addEventListener('submit', async e => {
   const obj = { id: uid(), empresa_id: state.empresaId, codigo, nome, area_id: areaId };
   const { error } = await db.from('tipos_pasta').insert(obj);
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  _cacheInvalidar(`lhub_tipos_${state.empresaId}`);
   toast('Tipo adicionado');
   e.target.reset();
   state.tiposPasta.push({ id: obj.id, codigo, nome, areaId });
@@ -145,6 +148,7 @@ async function excluirTipoPasta(id) {
   if (!confirm('Excluir este tipo de pasta?')) return;
   const { error } = await db.from('tipos_pasta').delete().eq('id', id).eq('empresa_id', state.empresaId);
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  _cacheInvalidar(`lhub_tipos_${state.empresaId}`);
   state.tiposPasta = state.tiposPasta.filter(t => t.id !== id);
   renderListaTipos();
   popularDropdownTipos();

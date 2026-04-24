@@ -46,11 +46,9 @@ function linkProcesso(processo, tribunal) {
   return null;
 }
 
-// Encontra pasta vinculada pelo número do processo
+// Encontra pasta vinculada pelo número do processo — O(1) via índice
 function pastaDaIntimacao(numeroProcesso) {
-  if (!numeroProcesso) return null;
-  const digits = numeroProcesso.replace(/\D/g, '');
-  return state.pastas.find(p => p.processo && p.processo.replace(/\D/g,'') === digits) || null;
+  return _pastaPorProcesso(numeroProcesso);
 }
 
 const INTIM_STATUS_LABEL = {
@@ -155,7 +153,7 @@ function criarPrazoDaIntimacao(intim) {
   // Abre o modal via função oficial (configura pickers, permissões, etc.)
   abrirModalNovoPrazo(null);
   // Sobrescreve campos com dados da intimação
-  const pasta = state.pastas.find(p => p.processo && intim.processo && p.processo.replace(/\D/g,'') === intim.processo.replace(/\D/g,''));
+  const pasta = _pastaPorProcesso(intim.processo);
   document.getElementById('prazoIntimacaoId').value = intim.id || '';
   document.getElementById('prazoTipo').value        = 'Manifestação';
   document.getElementById('prazoDescricao').value   =
@@ -170,7 +168,7 @@ function criarTarefaDaIntimacao(intim) {
   // Abre o modal via função oficial (configura pickers, seletores, etc.)
   abrirModalNovaTarefa(null);
   // Sobrescreve campos com dados da intimação
-  const pasta = state.pastas.find(p => p.processo && intim.processo && p.processo.replace(/\D/g,'') === intim.processo.replace(/\D/g,''));
+  const pasta = _pastaPorProcesso(intim.processo);
   document.getElementById('tTitulo').value     = `Intimação: ${intim.tipoDocumento || intim.nomeClasse || intim.orgao}`;
   document.getElementById('tTipo').value       = 'Diligência interna';
   document.getElementById('tPrioridade').value = 'alta';

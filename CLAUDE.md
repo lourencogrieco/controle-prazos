@@ -249,47 +249,28 @@ Seu objetivo não é apenas revisar.
   MELHORIAS PRIORITÁRIAS (alto impacto)                                                                        
                                                                                                              
   SEMANA 1 — Segurança Básica
-                                                                                                               
-  1. Rotacionar credenciais Supabase (agora)
-  2. Mover para .env + Vercel secrets                                                                          
-  3. Adicionar autenticação nos proxies da API (verificar empresa_id no header)                                
-  4. Adicionar rate limiting nos edge functions                                                                
-  5. Verificar se todas as tabelas têm RLS ativo no Supabase                                                   
-                                                                                                               
-  MÊS 1 — Confiabilidade                                                                                       
-                                                                                                               
-  6. Deletar script.js ou eliminar a duplicação (unificar em js/)                                              
-  7. Email de notificação para prazos vencendo (via Resend ou SendGrid)                                      
-  8. Log de auditoria simples (tabela audit_log com user, ação, timestamp)                                     
-  9. Tratamento de erros no cron do PJe (falha silenciosa atualmente)                                          
-  10. Backup automático diário no Supabase                                                                     
-                                                                                                               
-  MÊS 2 — Escalabilidade                                                                                       
-                                                                                                             
-  11. Cache local com localStorage para dados que não mudam rápido (áreas, tipos)                              
-  12. Paginação nas listagens de pastas/prazos                                                               
-  13. Índice em memória por numero_processo (evitar O(n) nas intimações)                                       
-  14. Real-time via Supabase Realtime subscriptions para multi-usuário                                         
-  15. Export PDF do relatório financeiro                                                                       
-                                                                                                               
-  ---                                                                                                          
-  POSICIONAMENTO COMPETITIVO                                                                                 
-                                                                                                               
-  vs. ProJuris, Astrea, ADVBOX: o sistema está competitivo no core (prazo + tarefas + integração judicial), mas
-   falta mobile, email, auditoria e colaboração real-time para chegar no nível premium.                        
-                                                                                                             
-  Diferencial possível: IA para triagem automática de intimações (classificar urgência, sugerir prazo, detectar
-   tipo de ato) — nenhum concorrente faz bem ainda.
 
-  ---
-  PENDÊNCIAS (retomar na próxima sessão)
+  1. ✅ Rotacionar credenciais Supabase
+  2. ✅ Mover para .env + Vercel secrets
+  3. ✅ Autenticação JWT nos proxies da API (proxy-guard.js)
+  4. ✅ Rate limiting nos proxies (sliding window por userId)
+  5. Verificar se todas as tabelas têm RLS ativo no Supabase
 
-  1. FINALIZAR EMAIL DE NOTIFICAÇÃO DE PRAZOS
-     - Edge Function `notificar-prazos` já deployada e funcionando (encontra prazos e usuários corretamente)
-     - Bloqueio: domínio `ngadvogados.com.br` não verificado no Resend (erro 403)
-     - Causa: acesso ao Hostinger perdido (DNS do domínio está lá)
-     - Solução: recuperar acesso ao Hostinger → adicionar 3 registros DNS que o Resend exibe em Domains
-       · TXT resend._domainkey → valor DKIM
-       · MX send → feedback[...].ses.com (prioridade 10)
-       · TXT send → v=spf1 i[...]om ~all
-     - Após verificar: testar novamente a função e confirmar recebimento
+  MÊS 1 — Confiabilidade
+
+  6.  ✅ Eliminar duplicação — script.js deletado
+  7.  ✅ Email de notificação de prazos (notificar-prazos + Vercel cron)
+        ⚠️  Bloqueado: ngadvogados.com.br pendente de verificação no Resend
+            → Recuperar acesso ao Hostinger (conta antiga) OU trocar nameservers no Registro.br
+  8.  ✅ Log de auditoria (tabela audit_log + logAuditoria() + UI em Configurações)
+        ⚠️  Pendente: rodar SQL de criação da tabela no Supabase SQL Editor
+  9.  ✅ Tratamento de erros no cron PJe (timeout 10s, logs detalhados, ultima_sync condicional)
+  10. ⏸️  Backup automático — adiado (verificar plano Supabase antes)
+
+  MÊS 2 — Escalabilidade
+
+  11. Cache localStorage para dados estáticos (áreas, tipos de pasta)
+  12. Paginação em prazos/tarefas
+  13. Índice em memória por numero_processo (O(1) nas intimações)
+  14. Real-time via Supabase Realtime subscriptions
+  15. Export PDF relatório financeiro

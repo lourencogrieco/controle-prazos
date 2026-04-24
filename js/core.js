@@ -55,6 +55,51 @@ async function proxyFetch(url, options = {}) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
+// ÍNDICE EM MEMÓRIA — busca O(1) de pasta por número de processo
+// Reconstruído sempre que state.pastas é recarregado.
+// ──────────────────────────────────────────────────────────────────────
+const _pastasPorProcesso = new Map();
+
+function _reconstruirIndicePastas() {
+  _pastasPorProcesso.clear();
+  for (const p of state.pastas) {
+    if (p.processo) {
+      _pastasPorProcesso.set(p.processo.replace(/\D/g, ''), p);
+    }
+  }
+}
+
+function _pastaPorProcesso(numeroProcesso) {
+  if (!numeroProcesso) return null;
+  return _pastasPorProcesso.get(numeroProcesso.replace(/\D/g, '')) || null;
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// CACHE localStorage — dados estáticos por empresa (TTL: 60 min)
+// ──────────────────────────────────────────────────────────────────────
+const CACHE_TTL_MS = 60 * 60 * 1000;
+
+function _cacheSet(chave, dados) {
+  try {
+    localStorage.setItem(chave, JSON.stringify({ ts: Date.now(), dados }));
+  } catch { /* quota exceeded — ignora silenciosamente */ }
+}
+
+function _cacheGet(chave) {
+  try {
+    const raw = localStorage.getItem(chave);
+    if (!raw) return null;
+    const { ts, dados } = JSON.parse(raw);
+    if (Date.now() - ts > CACHE_TTL_MS) { localStorage.removeItem(chave); return null; }
+    return dados;
+  } catch { return null; }
+}
+
+function _cacheInvalidar(chave) {
+  try { localStorage.removeItem(chave); } catch { /* ignora */ }
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // AUDIT LOG — fire-and-forget, não bloqueia o fluxo principal
 // ──────────────────────────────────────────────────────────────────────
 function logAuditoria(acao, tabela, registroId, descricao) {

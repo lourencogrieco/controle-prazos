@@ -230,6 +230,68 @@ function _enrichPrazo(p) {
   return p;
 }
 
+// ── MOBILE KANBAN NAV ──────────────────────────────────────────────────
+// Cria seletor de colunas (pills) acima de cada board em telas ≤ 900px.
+// Seguro chamar múltiplas vezes — ignora boards já configurados.
+function initMobileKanbanNav() {
+  if (window.innerWidth > 900) return;
+  document.querySelectorAll('.board, .board--3col').forEach(board => {
+    if (board.previousElementSibling?.classList.contains('kanban-mob-nav')) return;
+    const cols = Array.from(board.querySelectorAll(':scope > .board-col'));
+    if (cols.length < 2) return;
+
+    const nav = document.createElement('div');
+    nav.className = 'kanban-mob-nav';
+
+    cols.forEach((col, i) => {
+      const label    = col.querySelector('.board-col-head span:first-child')?.textContent.trim() || `Col ${i + 1}`;
+      const countEl  = col.querySelector('.col-count');
+      const count    = countEl?.textContent?.trim() || '0';
+      const btn      = document.createElement('button');
+      btn.type       = 'button';
+      btn.className  = 'kanban-mob-btn' + (i === 0 ? ' is-active' : '');
+      btn.innerHTML  = `${label}<span class="kanban-mob-count">${count}</span>`;
+      // guarda referência para atualizar o count dinamicamente
+      col._mobNavBtn = btn;
+      btn.addEventListener('click', () => {
+        const left = col.offsetLeft - board.offsetLeft;
+        board.scrollTo({ left, behavior: 'smooth' });
+      });
+      nav.appendChild(btn);
+    });
+
+    board.parentNode.insertBefore(nav, board);
+
+    // Atualiza pill ativa ao rolar
+    let _t;
+    board.addEventListener('scroll', () => {
+      clearTimeout(_t);
+      _t = setTimeout(() => {
+        const mid = board.scrollLeft + board.offsetWidth / 2;
+        cols.forEach((col, i) => {
+          const start = col.offsetLeft - board.offsetLeft;
+          nav.children[i]?.classList.toggle('is-active', mid >= start && mid < start + col.offsetWidth);
+        });
+      }, 40);
+    }, { passive: true });
+  });
+}
+
+// Atualiza contadores das pills do kanban mobile após re-render das colunas
+function updateMobileKanbanCounts() {
+  if (window.innerWidth > 900) return;
+  document.querySelectorAll('.board, .board--3col').forEach(board => {
+    const nav = board.previousElementSibling;
+    if (!nav?.classList.contains('kanban-mob-nav')) return;
+    const cols = board.querySelectorAll(':scope > .board-col');
+    cols.forEach((col, i) => {
+      const count = col.querySelector('.col-count')?.textContent?.trim() || '0';
+      const pill  = nav.children[i]?.querySelector('.kanban-mob-count');
+      if (pill) pill.textContent = count;
+    });
+  });
+}
+
 function toast(msg, tipo = 'success') {
   const el = document.createElement('div');
   el.className = `toast toast--${tipo}`;

@@ -144,7 +144,7 @@ function tarefaCard(t) {
       </button>` : ''}
     </div>` : '';
 
-  return `<article class="tarefa-card ${priorCls}">
+  return `<article class="tarefa-card ${priorCls}" draggable="true" data-id="${t.id}" data-status="${statusVal}">
     <div class="tarefa-card-header">
       <div class="tarefa-tags">
         <span class="tag ${tagInfo.cls}">${tagInfo.label}</span>
@@ -229,8 +229,80 @@ function renderTarefasAba() {
   document.getElementById('countTarefasPendentes').textContent  = pendentes.length;
   document.getElementById('countTarefasAndamento').textContent  = andamento.length;
   document.getElementById('countTarefasConcluidas').textContent = concluidas.length;
+  if (typeof updateMobileKanbanCounts === 'function') updateMobileKanbanCounts();
 }
 
 document.getElementById('buscaTarefas')?.addEventListener('input', renderTarefasAba);
 document.getElementById('filtroTarefasTipo')?.addEventListener('change', renderTarefasAba);
 document.getElementById('filtroTarefasStatus')?.addEventListener('change', renderTarefasAba);
+
+// ──────────────────────────────────────────────────────────────────────
+// DRAG-AND-DROP — mover tarefa entre colunas do kanban
+// Funciona tanto no kanban de Atividades quanto no da Pasta.
+// ──────────────────────────────────────────────────────────────────────
+const _tarefaStatusMap = {
+  // Atividades
+  colTarefasPendentes:  'pendente',
+  colTarefasAndamento:  'em_andamento',
+  colTarefasConcluidas: 'concluida',
+  // Pasta
+  ptabTarefPendentes:   'pendente',
+  ptabTarefAndamento:   'em_andamento',
+  ptabTarefConcluidas:  'concluida',
+};
+
+function initTarefaKanbanDrag(containerSelector) {
+  const container = document.querySelector(containerSelector);
+  if (!container) return;
+
+  let _dragId = null;
+
+  // delegação em vez de re-bind a cada re-render
+  container.addEventListener('dragstart', e => {
+    const card = e.target.closest('.tarefa-card[data-id]');
+    if (!card) return;
+    _dragId = card.dataset.id;
+    setTimeout(() => card.classList.add('is-dragging'), 0);
+    e.dataTransfer.effectAllowed = 'move';
+  });
+
+  container.addEventListener('dragend', e => {
+    const card = e.target.closest('.tarefa-card[data-id]');
+    if (card) card.classList.remove('is-dragging');
+    container.querySelectorAll('.board-col-body.drag-over')
+      .forEach(c => c.classList.remove('drag-over'));
+  });
+
+  container.addEventListener('dragover', e => {
+    const col = e.target.closest('.board-col-body');
+    if (!col || !_dragId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    container.querySelectorAll('.board-col-body').forEach(c => c.classList.remove('drag-over'));
+    col.classList.add('drag-over');
+  });
+
+  container.addEventListener('dragleave', e => {
+    const col = e.target.closest('.board-col-body');
+    if (col && !col.contains(e.relatedTarget)) col.classList.remove('drag-over');
+  });
+
+  container.addEventListener('drop', async e => {
+    const col = e.target.closest('.board-col-body');
+    if (!col) return;
+    e.preventDefault();
+    col.classList.remove('drag-over');
+    const novoStatus = _tarefaStatusMap[col.id];
+    if (!_dragId || !novoStatus) { _dragId = null; return; }
+    const id = _dragId;
+    _dragId = null;
+    // Não mover se já está na mesma coluna
+    const card = container.querySelector(`.tarefa-card[data-id="${id}"]`);
+    if (card?.dataset.status === novoStatus) return;
+    await alterarStatusTarefa(id, novoStatus);
+  });
+}
+
+// Inicializa drag para os dois kanban de tarefas
+initTarefaKanbanDrag('#subtab-tarefas');
+initTarefaKanbanDrag('#ptab-tarefas');

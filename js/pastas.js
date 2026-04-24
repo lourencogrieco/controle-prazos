@@ -436,7 +436,7 @@ document.querySelectorAll('.pasta-tab[data-ptab]').forEach(btn => {
     if (btn.dataset.ptab === 'documentos')    carregarDocumentos(state.currentPastaId);
     if (btn.dataset.ptab === 'prazos')        renderPrazosNaPasta();
     if (btn.dataset.ptab === 'solicitacoes')  renderSolicitacoesNaPasta();
-    if (btn.dataset.ptab === 'tarefas')       renderTarefasNaPasta();
+    if (btn.dataset.ptab === 'tarefas')       { renderTarefasNaPasta(); initMobileKanbanNav(); }
   });
 });
 

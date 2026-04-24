@@ -94,3 +94,6 @@ function _pararRealtime() {
     console.log('[realtime] desconectado');
   }
 }
+
+// Inicializa nav mobile do kanban após todos os módulos estarem carregados
+setTimeout(initMobileKanbanNav, 300);

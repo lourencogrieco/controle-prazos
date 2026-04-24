@@ -8,7 +8,7 @@ document.querySelectorAll('.subtab[data-subtab]').forEach(btn => {
     btn.classList.add('is-active');
     document.getElementById(`subtab-${btn.dataset.subtab}`)?.classList.remove('hidden');
     if (btn.dataset.subtab === 'prazos')     renderPrazosAba();
-    if (btn.dataset.subtab === 'tarefas')    renderTarefasAba();
+    if (btn.dataset.subtab === 'tarefas')    { renderTarefasAba(); initMobileKanbanNav(); }
     if (btn.dataset.subtab === 'intimacoes') {
       const hoje = new Date().toISOString().slice(0, 10);
       const elDe  = document.getElementById('filtroIntimacoesDe');

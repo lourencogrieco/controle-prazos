@@ -1896,11 +1896,12 @@ tbody td {
   border-radius: var(--r-md);
   padding: 14px 16px;
   box-shadow: var(--shadow-sm);
-  transition: box-shadow .15s, transform .15s;
-  cursor: pointer;
+  transition: box-shadow .15s, transform .15s, opacity .15s;
+  cursor: grab;
 }
 
 .tarefa-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.tarefa-card.is-dragging { opacity: .35; cursor: grabbing; transform: rotate(1deg) scale(.98); }
 
 .tarefa-card--alta    { border-left: 3px solid var(--red); }
 .tarefa-card--media   { border-left: 3px solid var(--orange); }
@@ -3142,6 +3143,9 @@ tbody td {
   .dados-grid { grid-template-columns: 1fr; }
 }
 
+/* ── Kanban Mobile Nav (seletor de colunas) ──────────────────────────── */
+.kanban-mob-nav { display: none; }
+
 /* ── Kanban: scroll horizontal em telas ≤ 900px ─────────────────────── */
 @media (max-width: 900px) {
   .board, .board--3col {
@@ -3150,17 +3154,69 @@ tbody td {
     overflow-x: auto;
     width: 100%;
     gap: 10px;
-    scroll-snap-type: x mandatory;
+    scroll-snap-type: x proximity;
     -webkit-overflow-scrolling: touch;
     padding-bottom: 8px;
-    /* remove propriedades de grid que sobram */
+    scrollbar-width: none;
     grid-template-columns: unset;
   }
+  .board::-webkit-scrollbar,
+  .board--3col::-webkit-scrollbar { display: none; }
   .board-col {
     min-width: min(82vw, 300px);
     flex-shrink: 0;
     scroll-snap-align: start;
-    min-height: 300px;
+    min-height: 220px;
+  }
+
+  /* Seletor de colunas do kanban */
+  .kanban-mob-nav {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 2px 0 4px;
+  }
+  .kanban-mob-nav::-webkit-scrollbar { display: none; }
+  .kanban-mob-btn {
+    flex-shrink: 0;
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1.5px solid var(--br-strong);
+    background: var(--s0);
+    color: var(--mu);
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .02em;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .kanban-mob-btn.is-active {
+    background: var(--navy);
+    color: #fff;
+    border-color: var(--navy);
+  }
+  .kanban-mob-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 9px;
+    background: rgba(255,255,255,.25);
+    font-size: .62rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .kanban-mob-btn:not(.is-active) .kanban-mob-count {
+    background: #e8e5dd;
+    color: var(--tx);
   }
 }
 
@@ -3604,16 +3660,17 @@ tbody td {
   .nav-tab.active::after { color: #fff; }
   .nav-tab.active { border-top-color: var(--ac); }
 
-  /* badge dentro da tab: centralizado e mais baixo (próximo ao label) */
+  /* badge de pendências: centralizado no topo da tab */
   .nav-tab .nav-badge {
     position: absolute;
-    bottom: 16px;
+    top: 6px;
     left: 50%;
-    transform: translateX(6px);
+    transform: translateX(-50%);
     font-size: .55rem;
     margin-left: 0;
-    min-width: 14px;
-    height: 14px;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
   }
 
   /* ── Header — compacto ───────────────────────────────────────────────── */

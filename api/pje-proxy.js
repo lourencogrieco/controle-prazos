@@ -1,18 +1,19 @@
+import { aplicarGuard } from './_lib/proxy-guard.js';
+
 export const config = { runtime: 'edge' };
 
 export default async function handler(req) {
+  // PJe pode ser paginado (múltiplas páginas por busca), limite mais alto
+  const guard = await aplicarGuard(req, 60);
+  if (guard instanceof Response) return guard;
+  const { cors } = guard;
+
   const { searchParams } = new URL(req.url);
-  const pagina = searchParams.get('pagina') || '1';
+  const pagina        = searchParams.get('pagina')        || '1';
   const itensPorPagina = searchParams.get('itensPorPagina') || '50';
-  const texto = searchParams.get('texto');
-  const dataInicio = searchParams.get('dataInicio');
-  const dataFim = searchParams.get('dataFim') || dataInicio;
-
-  const cors = { 'Access-Control-Allow-Origin': '*' };
-
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: cors });
-  }
+  const texto         = searchParams.get('texto');
+  const dataInicio    = searchParams.get('dataInicio');
+  const dataFim       = searchParams.get('dataFim') || dataInicio;
 
   if (!texto || !dataInicio) {
     return new Response(JSON.stringify({ error: 'Parâmetros obrigatórios: texto, dataInicio' }), {
@@ -29,11 +30,11 @@ export default async function handler(req) {
   try {
     const response = await fetch(url, {
       headers: {
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'pt-BR,pt;q=0.9',
-        'Origin': 'https://comunicaapi.pje.jus.br',
-        'Referer': 'https://comunicaapi.pje.jus.br/',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept':           'application/json, text/plain, */*',
+        'Accept-Language':  'pt-BR,pt;q=0.9',
+        'Origin':           'https://comunicaapi.pje.jus.br',
+        'Referer':          'https://comunicaapi.pje.jus.br/',
+        'User-Agent':       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
       },
     });
 

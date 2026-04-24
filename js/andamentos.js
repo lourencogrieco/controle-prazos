@@ -86,7 +86,7 @@ async function sincronizarAndamentos(silencioso = false) {
   if (btn) { btn.disabled = true; btn.textContent = silencioso ? 'Atualizando…' : 'Sincronizando…'; }
 
   try {
-    const res  = await fetch(`/api/cnj-proxy?numero=${encodeURIComponent(processo)}`);
+    const res  = await proxyFetch(`/api/cnj-proxy?numero=${encodeURIComponent(processo)}`);
     const json = await res.json();
 
     let movimentos, tribunal, numeroFormatado;

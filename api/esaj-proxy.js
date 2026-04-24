@@ -1,36 +1,36 @@
+import { aplicarGuard } from './_lib/proxy-guard.js';
+
 export const config = { runtime: 'edge' };
 
 export default async function handler(req) {
-  const CORS = { 'Access-Control-Allow-Origin': '*' };
-
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: CORS });
-  }
+  const guard = await aplicarGuard(req, 20);
+  if (guard instanceof Response) return guard;
+  const { cors } = guard;
 
   const { searchParams } = new URL(req.url);
   const numero = searchParams.get('numero');
 
   if (!numero) {
     return new Response(JSON.stringify({ error: 'Parâmetro obrigatório: numero' }), {
-      status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
+      status: 400, headers: { ...cors, 'Content-Type': 'application/json' },
     });
   }
 
   const d = numero.replace(/\D/g, '');
   if (d.length < 20) {
     return new Response(JSON.stringify({ error: 'Número inválido (mínimo 20 dígitos)' }), {
-      status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
+      status: 400, headers: { ...cors, 'Content-Type': 'application/json' },
     });
   }
 
-  const foro = d.slice(16, 20);
-  const isG2  = foro === '0000';
-  const formatted   = d.slice(0,7) + '-' + d.slice(7,9) + '.' + d.slice(9,13) + '.' + d.slice(13,14) + '.' + d.slice(14,16) + '.' + d.slice(16,20);
+  const foro   = d.slice(16, 20);
+  const isG2   = foro === '0000';
+  const formatted    = d.slice(0,7) + '-' + d.slice(7,9) + '.' + d.slice(9,13) + '.' + d.slice(13,14) + '.' + d.slice(14,16) + '.' + d.slice(16,20);
   const numDigitoAno = d.slice(0,7) + '-' + d.slice(7,9) + '.' + d.slice(9,13);
 
   const HDRS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'User-Agent':      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    'Accept':          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'Accept-Language': 'pt-BR,pt;q=0.9',
   };
 
@@ -49,7 +49,7 @@ export default async function handler(req) {
 
     if (!resp.ok) {
       return new Response(JSON.stringify({ error: 'ESAJ retornou status ' + resp.status }), {
-        status: resp.status, headers: { ...CORS, 'Content-Type': 'application/json' },
+        status: resp.status, headers: { ...cors, 'Content-Type': 'application/json' },
       });
     }
 
@@ -57,7 +57,7 @@ export default async function handler(req) {
 
     if (/captcha/i.test(html)) {
       return new Response(JSON.stringify({ error: 'ESAJ bloqueou com CAPTCHA — tente novamente mais tarde' }), {
-        status: 429, headers: { ...CORS, 'Content-Type': 'application/json' },
+        status: 429, headers: { ...cors, 'Content-Type': 'application/json' },
       });
     }
 
@@ -70,22 +70,22 @@ export default async function handler(req) {
           ? 'Processo não encontrado no ESAJ TJSP'
           : 'Movimentações não localizadas — ESAJ pode ter bloqueado a requisição',
       }), {
-        status: 404, headers: { ...CORS, 'Content-Type': 'application/json' },
+        status: 404, headers: { ...cors, 'Content-Type': 'application/json' },
       });
     }
 
     return new Response(JSON.stringify({
       movimentos,
-      tribunal: 'esaj_tjsp',
+      tribunal:       'esaj_tjsp',
       numeroFormatado: formatted,
-      fonte: 'esaj',
+      fonte:          'esaj',
     }), {
-      status: 200, headers: { ...CORS, 'Content-Type': 'application/json' },
+      status: 200, headers: { ...cors, 'Content-Type': 'application/json' },
     });
 
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500, headers: { ...CORS, 'Content-Type': 'application/json' },
+      status: 500, headers: { ...cors, 'Content-Type': 'application/json' },
     });
   }
 }
@@ -93,7 +93,6 @@ export default async function handler(req) {
 function parseMovimentos(html, grau) {
   const movimentos = [];
 
-  // Tenta localizar a tabela de movimentações por vários seletores conhecidos do ESAJ TJSP
   const tablePatterns = [
     /id="tabelaTodasMovimentacoes"[^>]*>([\s\S]*?)<\/table>/i,
     /id="tabelaUltimasMovimentacoes"[^>]*>([\s\S]*?)<\/table>/i,
@@ -114,13 +113,11 @@ function parseMovimentos(html, grau) {
   while ((rowM = rowRe.exec(tableHtml)) !== null) {
     const row = rowM[1];
 
-    // Data: DD/MM/YYYY
     const dateM = row.match(/(\d{2}\/\d{2}\/\d{4})/);
     if (!dateM) continue;
-    const parts = dateM[1].split('/');
+    const parts   = dateM[1].split('/');
     const dataHora = parts[2] + '-' + parts[1] + '-' + parts[0] + 'T00:00:00';
 
-    // Descrição: célula com classe contendo "descricao" ou "Movimentacao"
     const descM = row.match(/class="[^"]*(?:descri|movimenta)[^"]*"[^>]*>([\s\S]*?)<\/td>/i);
     if (!descM) continue;
 
@@ -139,8 +136,8 @@ function parseMovimentos(html, grau) {
     movimentos.push({
       dataHora,
       nome,
-      complemento: null,
-      codigo: null,
+      complemento:  null,
+      codigo:       null,
       grau,
       isIntimacao: /intima[çc]/i.test(nome) || /publica[çc][aã]o.*di[aá]rio/i.test(nome),
     });

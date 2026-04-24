@@ -1,17 +1,17 @@
+import { aplicarGuard } from './_lib/proxy-guard.js';
+
 export const config = { runtime: 'edge' };
 
 export default async function handler(req) {
-  const CORS = { 'Access-Control-Allow-Origin': '*' };
-
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: CORS });
-  }
+  const guard = await aplicarGuard(req, 20);
+  if (guard instanceof Response) return guard;
+  const { cors } = guard;
 
   const { searchParams } = new URL(req.url);
   const numero = searchParams.get('numero');
   if (!numero) {
     return new Response(JSON.stringify({ error: 'Parâmetro obrigatório: numero' }), {
-      status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
+      status: 400, headers: { ...cors, 'Content-Type': 'application/json' },
     });
   }
 
@@ -28,7 +28,7 @@ export default async function handler(req) {
   const d = numero.replace(/\D/g, '');
   if (d.length < 20) {
     return new Response(JSON.stringify({ error: 'Número de processo inválido (mínimo 20 dígitos)' }), {
-      status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
+      status: 400, headers: { ...cors, 'Content-Type': 'application/json' },
     });
   }
 
@@ -45,7 +45,7 @@ export default async function handler(req) {
 
   if (!index) {
     return new Response(JSON.stringify({ error: 'Tribunal não identificado pelo número do processo' }), {
-      status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
+      status: 400, headers: { ...cors, 'Content-Type': 'application/json' },
     });
   }
 
@@ -54,7 +54,7 @@ export default async function handler(req) {
       method: 'POST',
       headers: {
         'Authorization': 'APIKey cDZHYzlZa0JadVREZDJCendROXV4',
-        'Content-Type': 'application/json',
+        'Content-Type':  'application/json',
       },
       body: JSON.stringify({
         size: 5,
@@ -79,7 +79,7 @@ export default async function handler(req) {
         ? 'Processo não encontrado no DataJud. O TJSP usa o sistema ESAJ, que tem integração parcial com o DataJud — verifique diretamente no ESAJ.'
         : 'Processo não encontrado no DataJud.';
       return new Response(JSON.stringify({ error: msg, index }), {
-        status: 404, headers: { ...CORS, 'Content-Type': 'application/json' },
+        status: 404, headers: { ...cors, 'Content-Type': 'application/json' },
       });
     }
 
@@ -98,8 +98,8 @@ export default async function handler(req) {
 
       const movs = src.movimentos || [];
       for (let m = 0; m < movs.length; m++) {
-        const mv = movs[m];
-        const nome = mv.nome || '';
+        const mv    = movs[m];
+        const nome  = mv.nome || '';
         const codigo = mv.codigo || 0;
         const isIntimacao = INTIM_CODES.indexOf(codigo) !== -1
           || /intima[çc]/i.test(nome)
@@ -112,7 +112,7 @@ export default async function handler(req) {
         }
 
         todosMovimentos.push({
-          dataHora: mv.dataHora || null,
+          dataHora:   mv.dataHora || null,
           nome,
           complemento: complemento || null,
           codigo,
@@ -122,7 +122,6 @@ export default async function handler(req) {
       }
     }
 
-    // Sort descending by date
     todosMovimentos.sort(function(a, b) {
       const da = a.dataHora || '';
       const db = b.dataHora || '';
@@ -131,15 +130,15 @@ export default async function handler(req) {
 
     return new Response(JSON.stringify({
       movimentos: todosMovimentos,
-      tribunal: index,
+      tribunal:   index,
       numeroFormatado,
     }), {
-      status: 200, headers: { ...CORS, 'Content-Type': 'application/json' },
+      status: 200, headers: { ...cors, 'Content-Type': 'application/json' },
     });
 
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500, headers: { ...CORS, 'Content-Type': 'application/json' },
+      status: 500, headers: { ...cors, 'Content-Type': 'application/json' },
     });
   }
 }

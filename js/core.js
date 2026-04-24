@@ -38,6 +38,23 @@ const state = {
 const agendaEventos = [];
 
 // ──────────────────────────────────────────────────────────────────────
+// PROXY FETCH — fetch autenticado para os proxies da API
+// Injeta automaticamente o token Supabase do usuário logado.
+// Use no lugar de fetch() ao chamar /api/pje-proxy, /api/cnj-proxy, etc.
+// ──────────────────────────────────────────────────────────────────────
+async function proxyFetch(url, options = {}) {
+  const { data: { session } } = await db.auth.getSession();
+  const token = session?.access_token || '';
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // UTILS
 // ──────────────────────────────────────────────────────────────────────
 function uid() {

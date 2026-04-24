@@ -216,7 +216,7 @@ async function sincronizarPJeData() {
           `&texto=${encodeURIComponent(nome)}` +
           `&dataInicio=${de}` +
           `&dataFim=${ate || de}`;
-        const res = await fetch(url);
+        const res = await proxyFetch(url);
         if (!res.ok) break;
         const json = await res.json();
         totalApi = json.count ?? 0;
@@ -275,7 +275,7 @@ async function sincronizarPJe() {
       while ((pagina - 1) * 50 < totalApi) {
         const url = `/api/pje-proxy?pagina=${pagina}&itensPorPagina=50` +
           `&texto=${encodeURIComponent(nome)}&dataInicio=${hoje}&dataFim=${hoje}`;
-        const res = await fetch(url);
+        const res = await proxyFetch(url);
         if (!res.ok) break;
         const json = await res.json();
         totalApi = json.count ?? 0;

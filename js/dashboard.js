@@ -133,8 +133,11 @@ function renderDashboard() {
       : '<div class="dash-empty">Nenhuma tarefa pendente.</div>';
   }
 
+  renderDashProdutividade();
+
   // ── Agenda da semana ───────────────────────────────────────────────
   const hoje  = new Date();
+
   const base  = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
   const fim   = new Date(base); fim.setDate(fim.getDate() + 7);
 
@@ -166,4 +169,105 @@ function renderDashboard() {
         }).join('')
       : '<div class="dash-empty">Nenhum evento esta semana.</div>';
   }
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// PRODUTIVIDADE DA EQUIPE — visível apenas para perfis gerenciais
+// ──────────────────────────────────────────────────────────────────────
+function renderDashProdutividade() {
+  const secEl = document.getElementById('dashProdutividade');
+  if (!secEl) return;
+
+  const perfisGerenciais = ['socio', 'socio_fundador', 'admin', 'adm', 'controller'];
+  if (!perfisGerenciais.includes(state.meuPerfil?.perfil || '')) {
+    secEl.style.display = 'none';
+    return;
+  }
+  secEl.style.display = '';
+
+  // Período exibido
+  const agora  = new Date();
+  const meses  = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const mesStr = `${meses[agora.getMonth()]}/${agora.getFullYear()}`;
+  const periEl = document.getElementById('dashProdPeriodo');
+  if (periEl) periEl.textContent = mesStr;
+
+  // ── Acumula métricas por responsável ────────────────────────────────
+  const stats = new Map(); // nome → { prazPend, prazVenc, prazConcl, tarPend, tarConcl }
+  const _s = nome => {
+    if (!stats.has(nome)) stats.set(nome, { prazPend:0, prazVenc:0, prazConcl:0, tarPend:0, tarConcl:0 });
+    return stats.get(nome);
+  };
+
+  for (const p of state.prazos) {
+    const resps = (p.responsavel || '').split(';').map(n => n.trim()).filter(Boolean);
+    for (const nome of resps) {
+      const s = _s(nome);
+      if (p.status === 'Concluído')          s.prazConcl++;
+      else if (daysUntil(p.prazoFatal) < 0)  s.prazVenc++;
+      else                                   s.prazPend++;
+    }
+  }
+
+  for (const t of state.tarefas) {
+    const resps = (t.responsavel || '').split(';').map(n => n.trim()).filter(Boolean);
+    for (const nome of resps) {
+      const s = _s(nome);
+      if (t.status === 'Concluída') s.tarConcl++;
+      else                          s.tarPend++;
+    }
+  }
+
+  const tableEl = document.getElementById('dashProdTable');
+  if (!tableEl) return;
+
+  if (!stats.size) {
+    tableEl.innerHTML = '<p class="dash-empty">Nenhum responsável cadastrado nos prazos ou tarefas.</p>';
+    return;
+  }
+
+  const sorted = [...stats.entries()].sort((a, b) => a[0].localeCompare(b[0], 'pt-BR'));
+
+  const rows = sorted.map(([nome, s]) => {
+    const total      = s.prazConcl + s.prazPend + s.prazVenc;
+    const taxaPrazo  = total > 0 ? Math.round(s.prazConcl / total * 100) : 0;
+    const barW       = taxaPrazo;
+    const barCor     = taxaPrazo >= 80 ? '#1d8b60' : taxaPrazo >= 50 ? '#e07a17' : 'var(--red)';
+
+    return `<tr>
+      <td>
+        <div class="prod-user">
+          <span class="avatar" style="width:26px;height:26px;font-size:.54rem;flex-shrink:0">${initials(nome)}</span>
+          <span class="prod-user-nome">${nome}</span>
+        </div>
+      </td>
+      <td><span class="prod-num ${s.prazVenc > 0 ? 'prod-num--danger' : ''}">${s.prazVenc}</span></td>
+      <td><span class="prod-num ${s.prazPend > 0 ? 'prod-num--warn' : 'prod-num--zero'}">${s.prazPend}</span></td>
+      <td><span class="prod-num prod-num--ok">${s.prazConcl}</span></td>
+      <td><span class="prod-num ${s.tarPend > 0 ? 'prod-num--warn' : 'prod-num--zero'}">${s.tarPend}</span></td>
+      <td><span class="prod-num prod-num--ok">${s.tarConcl}</span></td>
+      <td>
+        <div class="prod-bar-wrap">
+          <div class="prod-bar" style="width:${barW}%;background:${barCor}"></div>
+        </div>
+        <span class="prod-bar-pct" style="color:${barCor}">${taxaPrazo}%</span>
+      </td>
+    </tr>`;
+  }).join('');
+
+  tableEl.innerHTML = `
+    <table class="prod-table">
+      <thead>
+        <tr>
+          <th>Responsável</th>
+          <th>Prazos vencidos</th>
+          <th>Prazos pendentes</th>
+          <th>Prazos concluídos</th>
+          <th>Tarefas pendentes</th>
+          <th>Tarefas concluídas</th>
+          <th>Conclusão prazos</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
 }

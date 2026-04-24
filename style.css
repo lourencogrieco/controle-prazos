@@ -3404,78 +3404,246 @@ tbody td {
 .btn-sm { padding: 5px 12px; font-size: .75rem; }
 
 /* ══════════════════════════════════════════════════════════════════════
+   DASHBOARD DE PRODUTIVIDADE
+   ══════════════════════════════════════════════════════════════════════ */
+.dash-prod-section {
+  margin-top: 24px;
+  background: var(--card);
+  border: 1px solid var(--br);
+  border-radius: var(--r);
+  padding: 20px 24px 24px;
+}
+
+.dash-prod-period {
+  font-size: .72rem;
+  color: var(--mu);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.dash-prod-wrap {
+  overflow-x: auto;
+}
+
+.prod-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 560px;
+}
+
+.prod-table thead th {
+  padding: 6px 12px;
+  font-size: .68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--mu);
+  border-bottom: 1px solid var(--br);
+  white-space: nowrap;
+  text-align: left;
+}
+
+.prod-table thead th:first-child { min-width: 160px; }
+
+.prod-table tbody tr:hover td { background: var(--hover); }
+
+.prod-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--br);
+  vertical-align: middle;
+  font-size: .8rem;
+}
+
+.prod-table tbody tr:last-child td { border-bottom: none; }
+
+.prod-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.prod-user-nome {
+  font-weight: 500;
+  font-size: .82rem;
+}
+
+.prod-num {
+  display: inline-block;
+  min-width: 28px;
+  text-align: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .82rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg);
+}
+
+.prod-num--danger { color: var(--red);    background: rgba(235,87,87,.1); }
+.prod-num--warn   { color: #e07a17;       background: rgba(224,122,23,.1); }
+.prod-num--ok     { color: #1d8b60;       background: rgba(29,139,96,.1); }
+.prod-num--zero   { color: var(--mu);     background: transparent; font-weight: 400; }
+
+.prod-bar-wrap {
+  height: 5px;
+  background: var(--br);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 3px;
+  width: 100%;
+  min-width: 60px;
+}
+
+.prod-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .4s ease;
+}
+
+.prod-bar-pct {
+  font-size: .72rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
    RESPONSIVIDADE MOBILE  ≤ 640px
    ══════════════════════════════════════════════════════════════════════ */
 @media (max-width: 640px) {
-  /* Header */
-  .hdr { padding: 0 12px; gap: 8px; }
+
+  /* ── Bottom nav bar — nav tabs descem para barra fixa na base ──────── */
+  .hdr-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 58px;
+    z-index: 200;
+    background: var(--navy);
+    border-top: 1px solid rgba(255,255,255,.12);
+    border-bottom: none;
+    overflow-x: auto;
+    scrollbar-width: none;
+    justify-content: flex-start;
+  }
+  .hdr-nav::-webkit-scrollbar { display: none; }
+
+  .nav-tab {
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 14px;
+    font-size: .56rem;
+    min-width: 64px;
+    border-bottom: none;
+    border-top: 3px solid transparent;
+    justify-content: center;
+    align-items: center;
+  }
+  .nav-tab.active {
+    border-bottom: none;
+    border-top-color: var(--ac);
+  }
+
+  /* ── Header — compacto sem a nav ────────────────────────────────────── */
+  .app-header { height: 50px; }
+  .hdr-brand { padding: 0 14px; }
   .hdr-brand .brand-text { display: none; }
   .hdr-right { gap: 4px; }
-  .hdr-btn { width: 32px; height: 32px; font-size: .85rem; }
+  .hdr-btn { width: 34px; height: 34px; font-size: .85rem; }
   .hdr-user-name { display: none; }
-  .hdr-user-avatar { width: 30px; height: 30px; font-size: .7rem; }
+  .hdr-user-avatar { width: 30px; height: 30px; font-size: .68rem; }
 
-  /* App main */
-  .app-main { padding: 14px 12px 24px; }
+  /* ── App main — espaço para bottom nav ─────────────────────────────── */
+  .app-main { padding: 14px 12px 76px; }
 
-  /* Page bar */
+  /* ── Page bar ────────────────────────────────────────────────────────  */
   .page-bar { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .page-bar-right {
-    width: 100%;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
+  .page-bar-right { width: 100%; flex-wrap: wrap; gap: 6px; }
   .page-bar-right .btn-primary,
   .page-bar-right .btn-outline { flex: 1; justify-content: center; font-size: .75rem; }
   .search-field { width: 100%; }
-  .search-field input { width: 100%; }
-  .page-title { font-size: 1.3rem; }
+  .search-field input { width: 100%; box-sizing: border-box; }
+  .page-title { font-size: 1.25rem; }
+  h1 { font-size: 1.25rem; }
 
-  /* Data table — scroll horizontal */
-  .data-table, .pasta-table { display: block; overflow-x: auto; white-space: nowrap; }
+  /* ── Touch targets mínimos 44px ────────────────────────────────────── */
+  .btn-primary, .btn-outline { min-height: 40px; }
+  select, input[type="text"], input[type="date"],
+  input[type="email"], input[type="password"],
+  input[type="number"], textarea {
+    font-size: 16px !important; /* evita zoom automático no iOS */
+    min-height: 40px;
+  }
 
-  /* Dashboard */
+  /* ── Data tables — scroll horizontal ───────────────────────────────── */
+  .data-table, .pasta-table,
+  .tbl-wrap, .fin-table-wrap { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ── Dashboard ───────────────────────────────────────────────────────  */
   .dashboard-grid { grid-template-columns: 1fr; }
   .dash-card--wide { grid-column: span 1; flex-direction: column; }
+  .dash-panel-row { grid-template-columns: 1fr; }
   .metric-strip { flex-wrap: wrap; gap: 8px; }
-  .metric-strip > * { flex: 1 1 40%; }
+  .metric-strip > * { flex: 1 1 45%; }
+  .dash-prod-section { padding: 16px; }
 
-  /* Agenda */
+  /* ── Kanban — scroll horizontal por grupo ──────────────────────────── */
+  .board, .board--3col {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 12px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+  }
+  .board-col {
+    min-width: 82vw;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
+
+  /* ── Agenda ──────────────────────────────────────────────────────────  */
   .agenda-layout { grid-template-columns: 1fr; }
   .agenda-aside { display: flex; flex-direction: column; gap: 12px; }
   .cal-day { min-height: 36px; }
 
-  /* Pastas */
+  /* ── Pastas ──────────────────────────────────────────────────────────  */
   .pasta-layout { grid-template-columns: 1fr; }
   .pasta-sidebar { border-right: none; border-bottom: 1px solid var(--br); }
   .dados-grid { grid-template-columns: 1fr; }
 
-  /* Intimações */
+  /* ── Subtabs + filtros ───────────────────────────────────────────────  */
   .view-subbar { flex-direction: column; align-items: stretch; gap: 8px; }
-  .view-subbar > * { width: 100%; }
-  .subtab-row { flex-wrap: wrap; gap: 4px; }
+  .subtab-row, .subtabs { flex-wrap: wrap; gap: 4px; overflow-x: auto; }
+  .subtab { font-size: .7rem; padding: 5px 10px; white-space: nowrap; }
+  .intim-filters { flex-direction: column; gap: 8px; }
+  .intim-filters > * { width: 100%; }
 
-  /* Pipeline board */
-  .board, .board--3col { grid-template-columns: 1fr; }
-  .board-col { min-width: 0; }
+  /* ── Financeiro tabs ─────────────────────────────────────────────────  */
+  .fin-tabs { overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; }
+  .fin-tabs::-webkit-scrollbar { display: none; }
+  [data-fin-tab] { white-space: nowrap; }
 
-  /* Configurações */
+  /* ── Configurações ───────────────────────────────────────────────────  */
   .cfg-grid { grid-template-columns: 1fr; padding: 12px; }
 
-  /* Modais */
-  .modal { margin: 0; border-radius: 12px 12px 0 0; max-width: 100% !important; width: 100%; }
+  /* ── Modais — bottom sheet ───────────────────────────────────────────  */
+  .modal {
+    margin: 0;
+    border-radius: 16px 16px 0 0;
+    max-width: 100% !important;
+    width: 100%;
+    max-height: 92dvh;
+    overflow-y: auto;
+  }
   .modal-overlay { align-items: flex-end; padding: 0; }
   .form-grid { grid-template-columns: 1fr !important; }
   .modal-full { grid-column: span 1 !important; }
 
-  /* Bottom grid */
+  /* ── Demais grids ────────────────────────────────────────────────────  */
   .bottom-grid { grid-template-columns: 1fr; }
-
-  /* Filtros de intimações */
-  .intim-filters { flex-direction: column; gap: 8px; }
-  .intim-filters > * { width: 100%; }
-
-  /* Relatórios */
   .rel-controls { flex-wrap: wrap; gap: 8px; }
   .rel-controls > * { flex: 1 1 45%; }
+  .fin-bar { flex-wrap: wrap; gap: 8px; }
+  .fin-bar-block { flex: 1 1 45%; }
 }

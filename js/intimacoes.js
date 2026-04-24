@@ -152,35 +152,31 @@ async function alterarStatusIntimacao(id, novoStatus) {
 }
 
 function criarPrazoDaIntimacao(intim) {
-  popularSelectsPastas();
-  // Pre-fill pasta se o número do processo bater com alguma pasta
+  // Abre o modal via função oficial (configura pickers, permissões, etc.)
+  abrirModalNovoPrazo(null);
+  // Sobrescreve campos com dados da intimação
   const pasta = state.pastas.find(p => p.processo && intim.processo && p.processo.replace(/\D/g,'') === intim.processo.replace(/\D/g,''));
-  document.getElementById('prazoId').value           = '';
-  document.getElementById('prazoIntimacaoId').value  = intim.id || '';
-  document.getElementById('prazoPastaSelect').value  = pasta?.id || '';
-  document.getElementById('prazoCliente').value      = pasta?.cliente || '';
-  document.getElementById('prazoTipo').value         = 'Manifestação';
-  document.getElementById('prazoFatal').value        = '';
-  document.getElementById('prazoResponsavel').value  = '';
-  document.getElementById('prazoStatus').value       = 'pendente';
-  document.getElementById('prazoDescricao').value    =
+  document.getElementById('prazoIntimacaoId').value = intim.id || '';
+  document.getElementById('prazoTipo').value        = 'Manifestação';
+  document.getElementById('prazoDescricao').value   =
     `Intimação ${intim.tipoDocumento || intim.nomeClasse || ''} — ${intim.orgao} (${formatDate(intim.dataPublicacao)})`.trim();
-  document.getElementById('modalNovoPrazo').classList.add('open');
+  if (pasta) {
+    document.getElementById('prazoPastaSelect').value = pasta.id;
+    document.getElementById('prazoCliente').value     = pasta.cliente || '';
+  }
 }
 
 function criarTarefaDaIntimacao(intim) {
-  popularSelectsPastas();
+  // Abre o modal via função oficial (configura pickers, seletores, etc.)
+  abrirModalNovaTarefa(null);
+  // Sobrescreve campos com dados da intimação
   const pasta = state.pastas.find(p => p.processo && intim.processo && p.processo.replace(/\D/g,'') === intim.processo.replace(/\D/g,''));
-  document.getElementById('tarefaId').value          = '';
-  document.getElementById('tTitulo').value           = `Intimação: ${intim.tipoDocumento || intim.nomeClasse || intim.orgao}`;
-  document.getElementById('tTipo').value             = 'Processo';
-  document.getElementById('tPrioridade').value       = 'alta';
-  document.getElementById('tarefaPastaSelect').value = pasta?.id || '';
-  document.getElementById('tPrazo').value            = '';
-  document.getElementById('tResponsavel').value      = '';
-  document.getElementById('tDescricao').value        =
+  document.getElementById('tTitulo').value     = `Intimação: ${intim.tipoDocumento || intim.nomeClasse || intim.orgao}`;
+  document.getElementById('tTipo').value       = 'Diligência interna';
+  document.getElementById('tPrioridade').value = 'alta';
+  document.getElementById('tDescricao').value  =
     `Intimação publicada em ${formatDate(intim.dataPublicacao)}.\nÓrgão: ${intim.orgao}\nProcesso: ${intim.processo}`;
-  document.getElementById('modalNovaTarefa').classList.add('open');
+  if (pasta) document.getElementById('tarefaPastaSelect').value = pasta.id;
 }
 
 function lerIntimacao(intim) {

@@ -195,11 +195,13 @@ document.getElementById('novoClienteForm').addEventListener('submit', async e =>
   try {
     const g = id => document.getElementById(id);
     const existingId = g('clienteId')?.value || '';
+    const tipoChecked = document.querySelector('input[name="cTipo"]:checked');
+    if (!tipoChecked) { toast('Selecione o tipo (PF ou PJ).', 'error'); return; }
     const obj = {
       id:          existingId || uid(),
       empresa_id:  state.empresaId,
       nome:        g('cNome').value.trim().toUpperCase(),
-      tipo:        document.querySelector('input[name="cTipo"]:checked').value,
+      tipo:        tipoChecked.value,
       cpf_cnpj:    g('cCpfCnpj')?.value?.trim() || null,
       telefone:    g('cTelefone')?.value?.trim() || null,
       email:       g('cEmail')?.value?.trim() || null,
@@ -212,8 +214,9 @@ document.getElementById('novoClienteForm').addEventListener('submit', async e =>
       estado:      g('cEstado')?.value || null,
     };
 
-    const { error } = await db.from('clientes_lhub').upsert(obj);
-    btn.disabled = false; btn.textContent = 'Salvar Cliente';
+    const saveReq = db.from('clientes_lhub').upsert(obj);
+    const tOut    = new Promise((_, r) => setTimeout(() => r(new Error('Sem resposta do banco em 12s. Verifique as políticas RLS.')), 12000));
+    const { error } = await Promise.race([saveReq, tOut]);
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
 
     if (existingId) {
@@ -237,8 +240,10 @@ document.getElementById('novoClienteForm').addEventListener('submit', async e =>
       abrirModalGerenciarClientes();
     }
   } catch (err) {
-    btn.disabled = false; btn.textContent = 'Salvar Cliente';
     toast('Erro inesperado: ' + err.message, 'error');
+    console.error('[cliente] exception:', err);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Salvar Cliente';
   }
 });
 

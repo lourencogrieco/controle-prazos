@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=42">
+  <link rel="stylesheet" href="style.css?v=43">
 </head>
 <body>
 <div class="app">
@@ -963,12 +963,12 @@
       <div id="fin-panel-cobrancas" class="fin-panel hidden">
         <div class="fin-resumo-bar">
           <div class="fin-resumo-item fin-resumo-pend">
-            <span class="fin-resumo-label">A RECEBER EM <span id="finCobMesLabel"></span></span>
+            <span class="fin-resumo-label" id="finCobLabelPend">TOTAL A RECEBER</span>
             <strong class="fin-resumo-val" id="finCobPendente">R$ 0,00</strong>
             <small id="finCobPendenteCount">0 cobranças pendentes</small>
           </div>
           <div class="fin-resumo-item fin-resumo-pago">
-            <span class="fin-resumo-label">✓ RECEBIDO EM <span id="finCobMesLabelPago"></span></span>
+            <span class="fin-resumo-label" id="finCobLabelPago">✓ TOTAL RECEBIDO</span>
             <strong class="fin-resumo-val fin-resumo-val--green" id="finCobPago">R$ 0,00</strong>
             <small id="finCobPagoCount">0 baixas registradas</small>
           </div>
@@ -996,10 +996,10 @@
         <div class="table-wrap">
           <table class="pasta-table">
             <thead><tr>
-              <th>Descrição</th><th>Cliente</th><th>Categoria</th>
+              <th style="min-width:180px">Descrição / Cliente</th><th>Categoria</th>
               <th>Vencimento</th><th>Valor</th><th>Recorrência</th><th>Status</th><th>Ações</th>
             </tr></thead>
-            <tbody id="finCobBody"><tr><td colspan="8" class="tbl-empty">Carregando…</td></tr></tbody>
+            <tbody id="finCobBody"><tr><td colspan="7" class="tbl-empty">Carregando…</td></tr></tbody>
           </table>
         </div>
         <div class="fin-table-foot">
@@ -1013,12 +1013,12 @@
       <div id="fin-panel-contaspagar" class="fin-panel hidden">
         <div class="fin-resumo-bar">
           <div class="fin-resumo-item fin-resumo-pend">
-            <span class="fin-resumo-label">A PAGAR EM <span id="finContMesLabel"></span></span>
+            <span class="fin-resumo-label" id="finContLabelPend">TOTAL A PAGAR</span>
             <strong class="fin-resumo-val" id="finContPendente">R$ 0,00</strong>
             <small id="finContPendenteCount">0 contas pendentes</small>
           </div>
           <div class="fin-resumo-item fin-resumo-pago">
-            <span class="fin-resumo-label">✓ PAGO EM <span id="finContMesLabelPago"></span></span>
+            <span class="fin-resumo-label" id="finContLabelPago">✓ TOTAL PAGO</span>
             <strong class="fin-resumo-val fin-resumo-val--green" id="finContPago">R$ 0,00</strong>
             <small id="finContPagoCount">0 baixas registradas</small>
           </div>
@@ -2752,21 +2752,21 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/core.js?v=42"></script>
-<script src="js/auth.js?v=42"></script>
-<script src="js/mappers.js?v=42"></script>
-<script src="js/dashboard.js?v=42"></script>
-<script src="js/nav.js?v=42"></script>
-<script src="js/atividades.js?v=42"></script>
-<script src="js/configuracoes.js?v=42"></script>
-<script src="js/agenda.js?v=42"></script>
-<script src="js/intimacoes.js?v=42"></script>
-<script src="js/prazos.js?v=42"></script>
-<script src="js/tarefas.js?v=42"></script>
-<script src="js/pastas.js?v=42"></script>
-<script src="js/relatorio.js?v=42"></script>
-<script src="js/andamentos.js?v=42"></script>
-<script src="js/documentos.js?v=42"></script>
-<script src="js/financeiro.js?v=42"></script>
+<script src="js/core.js?v=43"></script>
+<script src="js/auth.js?v=43"></script>
+<script src="js/mappers.js?v=43"></script>
+<script src="js/dashboard.js?v=43"></script>
+<script src="js/nav.js?v=43"></script>
+<script src="js/atividades.js?v=43"></script>
+<script src="js/configuracoes.js?v=43"></script>
+<script src="js/agenda.js?v=43"></script>
+<script src="js/intimacoes.js?v=43"></script>
+<script src="js/prazos.js?v=43"></script>
+<script src="js/tarefas.js?v=43"></script>
+<script src="js/pastas.js?v=43"></script>
+<script src="js/relatorio.js?v=43"></script>
+<script src="js/andamentos.js?v=43"></script>
+<script src="js/documentos.js?v=43"></script>
+<script src="js/financeiro.js?v=43"></script>
 </body>
 </html>

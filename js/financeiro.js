@@ -204,9 +204,13 @@ function renderFinCobrancas() {
   const fCat    = document.getElementById('filtroFinCobCat')?.value || '';
   const fMes    = document.getElementById('filtroFinCobMes')?.value || '';
 
-  const mesLabel = fMes || new Date().toISOString().slice(0, 7);
-  _setText('finCobMesLabel',     _formatMes(mesLabel));
-  _setText('finCobMesLabelPago', _formatMes(mesLabel));
+  if (fMes) {
+    _setText('finCobLabelPend', `A RECEBER EM ${_formatMes(fMes)}`);
+    _setText('finCobLabelPago', `✓ RECEBIDO EM ${_formatMes(fMes)}`);
+  } else {
+    _setText('finCobLabelPend', 'TOTAL A RECEBER');
+    _setText('finCobLabelPago', '✓ TOTAL RECEBIDO');
+  }
 
   const lista = (state.cobrancas || []).filter(c => {
     const st = _statusCob(c);
@@ -239,10 +243,12 @@ function renderFinCobrancas() {
   }
   tbody.innerHTML = lista.map(c => {
     const st = _statusCob(c);
-    const pInfo = c.parcelaNum ? `<small style="color:var(--mu)"> (${c.parcelaNum}/${c.parcelaTotal})</small>` : '';
+    const pInfo = c.parcelaNum ? ` <small style="color:var(--mu)">(${c.parcelaNum}/${c.parcelaTotal})</small>` : '';
     return `<tr>
-      <td>${c.descricao}${pInfo}</td>
-      <td style="font-size:.78rem;text-transform:uppercase">${c.clienteNome || '—'}</td>
+      <td style="min-width:180px">
+        <span style="font-size:.82rem;font-weight:500">${c.descricao}${pInfo}</span>
+        ${c.clienteNome ? `<br><small style="color:var(--mu);text-transform:uppercase;letter-spacing:.03em">${c.clienteNome}</small>` : ''}
+      </td>
       <td>${c.categoria || '—'}</td>
       <td style="white-space:nowrap">${c.vencimento ? formatDate(c.vencimento) : '—'}</td>
       <td style="font-family:'IBM Plex Mono',monospace;font-weight:600">${formatCurrency(c.valor)}</td>
@@ -269,9 +275,13 @@ function renderFinContasPagar() {
   const fTipo   = document.getElementById('filtroFinContTipo')?.value || '';
   const fMes    = document.getElementById('filtroFinContMes')?.value || '';
 
-  const mesLabel = fMes || new Date().toISOString().slice(0, 7);
-  _setText('finContMesLabel',     _formatMes(mesLabel));
-  _setText('finContMesLabelPago', _formatMes(mesLabel));
+  if (fMes) {
+    _setText('finContLabelPend', `A PAGAR EM ${_formatMes(fMes)}`);
+    _setText('finContLabelPago', `✓ PAGO EM ${_formatMes(fMes)}`);
+  } else {
+    _setText('finContLabelPend', 'TOTAL A PAGAR');
+    _setText('finContLabelPago', '✓ TOTAL PAGO');
+  }
 
   const lista = (state.contasPagar || []).filter(c => {
     const st = _statusCont(c);

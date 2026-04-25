@@ -394,6 +394,46 @@ function irParaIntimacao(id) {
   renderIntimacoesAba();
 }
 
+function exportarPrazosCSV() {
+  const busca = (document.getElementById('buscaPrazosAba')?.value ?? '').toLowerCase();
+  const st    = document.getElementById('filtroPrazosStatus')?.value ?? '';
+  const resp  = document.getElementById('filtroPrazosResponsavel')?.value ?? '';
+  const lista = state.prazos.filter(p => {
+    const m = !busca ||
+      (p.pastaNr || '').toLowerCase().includes(busca) ||
+      (p.processo || '').toLowerCase().includes(busca) ||
+      (p.cliente  || '').toLowerCase().includes(busca);
+    const respMatch = !resp || (p.responsavel || '').split(';').map(n => n.trim()).includes(resp);
+    return m && (!st || p.status === st) && respMatch;
+  });
+  const hoje = new Date().toISOString().slice(0, 10);
+  exportarCSV(lista.map(p => ({
+    pasta:       p.pastaNr || '—',
+    cliente:     p.cliente,
+    processo:    p.processo || '—',
+    comarca:     p.comarca  || '—',
+    tipo:        p.tipoPrazo,
+    prazo_fatal: p.prazoFatal ? formatDate(p.prazoFatal) : '—',
+    dias:        p.prazoFatal ? daysUntil(p.prazoFatal) : '—',
+    status:      p.status,
+    responsavel: (p.responsavel || '').replace(/;/g, ', '),
+    descricao:   p.descricao,
+  })), [
+    { label: 'N° Pasta',       key: 'pasta' },
+    { label: 'Cliente',        key: 'cliente' },
+    { label: 'N° Processo',    key: 'processo' },
+    { label: 'Comarca',        key: 'comarca' },
+    { label: 'Tipo de Prazo',  key: 'tipo' },
+    { label: 'Prazo Fatal',    key: 'prazo_fatal' },
+    { label: 'Dias Restantes', key: 'dias' },
+    { label: 'Status',         key: 'status' },
+    { label: 'Responsável',    key: 'responsavel' },
+    { label: 'Descrição',      key: 'descricao' },
+  ], `prazos_${hoje}.csv`);
+}
+
+document.getElementById('btnExportarPrazos')?.addEventListener('click', exportarPrazosCSV);
+
 document.getElementById('buscaPrazosAba')?.addEventListener('input', () => { prazoPagAtual = 1; renderPrazosAba(); });
 document.getElementById('filtroPrazosStatus')?.addEventListener('change', () => { prazoPagAtual = 1; renderPrazosAba(); });
 document.getElementById('filtroPrazosResponsavel')?.addEventListener('change', () => { prazoPagAtual = 1; renderPrazosAba(); });

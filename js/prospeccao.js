@@ -67,6 +67,7 @@ function renderPipeline() {
     if (countEl) countEl.textContent = items.length;
   });
 
+  if (typeof updateMobileKanbanCounts === 'function') updateMobileKanbanCounts();
   _initPipelineDrag();
 
   // Touch drag — registrado uma vez, guard interno evita duplicata

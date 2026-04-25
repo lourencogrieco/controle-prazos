@@ -4111,12 +4111,14 @@ tbody td {
   .nav-tab.active::after { color: #fff; }
   .nav-tab.active { border-top-color: var(--ac); }
 
-  /* badge de pendências: centralizado, abaixo do label */
+  /* badge de pendências: canto superior direito do tab */
   .nav-tab .nav-badge {
     position: absolute;
-    bottom: 8px;
-    left: 50%;
-    transform: translateX(-50%);
+    top: 4px;
+    right: 6px;
+    bottom: auto;
+    left: auto;
+    transform: none;
     font-size: .55rem;
     margin-left: 0;
     min-width: 16px;
@@ -4169,13 +4171,30 @@ tbody td {
   }
 
   /* ── Dashboard ───────────────────────────────────────────────────────── */
-  .dashboard-grid { grid-template-columns: 1fr; }
+  .dashboard-grid { grid-template-columns: 1fr; gap: 10px; }
   .dash-card--wide { grid-column: span 1; flex-direction: column; }
   .dash-panel-row { grid-template-columns: 1fr; }
   .metric-strip { flex-wrap: wrap; gap: 8px; }
   .metric-strip > * { flex: 1 1 45%; }
   .dash-prod-section { padding: 14px; }
   .prod-table { font-size: .76rem; }
+
+  /* cards com borda mais definida no fundo creme */
+  .dash-card,
+  .risk-board {
+    border-color: var(--br-strong);
+    box-shadow: 0 2px 8px rgba(8,80,93,.08);
+  }
+
+  /* risk-grid em 2 colunas no mobile */
+  .risk-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+
+  /* alerta de prazos: empilha ícone + badges */
+  .dash-alerta-strip { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .dash-alerta-list { width: 100%; }
+
+  /* toolbar: permite quebra de linha em telas pequenas */
+  .pane-toolbar { flex-wrap: wrap; gap: 6px; }
 
   /* ── Kanban — ajustes adicionais para telas muito pequenas ──────────── */
   .board-col {

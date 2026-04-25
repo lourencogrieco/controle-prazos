@@ -31,8 +31,8 @@ function navegarPara(view) {
   const el = document.getElementById(`view-${view}`);
   if (el) el.classList.add('is-active');
   if (view === 'configuracoes') renderConfiguracoes();
-  if (view === 'pipeline')      renderPipeline();
-  if (view === 'atividades')    renderAtividades();
+  if (view === 'pipeline')      { renderPipeline();   initMobileKanbanNav(); }
+  if (view === 'atividades')    { renderAtividades(); initMobileKanbanNav(); }
   if (view === 'agenda')        renderCalendario();
 }
 
@@ -46,8 +46,8 @@ document.querySelectorAll('.nav-tab[data-view]').forEach(btn => {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('is-active'));
     const view = document.getElementById(`view-${target}`);
     if (view) view.classList.add('is-active');
-    if (target === 'pipeline')   renderPipeline();
-    if (target === 'atividades') renderAtividades();
+    if (target === 'pipeline')   { renderPipeline();   initMobileKanbanNav(); }
+    if (target === 'atividades') { renderAtividades(); initMobileKanbanNav(); }
     if (target === 'agenda')     renderCalendario();
   });
 });

@@ -144,6 +144,7 @@ function renderAtividades() {
   document.getElementById('progressBar').style.width      = `${pct}%`;
   document.getElementById('progressLabel').textContent    = `${pct}% completo`;
 
+  if (typeof updateMobileKanbanCounts === 'function') updateMobileKanbanCounts();
   renderTabela(lista);
 }
 

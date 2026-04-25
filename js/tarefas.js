@@ -232,6 +232,39 @@ function renderTarefasAba() {
   if (typeof updateMobileKanbanCounts === 'function') updateMobileKanbanCounts();
 }
 
+function exportarTarefasCSV() {
+  const busca  = (document.getElementById('buscaTarefas')?.value ?? '').toLowerCase();
+  const tipo   = document.getElementById('filtroTarefasTipo')?.value ?? '';
+  const status = document.getElementById('filtroTarefasStatus')?.value ?? '';
+  const lista  = state.tarefas.filter(t => {
+    const m = !busca || t.titulo.toLowerCase().includes(busca) || t.descricao.toLowerCase().includes(busca);
+    return m && (!tipo || t.tipo === tipo) && (!status || t.status === status);
+  });
+  const hoje = new Date().toISOString().slice(0, 10);
+  const pastaNr = id => state.pastas.find(p => p.id === id)?.numero || '—';
+  exportarCSV(lista.map(t => ({
+    titulo:      t.titulo,
+    tipo:        t.tipo,
+    prioridade:  t.prioridade,
+    status:      t.status,
+    responsavel: (t.responsavel || '').replace(/;/g, ', '),
+    prazo:       t.dataLimite ? formatDate(t.dataLimite) : '—',
+    pasta:       t.pastaId ? pastaNr(t.pastaId) : '—',
+    descricao:   t.descricao,
+  })), [
+    { label: 'Título',      key: 'titulo' },
+    { label: 'Tipo',        key: 'tipo' },
+    { label: 'Prioridade',  key: 'prioridade' },
+    { label: 'Status',      key: 'status' },
+    { label: 'Responsável', key: 'responsavel' },
+    { label: 'Prazo Limite',key: 'prazo' },
+    { label: 'N° Pasta',    key: 'pasta' },
+    { label: 'Descrição',   key: 'descricao' },
+  ], `tarefas_${hoje}.csv`);
+}
+
+document.getElementById('btnExportarTarefas')?.addEventListener('click', exportarTarefasCSV);
+
 document.getElementById('buscaTarefas')?.addEventListener('input', renderTarefasAba);
 document.getElementById('filtroTarefasTipo')?.addEventListener('change', renderTarefasAba);
 document.getElementById('filtroTarefasStatus')?.addEventListener('change', renderTarefasAba);

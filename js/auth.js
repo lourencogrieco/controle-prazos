@@ -111,6 +111,7 @@ async function onLogin(user) {
   await carregarDados();
   aplicarPermissoes();
   _iniciarRealtime();
+  _iniciarIdleTimer();
 }
 
 function mostrarLogin() {
@@ -119,11 +120,51 @@ function mostrarLogin() {
 
 async function fazerLogout() {
   _pararRealtime();
+  _pararIdleTimer();
   await db.auth.signOut();
   state.user = null;
   state.meuPerfil = null;
   state.empresaId = null;
   mostrarLogin();
+}
+
+// ── IDLE TIMEOUT ────────────────────────────────────────────────────────
+// Encerra sessão após 4h de inatividade; avisa com toast nos últimos 5min.
+const IDLE_TIMEOUT_MS  = 4 * 60 * 60 * 1000;   // 4 horas
+const IDLE_WARN_MS     = IDLE_TIMEOUT_MS - 5 * 60 * 1000; // aviso 5min antes
+
+let _idleTimer      = null;
+let _idleWarnTimer  = null;
+let _idleWarnShown  = false;
+
+function _resetIdleTimer() {
+  clearTimeout(_idleTimer);
+  clearTimeout(_idleWarnTimer);
+  _idleWarnShown = false;
+
+  _idleWarnTimer = setTimeout(() => {
+    if (!state.user) return;
+    _idleWarnShown = true;
+    toast('Sua sessão encerrará em 5 minutos por inatividade.', 'error');
+  }, IDLE_WARN_MS);
+
+  _idleTimer = setTimeout(async () => {
+    if (!state.user) return;
+    toast('Sessão encerrada por inatividade.', 'error');
+    await fazerLogout();
+  }, IDLE_TIMEOUT_MS);
+}
+
+function _pararIdleTimer() {
+  clearTimeout(_idleTimer);
+  clearTimeout(_idleWarnTimer);
+}
+
+function _iniciarIdleTimer() {
+  _resetIdleTimer();
+  ['mousemove', 'keydown', 'touchstart', 'click'].forEach(ev => {
+    document.addEventListener(ev, _resetIdleTimer, { passive: true });
+  });
 }
 
 function esconderLogin() {

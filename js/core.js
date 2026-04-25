@@ -306,6 +306,24 @@ function toast(msg, tipo = 'success') {
   }, 2500);
 }
 
+// ── EXPORT CSV ────────────────────────────────────────────────────────
+// Gera e faz download de um CSV a partir de um array de objetos.
+// headers: array de { label, key } — define colunas e ordem.
+function exportarCSV(dados, headers, nomeArquivo) {
+  if (!dados.length) { toast('Nenhum dado para exportar.', 'error'); return; }
+  const sep  = ';';
+  const bom  = '﻿'; // UTF-8 BOM para Excel abrir corretamente
+  const esc  = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const head = headers.map(h => esc(h.label)).join(sep);
+  const rows = dados.map(d => headers.map(h => esc(d[h.key] ?? '')).join(sep));
+  const csv  = bom + [head, ...rows].join('\n');
+  const a    = Object.assign(document.createElement('a'), {
+    href:     'data:text/csv;charset=utf-8,' + encodeURIComponent(csv),
+    download: nomeArquivo,
+  });
+  a.click();
+}
+
 // ── TOUCH KANBAN DRAG ─────────────────────────────────────────────────
 // Sistema genérico de drag-and-drop por toque para qualquer kanban.
 // Usage: registerTouchKanban(containerSelector, statusMap, onDropFn, idAttr?)
@@ -316,6 +334,7 @@ const _tdk = {
   ghost: null, dragId: null, srcCard: null, activeCol: null,
   container: null, ghostW: 0, ghostH: 0,
   statusMap: null, onDrop: null, idAttr: 'data-id', timer: null,
+  startX: 0, startY: 0,
 };
 
 function _tdkReset() {
@@ -326,6 +345,7 @@ function _tdkReset() {
   Object.assign(_tdk, {
     ghost: null, dragId: null, srcCard: null, activeCol: null,
     container: null, statusMap: null, onDrop: null, idAttr: 'data-id', timer: null,
+    startX: 0, startY: 0,
   });
 }
 
@@ -362,9 +382,13 @@ function registerTouchKanban(containerSelector, statusMap, onDrop, idAttr = 'dat
   if (!container || container._tkBound) return;
   container._tkBound = true;
 
-  // Cancela drag pendente quando o dedo se move antes dos 180ms (= scroll)
-  container.addEventListener('touchmove', () => {
-    if (_tdk.timer) { clearTimeout(_tdk.timer); _tdk.timer = null; }
+  // Cancela drag pendente só se o dedo se mover mais de 12px (finger tremor tolerado)
+  container.addEventListener('touchmove', e => {
+    if (!_tdk.timer) return;
+    const t  = e.touches[0];
+    const dx = Math.abs(t.clientX - _tdk.startX);
+    const dy = Math.abs(t.clientY - _tdk.startY);
+    if (dx > 12 || dy > 12) { clearTimeout(_tdk.timer); _tdk.timer = null; }
   }, { passive: true });
 
   container.addEventListener('touchstart', e => {
@@ -376,6 +400,8 @@ function registerTouchKanban(containerSelector, statusMap, onDrop, idAttr = 'dat
     const startX = e.touches[0].clientX;
     const startY = e.touches[0].clientY;
     const rect   = card.getBoundingClientRect();
+    _tdk.startX  = startX;
+    _tdk.startY  = startY;
 
     _tdk.timer = setTimeout(() => {
       _tdk.timer     = null;

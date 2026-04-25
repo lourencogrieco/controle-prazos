@@ -78,18 +78,35 @@ function mesmoIdIntimacao(a, b) {
 function textoLegivelIntimacao(texto) {
   const raw = String(texto || '').trim();
   if (!raw) return '';
-  const normalizado = raw
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = raw;
+  const decodificado = textarea.value;
+  const normalizado = decodificado
     .replace(/\\n/g, '\n')
     .replace(/\\t/g, ' ')
-    .replace(/\\"/g, '"');
+    .replace(/\\"/g, '"')
+    .replace(/\\'/g, "'");
   if (!/[<][a-z!/][\s\S]*[>]/i.test(normalizado)) {
-    const txt = document.createElement('textarea');
-    txt.innerHTML = normalizado;
-    return txt.value.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+    textarea.innerHTML = normalizado;
+    return textarea.value
+      .replace(/[ \t]+\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
   }
   const doc = new DOMParser().parseFromString(normalizado, 'text/html');
   doc.querySelectorAll('script,style').forEach(el => el.remove());
-  return (doc.body?.innerText || doc.documentElement?.textContent || '')
+  const legivel = (doc.body?.innerText || doc.documentElement?.textContent || '')
+    .replace(/\u00a0/g, ' ')
+    .replace(/([a-záéíóúâêôãõç])([A-ZÁÉÍÓÚÂÊÔÃÕÇ])/g, '$1 $2')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  if (legivel && !/[<][a-z!/][\s\S]*[>]/i.test(legivel)) return legivel;
+  return normalizado
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|tr|table|li|h[1-6])>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
     .replace(/\u00a0/g, ' ')
     .replace(/[ \t]{2,}/g, ' ')
     .replace(/[ \t]+\n/g, '\n')

@@ -191,7 +191,10 @@ document.getElementById('formOportunidade').addEventListener('submit', async e =
 
 async function excluirOportunidade(id) {
   if (!confirm('Excluir esta oportunidade?')) return;
-  const { error } = await db.from('oportunidades_crm').delete().eq('id', id);
+  const { error } = await db.from('oportunidades_crm')
+    .delete()
+    .eq('id', id)
+    .eq('empresa_id', state.empresaId);
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
   _stateRemove(state.oportunidades, id);
   toast('Oportunidade excluída.');

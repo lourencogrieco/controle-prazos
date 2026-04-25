@@ -2,10 +2,18 @@ import { aplicarGuard } from './_lib/proxy-guard.js';
 
 export const config = { runtime: 'edge' };
 
+const DATAJUD_API_KEY = (process.env.DATAJUD_API_KEY || '').trim();
+
 export default async function handler(req) {
   const guard = await aplicarGuard(req, 20);
   if (guard instanceof Response) return guard;
   const { cors } = guard;
+
+  if (!DATAJUD_API_KEY) {
+    return new Response(JSON.stringify({ error: 'Integração DataJud não configurada.' }), {
+      status: 500, headers: { ...cors, 'Content-Type': 'application/json' },
+    });
+  }
 
   const { searchParams } = new URL(req.url);
   const numero = searchParams.get('numero');
@@ -53,7 +61,7 @@ export default async function handler(req) {
     const resp = await fetch(`https://api-publica.datajud.cnj.jus.br/${index}/_search`, {
       method: 'POST',
       headers: {
-        'Authorization': 'APIKey cDZHYzlZa0JadVREZDJCendROXV4',
+        'Authorization': `APIKey ${DATAJUD_API_KEY}`,
         'Content-Type':  'application/json',
       },
       body: JSON.stringify({

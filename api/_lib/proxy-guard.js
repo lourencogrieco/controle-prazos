@@ -7,12 +7,13 @@
 //   SUPABASE_URL      — URL do projeto Supabase
 //   SUPABASE_ANON_KEY — chave pública (anon) do Supabase
 //   ALLOWED_ORIGIN    — origem permitida (ex: https://meusite.vercel.app)
-//                       Use '*' ou omita para desenvolvimento local
+//                       Use '*' apenas em desenvolvimento local
 // ──────────────────────────────────────────────────────────────────────
 
 const SUPABASE_URL      = (process.env.SUPABASE_URL      || 'https://gcucadlnxttlxckravui.supabase.co').trim();
 const SUPABASE_ANON_KEY = (process.env.SUPABASE_ANON_KEY || '').trim();
-const ALLOWED_ORIGIN    = (process.env.ALLOWED_ORIGIN    || '*').trim();
+const ALLOWED_ORIGIN    = (process.env.ALLOWED_ORIGIN    || '').trim();
+const IS_PRODUCTION     = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
 
 // Rate limit: requisições por usuário por minuto (por instância Edge).
 // Como Edge Functions são stateless entre invocações frias, esse contador
@@ -84,9 +85,11 @@ function buildCorsHeaders(req) {
 
   if (ALLOWED_ORIGIN === '*') {
     allowedOrigin = '*';
+  } else if (!ALLOWED_ORIGIN) {
+    allowedOrigin = IS_PRODUCTION ? 'null' : (origin || '*');
   } else {
     const lista = ALLOWED_ORIGIN.split(',').map(s => s.trim());
-    allowedOrigin = lista.includes(origin) ? origin : lista[0];
+    allowedOrigin = lista.includes(origin) ? origin : 'null';
   }
 
   return {

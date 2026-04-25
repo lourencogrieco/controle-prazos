@@ -1,8 +1,31 @@
 import http from 'node:http';
 
 const PORT = process.env.PORT || 3000;
+const ALLOWED_ORIGIN = (process.env.ALLOWED_ORIGIN || '').trim();
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+
+function corsHeaders(req) {
+  const origin = req.headers.origin || '';
+  let allowedOrigin;
+
+  if (ALLOWED_ORIGIN === '*') {
+    allowedOrigin = '*';
+  } else if (!ALLOWED_ORIGIN) {
+    allowedOrigin = IS_PRODUCTION ? 'null' : (origin || '*');
+  } else {
+    const list = ALLOWED_ORIGIN.split(',').map(s => s.trim());
+    allowedOrigin = list.includes(origin) ? origin : 'null';
+  }
+
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Content-Type': 'application/json',
+  };
+}
 
 // ── Busca andamentos no ESAJ TJSP ────────────────────────────────────────────
 async function fetchEsaj(numero) {
@@ -109,13 +132,10 @@ function parseMovimentos(html, grau) {
 
 // ── Servidor HTTP ─────────────────────────────────────────────────────────────
 http.createServer(async (req, res) => {
-  const CORS = {
-    'Access-Control-Allow-Origin': '*',
-    'Content-Type': 'application/json',
-  };
+  const CORS = corsHeaders(req);
 
   if (req.method === 'OPTIONS') {
-    res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*' });
+    res.writeHead(204, CORS);
     return res.end();
   }
 

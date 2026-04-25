@@ -27,6 +27,12 @@ function textoAndamentoIntimacao(texto) {
   return String(texto || '').replace(/<[^>]+>/g, ' ').replace(/\s{2,}/g, ' ').trim();
 }
 
+function escAndamento(value) {
+  const el = document.createElement('textarea');
+  el.textContent = value ?? '';
+  return el.innerHTML;
+}
+
 function montarAndamentosComIntimacoesVinculadas(andamentos, pastaId) {
   const base = [...(andamentos || [])];
   const vinculadas = (state.intimacoes || [])
@@ -40,6 +46,7 @@ function montarAndamentosComIntimacoesVinculadas(andamentos, pastaId) {
       numero_processo: i.processo || '',
       data_hora: i.dataPublicacao ? `${i.dataPublicacao}T12:00:00` : null,
       nome: i.tipoDocumento || i.tipoComunicacao || 'Intimação',
+      _intimacao: i,
       complemento: [
         i.nomeClasse ? `Classe: ${i.nomeClasse}` : '',
         i.orgao ? `Órgão: ${i.orgao}` : '',
@@ -92,11 +99,15 @@ function renderAndamentosNasInstancias(andamentos) {
     const vinculoBadge = isVirtual
       ? '<span style="background:var(--ac-soft);color:var(--ac);padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase;margin-left:4px">Vinculada</span>'
       : '';
-    const snippet = a.complemento ? `<div style="font-size:.72rem;color:var(--mu);margin-top:2px">${a.complemento.slice(0,80)}${a.complemento.length > 80 ? '…' : ''}</div>` : '';
+    const processo = isVirtual && a.numero_processo
+      ? `<div style="font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--ac);margin-top:2px">${escAndamento(a.numero_processo)}</div>`
+      : '';
+    const snippet = a.complemento ? `<div style="font-size:.72rem;color:var(--mu);margin-top:2px">${escAndamento(a.complemento.slice(0,80))}${a.complemento.length > 80 ? '…' : ''}</div>` : '';
     return `<tr style="cursor:pointer" onclick="abrirDetalheAndamento('${a.id}')">
       <td style="white-space:nowrap;font-size:.78rem">${data}</td>
       <td>
-        <div style="font-size:.82rem">${a.nome || '—'}</div>
+        <div style="font-size:.82rem">${escAndamento(a.nome || '—')}</div>
+        ${processo}
         ${snippet}
       </td>
       <td style="white-space:nowrap">${tipoBadge}${manualBadge}${vinculoBadge}</td>
@@ -297,6 +308,9 @@ function abrirDetalheAndamento(andamentoId) {
 
   const isManual = a.tribunal === 'manual';
   const isVirtual = !!a._virtualIntimacao;
+  const intimacao = isVirtual
+    ? (a._intimacao || state.intimacoes.find(i => String(i.id) === String(a.intimacao_id)))
+    : null;
   const grauMap  = { G1: '1ª Instância', G2: '2ª Instância', SUP: 'Superior', JE: 'Juizado Especial' };
   const data     = a.data_hora ? new Date(a.data_hora).toLocaleDateString('pt-BR') : '—';
 
@@ -304,11 +318,11 @@ function abrirDetalheAndamento(andamentoId) {
   document.getElementById('detalheAndInfo').innerHTML = `
     <div>
       <div class="field-label">Data</div>
-      <div style="font-size:.85rem;margin-top:4px">${data}</div>
+      <div style="font-size:.85rem;margin-top:4px">${escAndamento(data)}</div>
     </div>
     <div>
       <div class="field-label">Instância</div>
-      <div style="font-size:.85rem;margin-top:4px">${grauMap[a.grau] || a.grau || '—'}</div>
+      <div style="font-size:.85rem;margin-top:4px">${escAndamento(grauMap[a.grau] || a.grau || '—')}</div>
     </div>
     <div>
       <div class="field-label">Tipo</div>
@@ -316,7 +330,11 @@ function abrirDetalheAndamento(andamentoId) {
     </div>
     <div>
       <div class="field-label">Origem</div>
-      <div style="font-size:.85rem;margin-top:4px">${isVirtual ? 'Intimações' : (isManual ? 'Manual' : (a.tribunal || '—').replace('api_publica_', '').toUpperCase())}</div>
+      <div style="font-size:.85rem;margin-top:4px">${escAndamento(isVirtual ? 'Intimações' : (isManual ? 'Manual' : (a.tribunal || '—').replace('api_publica_', '').toUpperCase()))}</div>
+    </div>
+    <div style="grid-column:1 / -1">
+      <div class="field-label">Processo</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:.85rem;margin-top:4px;color:var(--ac)">${escAndamento(a.numero_processo || '—')}</div>
     </div>
   `;
   document.getElementById('detalheAndDesc').textContent = a.complemento || '(sem descrição)';
@@ -324,9 +342,17 @@ function abrirDetalheAndamento(andamentoId) {
   const editBtn   = document.getElementById('btnEditarAndamento');
   const excluirBtn = document.getElementById('btnExcluirAndamento');
   const uploadBtn = document.getElementById('btnUploadDocAndamento');
+  const lerIntimBtn = document.getElementById('btnLerIntimacaoAndamento');
   if (editBtn)    editBtn.style.display    = isManual ? '' : 'none';
   if (excluirBtn) excluirBtn.style.display = isManual ? '' : 'none';
   if (uploadBtn)  uploadBtn.style.display  = isVirtual ? 'none' : '';
+  if (lerIntimBtn) {
+    lerIntimBtn.style.display = intimacao ? '' : 'none';
+    lerIntimBtn.onclick = () => {
+      document.getElementById('modalDetalheAndamento').classList.remove('open');
+      lerIntimacao(intimacao);
+    };
+  }
 
   if (isVirtual) {
     const docs = document.getElementById('detalheAndDocs');

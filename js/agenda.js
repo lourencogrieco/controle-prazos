@@ -112,7 +112,7 @@ function selecionarDia(iso) {
     const partHtml = parts.length
       ? `<p class="ev-meta ev-participantes">${avatarGroup(e.participantes, 5)} ${parts.join(', ')}</p>`
       : '';
-    return `<div class="ev-item" role="button" tabindex="0" onclick="abrirModalEvento('${e.id}')" onkeydown="if(event.key==='Enter')abrirModalEvento('${e.id}')">
+    return `<div class="ev-item" data-evento-id="${e.id}" role="button" tabindex="0" onclick="abrirModalEvento('${e.id}')" onkeydown="if(event.key==='Enter')abrirModalEvento('${e.id}')">
       <span class="ev-dot" style="background:${corDot(e.tipo)}"></span>
       <div class="ev-info">
         <p class="ev-titulo">${e.titulo}</p>
@@ -140,7 +140,7 @@ function renderProximos() {
     const badgeCls = isHoje ? 'ev-date-badge--today' : (e.tipo === 'Prazo' ? 'ev-date-badge--urgent' : '');
     const parts = (e.participantes || '').split(';').map(n => n.trim()).filter(Boolean);
     const partMeta = parts.length ? ` · ${parts.length} participante${parts.length > 1 ? 's' : ''}` : '';
-    return `<div class="ev-item" role="button" tabindex="0" onclick="abrirModalEvento('${e.id}')" onkeydown="if(event.key==='Enter')abrirModalEvento('${e.id}')">
+    return `<div class="ev-item" data-evento-id="${e.id}" role="button" tabindex="0" onclick="abrirModalEvento('${e.id}')" onkeydown="if(event.key==='Enter')abrirModalEvento('${e.id}')">
       <span class="ev-dot" style="background:${corDot(e.tipo)}"></span>
       <div class="ev-info">
         <p class="ev-titulo">${e.titulo}</p>

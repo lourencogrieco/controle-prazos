@@ -428,15 +428,6 @@ h2 {
   padding: 24px 32px 28px;
 }
 
-.modal-ler-intimacao .form-foot {
-  position: static;
-  bottom: auto;
-  margin: 0;
-  padding: 18px 32px;
-  border-top: 1px solid var(--br);
-  background: var(--s1);
-}
-
 .intimacao-texto-legivel {
   min-height: 280px;
   max-height: 58vh;
@@ -3252,15 +3243,20 @@ tbody td {
   box-shadow: 0 24px 60px rgba(10, 25, 45, .2);
   width: 100%;
   max-width: 560px;
+  max-height: calc(100dvh - 48px);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 22px;
+  gap: 18px;
+  padding: 22px 28px 18px;
   border-bottom: 1px solid var(--br);
+  flex: 0 0 auto;
 }
 
 .modal-head h3 {
@@ -3268,11 +3264,13 @@ tbody td {
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--tx-strong);
+  line-height: 1.25;
 }
 
 .modal-close {
   width: 32px;
   height: 32px;
+  flex: 0 0 32px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -3284,9 +3282,11 @@ tbody td {
 .modal-close:hover { background: var(--red-soft); color: var(--red); }
 
 .modal-body {
-  padding: 20px 22px;
+  padding: 24px 28px;
   overflow-y: auto;
-  max-height: calc(90vh - 80px);
+  min-height: 0;
+  max-height: none;
+  flex: 1 1 auto;
 }
 
 /* ─── PICKER DE TIPO DE SOLICITAÇÃO ────────────────────────────── */
@@ -3341,21 +3341,31 @@ tbody td {
 /* Botão de salvar sempre visível na base do modal, independente do scroll */
 .modal .form-foot {
   position: sticky;
-  bottom: -20px;
-  margin: 16px -22px -20px;
-  padding: 14px 22px;
+  bottom: -24px;
+  margin: 20px -28px -24px;
+  padding: 16px 28px;
   background: var(--s0);
   border-top: 1px solid var(--br);
   border-radius: 0 0 var(--r-lg) var(--r-lg);
   z-index: 1;
 }
 
+.modal-ler-intimacao .form-foot,
 .modal-vincular-intimacao .form-foot {
   position: static;
   bottom: auto;
   margin: 0;
-  padding: 20px 32px;
   border-radius: 0 0 10px 10px;
+}
+
+.modal-vincular-intimacao .form-foot {
+  padding: 20px 32px;
+  background: var(--s1);
+  border-top: 1px solid var(--br);
+}
+
+.modal-ler-intimacao .form-foot {
+  padding: 18px 32px;
   background: var(--s1);
   border-top: 1px solid var(--br);
 }

@@ -43,7 +43,21 @@ function navegarParaTarefa(tarefaId) {
   setTimeout(() => {
     const btnTarefas = document.querySelector('.subtab[data-subtab="tarefas"]');
     if (btnTarefas) btnTarefas.click();
-    setTimeout(() => abrirModalNovaTarefa(tarefaId), 180);
+    const filtroStatus = document.getElementById('filtroTarefasStatus');
+    const filtroTipo = document.getElementById('filtroTarefasTipo');
+    const busca = document.getElementById('buscaTarefas');
+    if (filtroStatus) filtroStatus.value = '';
+    if (filtroTipo) filtroTipo.value = '';
+    if (busca) busca.value = '';
+    if (typeof renderTarefasAba === 'function') renderTarefasAba();
+    setTimeout(() => {
+      const card = document.querySelector(`.tarefa-card[data-id="${CSS.escape(tarefaId)}"]`);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.classList.add('highlight-row');
+        setTimeout(() => card.classList.remove('highlight-row'), 2000);
+      }
+    }, 200);
   }, 100);
 }
 
@@ -59,7 +73,14 @@ function navegarParaEvento(eventoId) {
       renderCalendario();
       selecionarDia(evento.data);
     }
-    setTimeout(() => abrirModalEvento(eventoId), 120);
+    setTimeout(() => {
+      const item = document.querySelector(`.ev-item[data-evento-id="${CSS.escape(eventoId)}"]`);
+      if (item) {
+        item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        item.classList.add('highlight-row');
+        setTimeout(() => item.classList.remove('highlight-row'), 2000);
+      }
+    }, 160);
   }, 100);
 }
 
@@ -179,7 +200,7 @@ function renderDashboard() {
           const dias = t.dataLimite
             ? (() => { const d = daysUntil(t.dataLimite); return d < 0 ? ' · vencida' : d === 0 ? ' · hoje' : ` · ${d}d`; })()
             : '';
-          return `<div class="dash-list-item" style="cursor:pointer" onclick="navegarParaTarefa('${t.id}')" title="Abrir tarefa">
+          return `<div class="dash-list-item" style="cursor:pointer" onclick="navegarParaTarefa('${t.id}')" title="Ver tarefa na aba de atividades">
             <span class="dash-item-dot" style="background:${cor}"></span>
             <span class="dash-item-title">${t.titulo}</span>
             <span class="dash-item-meta">${t.tipo || '—'}${dias}</span>
@@ -216,7 +237,7 @@ function renderDashboard() {
           const [, mm, dd] = e.data.split('-');
           const cor  = TIPO_COR_AG[e.tipo] || 'var(--mu)';
           const hora = e.hora ? ` · ${e.hora}` : '';
-          return `<div class="dash-list-item" style="cursor:pointer" onclick="navegarParaEvento('${e.id}')" title="Abrir compromisso">
+          return `<div class="dash-list-item" style="cursor:pointer" onclick="navegarParaEvento('${e.id}')" title="Ver compromisso na agenda">
             <span class="dash-date-chip">${dd}/${mm}</span>
             <span class="dash-item-title">${e.titulo}</span>
             <span class="dash-item-meta" style="color:${cor}">${e.tipo}${hora}</span>

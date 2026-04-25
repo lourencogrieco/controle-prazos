@@ -4121,16 +4121,16 @@ tbody td {
   .nav-tab.active::after { color: #fff; }
   .nav-tab.active { border-top-color: var(--ac); }
 
-  /* label (::after) vem antes do badge no fluxo flex */
-  .nav-tab::after { order: 1; }
-
-  /* badge de pendências: abaixo do label, no fluxo normal */
+  /* badge de pendências: abaixo do label, ancorado no bottom do tab */
   .nav-tab .nav-badge {
-    position: static;
-    order: 2;
-    transform: none;
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    top: auto;
+    right: auto;
+    transform: translateX(-50%);
     font-size: .55rem;
-    margin: 2px 0 0 0;
+    margin: 0;
     min-width: 16px;
     height: 16px;
     border-radius: 8px;

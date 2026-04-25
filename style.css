@@ -4056,6 +4056,16 @@ tbody td {
    ══════════════════════════════════════════════════════════════════════ */
 @media (max-width: 640px) {
 
+  /* ── Impede overflow horizontal (borda branca direita) ───────────────── */
+  html, body {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+  .app {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
   /* ── Bottom nav bar com suporte a safe-area iOS ─────────────────────── */
   .hdr-nav {
     position: fixed;
@@ -4111,19 +4121,20 @@ tbody td {
   .nav-tab.active::after { color: #fff; }
   .nav-tab.active { border-top-color: var(--ac); }
 
-  /* badge de pendências: canto superior direito do tab */
+  /* label (::after) vem antes do badge no fluxo flex */
+  .nav-tab::after { order: 1; }
+
+  /* badge de pendências: abaixo do label, no fluxo normal */
   .nav-tab .nav-badge {
-    position: absolute;
-    top: 4px;
-    right: 6px;
-    bottom: auto;
-    left: auto;
+    position: static;
+    order: 2;
     transform: none;
     font-size: .55rem;
-    margin-left: 0;
+    margin: 2px 0 0 0;
     min-width: 16px;
     height: 16px;
     border-radius: 8px;
+    line-height: 16px;
   }
 
   /* ── Header — compacto ───────────────────────────────────────────────── */
@@ -4141,13 +4152,16 @@ tbody td {
   .app-main {
     padding: 14px 12px;
     padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    max-width: 100vw;
+    overflow-x: hidden;
+    box-sizing: border-box;
   }
 
   /* ── Page bar ────────────────────────────────────────────────────────── */
-  .page-bar { flex-direction: column; align-items: flex-start; gap: 8px; }
-  .page-bar-right { width: 100%; flex-wrap: wrap; gap: 6px; }
+  .page-bar { flex-direction: column; align-items: flex-start; gap: 8px; max-width: 100%; }
+  .page-bar-right { width: 100%; max-width: 100%; flex-wrap: wrap; gap: 6px; box-sizing: border-box; }
   .page-bar-right .btn-primary,
-  .page-bar-right .btn-outline { flex: 1; justify-content: center; font-size: .75rem; }
+  .page-bar-right .btn-outline { flex: 1 1 auto; min-width: 0; justify-content: center; font-size: .75rem; }
   .page-bar-right .sys-tag { display: none; }
   .search-field { width: 100%; }
   .search-field input { width: 100%; box-sizing: border-box; }

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=50">
+  <link rel="stylesheet" href="style.css?v=52">
 </head>
 <body>
 <div class="app">
@@ -1543,6 +1543,10 @@
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                 Tipos de Pasta
               </button>
+              <button class="btn-outline cfg-cadastro-btn" onclick="abrirModalModeloDocumento()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h6"/></svg>
+                Modelos de Documentos
+              </button>
               <button class="btn-outline cfg-cadastro-btn" onclick="abrirModalConfig()">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
                 Aparência do sistema
@@ -2375,9 +2379,14 @@
           <span class="field-label">Texto do modelo *</span>
           <textarea id="modeloConteudo" rows="12" required placeholder="Eu, {{cliente.nome}}, inscrito(a) no CPF/CNPJ {{cliente.cpf_cnpj}}..."></textarea>
         </div>
-        <div class="modelo-vars">
-          <strong>Variáveis disponíveis</strong>
-          <span>{{cliente.nome}}</span><span>{{cliente.cpf_cnpj}}</span><span>{{cliente.email}}</span><span>{{cliente.telefone}}</span><span>{{cliente.endereco}}</span><span>{{pasta.numero}}</span><span>{{pasta.processo}}</span><span>{{pasta.comarca}}</span>
+        <div class="modelo-builder">
+          <div class="modelo-vars" id="modeloVariaveisDisponiveis">
+            <strong>Variáveis disponíveis</strong>
+          </div>
+          <div class="modelo-detectadas">
+            <strong>Campos detectados no modelo</strong>
+            <div id="modeloVariaveisDetectadas" class="modelo-detectadas-list"></div>
+          </div>
         </div>
         <div class="form-foot" style="margin-top:18px">
           <button type="button" class="btn-outline" onclick="fecharModalModeloDocumento()">Cancelar</button>
@@ -3064,12 +3073,12 @@
 <script src="js/core.js?v=59"></script>
 <script src="js/auth.js?v=57"></script>
 <script src="js/mappers.js?v=52"></script>
-<script src="js/dashboard.js?v=57"></script>
+<script src="js/dashboard.js?v=58"></script>
 <script src="js/nav.js?v=59"></script>
 <script src="js/atividades.js?v=50"></script>
 <script src="js/prospeccao.js?v=54"></script>
 <script src="js/configuracoes.js?v=57"></script>
-<script src="js/agenda.js?v=50"></script>
+<script src="js/agenda.js?v=51"></script>
 <script src="js/prazo-calculo.js?v=1"></script>
 <script src="js/intimacoes.js?v=52"></script>
 <script src="js/prazos.js?v=56"></script>

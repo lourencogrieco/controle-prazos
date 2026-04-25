@@ -12,7 +12,6 @@ function abrirModalNovaTarefa(id) {
   document.getElementById('tTitulo').value           = t?.titulo || '';
   document.getElementById('tTipo').value             = t?.tipo || 'Outro';
   document.getElementById('tPrioridade').value       = t?.prioridade?.toLowerCase() || 'normal';
-  document.getElementById('tarefaPastaSelect').value = '';
   document.getElementById('tPrazo').value            = t?.dataLimite || '';
   document.getElementById('tDescricao').value        = t?.descricao || '';
   const statusRaw = t?.status || 'Pendente';
@@ -21,6 +20,7 @@ function abrirModalNovaTarefa(id) {
     statusRaw === 'Em andamento' ? 'em_andamento' : 'pendente';
   document.getElementById('tarefaStatusField').style.display = t ? '' : 'none';
   popularSelectsPastas();
+  document.getElementById('tarefaPastaSelect').value = t?.pastaId || '';
   popularSelectResponsaveisTarefa(t?.responsavel || '');
   document.getElementById('modalNovaTarefa').classList.add('open');
 }

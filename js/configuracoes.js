@@ -594,6 +594,73 @@ async function renderAuditLog() {
 // ──────────────────────────────────────────────────────────────────────
 // MODELOS DE DOCUMENTOS
 // ──────────────────────────────────────────────────────────────────────
+const MODELO_VARIAVEIS = [
+  { grupo: 'Cliente', chave: 'cliente.nome', label: 'Nome' },
+  { grupo: 'Cliente', chave: 'cliente.cpf_cnpj', label: 'CPF/CNPJ' },
+  { grupo: 'Cliente', chave: 'cliente.email', label: 'E-mail' },
+  { grupo: 'Cliente', chave: 'cliente.telefone', label: 'Telefone' },
+  { grupo: 'Cliente', chave: 'cliente.endereco', label: 'Endereço completo' },
+  { grupo: 'Cliente', chave: 'cliente.cidade', label: 'Cidade' },
+  { grupo: 'Cliente', chave: 'cliente.estado', label: 'Estado' },
+  { grupo: 'Pasta', chave: 'pasta.numero', label: 'Número da pasta' },
+  { grupo: 'Pasta', chave: 'pasta.processo', label: 'Processo' },
+  { grupo: 'Pasta', chave: 'pasta.comarca', label: 'Comarca' },
+  { grupo: 'Pasta', chave: 'pasta.parte_contraria', label: 'Parte contrária' },
+  { grupo: 'Pasta', chave: 'pasta.valor_causa', label: 'Valor da causa' },
+];
+
+function modeloEscapeHtml(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[c]));
+}
+
+function renderModeloVariaveisDisponiveis() {
+  const wrap = document.getElementById('modeloVariaveisDisponiveis');
+  if (!wrap) return;
+  const grupos = [...new Set(MODELO_VARIAVEIS.map(v => v.grupo))];
+  wrap.innerHTML = '<strong>Variáveis disponíveis</strong>' + grupos.map(grupo => `
+    <div class="modelo-var-group">
+      <span class="modelo-var-group-title">${grupo}</span>
+      <div class="modelo-var-buttons">
+        ${MODELO_VARIAVEIS.filter(v => v.grupo === grupo).map(v => `
+          <button type="button" class="modelo-var-chip" onclick="inserirVariavelModelo('${v.chave}')" title="{{${v.chave}}}">
+            ${modeloEscapeHtml(v.label)}
+          </button>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function inserirVariavelModelo(chave) {
+  const campo = document.getElementById('modeloConteudo');
+  if (!campo) return;
+  const token = `{{${chave}}}`;
+  const ini = campo.selectionStart ?? campo.value.length;
+  const fim = campo.selectionEnd ?? campo.value.length;
+  campo.value = `${campo.value.slice(0, ini)}${token}${campo.value.slice(fim)}`;
+  const pos = ini + token.length;
+  campo.focus();
+  campo.setSelectionRange(pos, pos);
+  atualizarVariaveisDetectadasModelo();
+}
+
+function atualizarVariaveisDetectadasModelo() {
+  const lista = document.getElementById('modeloVariaveisDetectadas');
+  const campo = document.getElementById('modeloConteudo');
+  if (!lista || !campo) return;
+  const conhecidas = new Set(MODELO_VARIAVEIS.map(v => v.chave));
+  const variaveis = extrairVariaveisModelo(campo.value);
+  lista.innerHTML = variaveis.length ? variaveis.map(v => `
+    <span class="modelo-detectada ${conhecidas.has(v) ? 'modelo-detectada--ok' : 'modelo-detectada--manual'}">
+      {{${modeloEscapeHtml(v)}}}
+      <small>${conhecidas.has(v) ? 'auto' : 'manual'}</small>
+    </span>`).join('') : '<em>Nenhuma variável detectada.</em>';
+}
+
 function renderModelosDocumentos() {
   const tbody = document.getElementById('tbodyModelosDocumentos');
   if (!tbody) return;
@@ -615,12 +682,14 @@ function renderModelosDocumentos() {
 
 function abrirModalModeloDocumento(id) {
   const m = id ? state.modelosDocumentos.find(x => x.id === id) : null;
+  renderModeloVariaveisDisponiveis();
   document.getElementById('modeloModalTitulo').textContent = m ? 'Editar modelo' : 'Novo modelo';
   document.getElementById('modeloId').value = m?.id || '';
   document.getElementById('modeloNome').value = m?.nome || '';
   document.getElementById('modeloCategoria').value = m?.categoria || '';
   document.getElementById('modeloDescricao').value = m?.descricao || '';
   document.getElementById('modeloConteudo').value = m?.conteudo || '';
+  atualizarVariaveisDetectadasModelo();
   document.getElementById('modalModeloDocumento').classList.add('open');
 }
 
@@ -654,6 +723,8 @@ document.getElementById('formModeloDocumento')?.addEventListener('submit', async
     btn.disabled = false; btn.textContent = 'Salvar modelo';
   }
 });
+
+document.getElementById('modeloConteudo')?.addEventListener('input', atualizarVariaveisDetectadasModelo);
 
 async function excluirModeloDocumento(id) {
   if (!confirm('Excluir este modelo?')) return;
@@ -719,8 +790,8 @@ function renderCamposExtrasModelo(modelo) {
   const extras = extrairVariaveisModelo(modelo.conteudo).filter(v => !conhecidos.has(v));
   wrap.innerHTML = extras.map(v => `
     <label class="field modelo-extra-field">
-      <span class="field-label">{{${v}}}</span>
-      <input type="text" data-modelo-var="${v}" placeholder="Preencher ${v}">
+      <span class="field-label">{{${modeloEscapeHtml(v)}}}</span>
+      <input type="text" data-modelo-var="${modeloEscapeHtml(v)}" placeholder="Preencher ${modeloEscapeHtml(v)}">
     </label>`).join('');
   wrap.querySelectorAll('input').forEach(i => i.addEventListener('input', atualizarDocumentoGerado));
 }
@@ -736,7 +807,12 @@ function atualizarDocumentoGerado() {
 }
 
 document.getElementById('gerarClienteSelect')?.addEventListener('change', atualizarDocumentoGerado);
-document.getElementById('gerarPastaSelect')?.addEventListener('change', atualizarDocumentoGerado);
+document.getElementById('gerarPastaSelect')?.addEventListener('change', () => {
+  const pasta = state.pastas.find(p => p.id === document.getElementById('gerarPastaSelect').value);
+  const clienteSelect = document.getElementById('gerarClienteSelect');
+  if (pasta?.clienteId && clienteSelect) clienteSelect.value = pasta.clienteId;
+  atualizarDocumentoGerado();
+});
 
 async function copiarDocumentoGerado() {
   await navigator.clipboard.writeText(document.getElementById('gerarDocumentoResultado').value || '');

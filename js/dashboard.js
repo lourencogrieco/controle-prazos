@@ -38,6 +38,31 @@ function navegarParaPrazo(prazoId) {
   }, 100);
 }
 
+function navegarParaTarefa(tarefaId) {
+  navegarPara('atividades');
+  setTimeout(() => {
+    const btnTarefas = document.querySelector('.subtab[data-subtab="tarefas"]');
+    if (btnTarefas) btnTarefas.click();
+    setTimeout(() => abrirModalNovaTarefa(tarefaId), 180);
+  }, 100);
+}
+
+function navegarParaEvento(eventoId) {
+  const evento = agendaEventos.find(e => e.id === eventoId);
+  navegarPara('agenda');
+  setTimeout(() => {
+    if (evento?.data) {
+      const [ano, mes] = evento.data.split('-').map(Number);
+      calAno = ano;
+      calMes = mes - 1;
+      calDataSelecionada = evento.data;
+      renderCalendario();
+      selecionarDia(evento.data);
+    }
+    setTimeout(() => abrirModalEvento(eventoId), 120);
+  }, 100);
+}
+
 function abrirRisco(tipo) {
   if (tipo === 'prazos_vencidos') {
     navegarPara('atividades');
@@ -154,7 +179,7 @@ function renderDashboard() {
           const dias = t.dataLimite
             ? (() => { const d = daysUntil(t.dataLimite); return d < 0 ? ' · vencida' : d === 0 ? ' · hoje' : ` · ${d}d`; })()
             : '';
-          return `<div class="dash-list-item">
+          return `<div class="dash-list-item" style="cursor:pointer" onclick="navegarParaTarefa('${t.id}')" title="Abrir tarefa">
             <span class="dash-item-dot" style="background:${cor}"></span>
             <span class="dash-item-title">${t.titulo}</span>
             <span class="dash-item-meta">${t.tipo || '—'}${dias}</span>
@@ -191,7 +216,7 @@ function renderDashboard() {
           const [, mm, dd] = e.data.split('-');
           const cor  = TIPO_COR_AG[e.tipo] || 'var(--mu)';
           const hora = e.hora ? ` · ${e.hora}` : '';
-          return `<div class="dash-list-item">
+          return `<div class="dash-list-item" style="cursor:pointer" onclick="navegarParaEvento('${e.id}')" title="Abrir compromisso">
             <span class="dash-date-chip">${dd}/${mm}</span>
             <span class="dash-item-title">${e.titulo}</span>
             <span class="dash-item-meta" style="color:${cor}">${e.tipo}${hora}</span>
@@ -244,7 +269,7 @@ function renderDashboardRiscos() {
       nivel: 'warn',
       titulo: t.titulo || 'Tarefa sem título',
       meta: `${t.tipo || 'Tarefa'} · sem responsável definido`,
-      acao: `abrirRisco('tarefas_sem_responsavel')`,
+      acao: `navegarParaTarefa('${t.id}')`,
     })),
   ].slice(0, 6);
 

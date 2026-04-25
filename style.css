@@ -527,6 +527,100 @@ h2 {
   padding: 8px 0;
 }
 
+.risk-board {
+  margin-top: 16px;
+  margin-bottom: 16px;
+  background: var(--s0);
+  border: 1px solid var(--br);
+  border-radius: var(--r-md);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.risk-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.risk-card {
+  min-height: 76px;
+  padding: 12px 14px;
+  border: 1px solid var(--br);
+  border-radius: var(--r-sm);
+  background: var(--s1);
+  text-align: left;
+  transition: border-color .15s, background .15s;
+}
+
+.risk-card strong {
+  display: block;
+  font-family: "Manrope", sans-serif;
+  font-size: 1.35rem;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.risk-card span {
+  display: block;
+  margin-top: 7px;
+  color: var(--tx);
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.risk-card--danger strong { color: var(--red); }
+.risk-card--warn strong { color: var(--orange); }
+.risk-card:hover { border-color: var(--ac); background: var(--ac-soft); }
+
+.risk-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin-top: 14px;
+}
+
+.risk-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 9px 10px;
+  border: 1px solid var(--br);
+  border-radius: var(--r-sm);
+  background: var(--s0);
+  text-align: left;
+  min-width: 0;
+}
+
+.risk-item:hover { background: var(--s1); border-color: var(--br-strong); }
+.risk-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+.risk-item--danger .risk-dot { background: var(--red); }
+.risk-item--warn .risk-dot { background: var(--orange); }
+.risk-copy { min-width: 0; }
+.risk-copy strong {
+  display: block;
+  color: var(--tx-strong);
+  font-size: .8rem;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.risk-copy small {
+  display: block;
+  margin-top: 2px;
+  color: var(--mu);
+  font-size: .72rem;
+  line-height: 1.25;
+}
+
 /* ── Dashboard panel row (3-column list panels) ─────────────────── */
 .dash-panel-row {
   display: grid;
@@ -1347,6 +1441,7 @@ tbody td {
   .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
   .dash-card--wide { grid-column: span 2; }
   .dash-panel-row { grid-template-columns: 1fr 1fr; }
+  .risk-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .agenda-layout { grid-template-columns: 1fr; }
   .agenda-aside { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
 }
@@ -1360,6 +1455,8 @@ tbody td {
   .dashboard-grid { grid-template-columns: 1fr; }
   .dash-card--wide { grid-column: span 1; flex-direction: column; }
   .dash-panel-row { grid-template-columns: 1fr; }
+  .risk-grid,
+  .risk-list { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
   .metric-strip { flex-wrap: wrap; }
   .view-subbar { flex-direction: column; align-items: flex-start; }

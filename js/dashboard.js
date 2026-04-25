@@ -38,6 +38,25 @@ function navegarParaPrazo(prazoId) {
   }, 100);
 }
 
+function abrirRisco(tipo) {
+  if (tipo === 'prazos_vencidos') {
+    navegarPara('atividades');
+    setTimeout(() => document.querySelector('[data-subtab=prazos]')?.click(), 80);
+    return;
+  }
+  if (tipo === 'intimacoes_pendentes') {
+    navegarPara('atividades');
+    setTimeout(() => document.querySelector('[data-subtab=intimacoes]')?.click(), 80);
+    return;
+  }
+  if (tipo === 'tarefas_sem_responsavel') {
+    navegarPara('atividades');
+    setTimeout(() => document.querySelector('[data-subtab=tarefas]')?.click(), 80);
+    return;
+  }
+  if (tipo === 'financeiro_vencido') navegarPara('financeiro');
+}
+
 // ──────────────────────────────────────────────────────────────────────
 // DASHBOARD
 // ──────────────────────────────────────────────────────────────────────
@@ -58,6 +77,8 @@ function renderDashboard() {
   set('dashTarefasLabel',     `Tarefa${tarefasPendentes !== 1 ? 's' : ''} a fazer`);
   set('dashPrazosSemana',     prazosSemana);
   set('dashPrazosVencidos',   prazosVencidos);
+
+  renderDashboardRiscos();
 
   // ── Alertas de prazos urgentes ─────────────────────────────────────
   const alertas = state.prazos.filter(p => {
@@ -169,6 +190,66 @@ function renderDashboard() {
         }).join('')
       : '<div class="dash-empty">Nenhum evento esta semana.</div>';
   }
+}
+
+function renderDashboardRiscos() {
+  const hoje = new Date().toISOString().slice(0, 10);
+  const prazosVencidos = state.prazos
+    .filter(p => p.status !== 'Concluído' && daysUntil(p.prazoFatal) < 0)
+    .sort((a, b) => a.prazoFatal.localeCompare(b.prazoFatal));
+  const intimacoesPendentes = state.intimacoes
+    .filter(i => (i.status || 'pendente') === 'pendente')
+    .sort((a, b) => (b.dataPublicacao || '').localeCompare(a.dataPublicacao || ''));
+  const tarefasSemResp = state.tarefas
+    .filter(t => t.status !== 'Concluída' && !(t.responsavel || '').trim());
+  const cobrancasVencidas = state.cobrancas
+    .filter(c => c.status !== 'pago' && c.vencimento && c.vencimento < hoje)
+    .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('riskPrazosVencidos', prazosVencidos.length);
+  set('riskIntimacoesPendentes', intimacoesPendentes.length);
+  set('riskTarefasSemResponsavel', tarefasSemResp.length);
+  set('riskFinanceiroVencido', cobrancasVencidas.length);
+
+  const riscos = [
+    ...prazosVencidos.slice(0, 3).map(p => ({
+      nivel: 'danger',
+      titulo: p.cliente || p.pastaNr || 'Prazo sem cliente',
+      meta: `${p.tipoPrazo || 'Prazo'} · venceu em ${formatDate(p.prazoFatal)}`,
+      acao: `navegarParaPrazo('${p.id}')`,
+    })),
+    ...intimacoesPendentes.slice(0, 2).map(i => ({
+      nivel: 'warn',
+      titulo: i.processo || 'Intimação sem processo',
+      meta: `${i.tribunal || 'Tribunal'} · publicada em ${formatDate(i.dataPublicacao)}`,
+      acao: `abrirRisco('intimacoes_pendentes')`,
+    })),
+    ...cobrancasVencidas.slice(0, 2).map(c => ({
+      nivel: 'danger',
+      titulo: c.clienteNome || c.descricao || 'Cobrança vencida',
+      meta: `${typeof formatCurrency === 'function' ? formatCurrency(c.valor) : c.valor} · venceu em ${formatDate(c.vencimento)}`,
+      acao: `abrirRisco('financeiro_vencido')`,
+    })),
+    ...tarefasSemResp.slice(0, 2).map(t => ({
+      nivel: 'warn',
+      titulo: t.titulo || 'Tarefa sem título',
+      meta: `${t.tipo || 'Tarefa'} · sem responsável definido`,
+      acao: `abrirRisco('tarefas_sem_responsavel')`,
+    })),
+  ].slice(0, 6);
+
+  const listEl = document.getElementById('dashRiskList');
+  if (!listEl) return;
+  listEl.innerHTML = riscos.length
+    ? riscos.map(r => `<button type="button" class="risk-item risk-item--${r.nivel}" onclick="${r.acao}">
+        <span class="risk-dot"></span>
+        <span class="risk-copy">
+          <strong>${r.titulo}</strong>
+          <small>${r.meta}</small>
+        </span>
+      </button>`).join('')
+    : '<div class="dash-empty">Nenhum risco crítico encontrado agora.</div>';
 }
 
 // ──────────────────────────────────────────────────────────────────────

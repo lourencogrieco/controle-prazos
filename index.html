@@ -133,6 +133,32 @@
 
       </div>
 
+      <section class="risk-board" id="dashRiskBoard">
+        <div class="dash-card-head">
+          <span class="dash-label">Radar de risco</span>
+          <button class="dash-refresh" onclick="carregarDados()" title="Atualizar">↻</button>
+        </div>
+        <div class="risk-grid">
+          <button class="risk-card risk-card--danger" type="button" onclick="abrirRisco('prazos_vencidos')">
+            <strong id="riskPrazosVencidos">—</strong>
+            <span>Prazos vencidos</span>
+          </button>
+          <button class="risk-card risk-card--warn" type="button" onclick="abrirRisco('intimacoes_pendentes')">
+            <strong id="riskIntimacoesPendentes">—</strong>
+            <span>Intimações pendentes</span>
+          </button>
+          <button class="risk-card risk-card--warn" type="button" onclick="abrirRisco('tarefas_sem_responsavel')">
+            <strong id="riskTarefasSemResponsavel">—</strong>
+            <span>Tarefas sem responsável</span>
+          </button>
+          <button class="risk-card risk-card--danger" type="button" onclick="abrirRisco('financeiro_vencido')">
+            <strong id="riskFinanceiroVencido">—</strong>
+            <span>Cobranças vencidas</span>
+          </button>
+        </div>
+        <div class="risk-list" id="dashRiskList"></div>
+      </section>
+
       <div class="dash-panel-row">
         <div class="dash-panel">
           <div class="dash-card-head">

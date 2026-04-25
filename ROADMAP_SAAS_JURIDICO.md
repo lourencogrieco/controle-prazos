@@ -18,7 +18,7 @@ Evoluir o Legal Hub de sistema interno para SaaS jurídico escalável, seguro e 
 ## Fase 1 - Produto Vendável (3 a 6 semanas)
 
 - Criar fluxo guiado: cliente -> pasta/processo -> prazo/tarefa -> cobrança.
-- Criar dashboard de risco: prazos vencidos, intimações pendentes, tarefas sem responsável, cobranças vencidas.
+- [x] Criar dashboard de risco: prazos vencidos, intimações pendentes, tarefas sem responsável, cobranças vencidas.
 - [x] Iniciar motor de cálculo de prazos com dias úteis, feriados nacionais e recesso.
 - [ ] Evoluir cálculo de prazos para backend auditável com regras por tribunal/UF.
 - Criar linha do tempo completa da pasta com andamentos, prazos, tarefas, documentos e financeiro.

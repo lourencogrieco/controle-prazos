@@ -307,103 +307,21 @@ function initTarefaKanbanDrag(containerSelector) {
 initTarefaKanbanDrag('#subtab-tarefas');
 initTarefaKanbanDrag('#ptab-tarefas');
 
-// ──────────────────────────────────────────────────────────────────────
-// TOUCH DRAG-AND-DROP — kanban de tarefas no mobile
-// Estado compartilhado + listeners únicos no document para evitar duplicatas
-// quando múltiplos containers são registrados.
-// ──────────────────────────────────────────────────────────────────────
-const _td = {
-  ghost: null, dragId: null, srcCard: null, activeCol: null, container: null,
-};
-
-function _tdReset() {
-  if (_td.ghost)     { _td.ghost.remove(); _td.ghost = null; }
-  if (_td.srcCard)   { _td.srcCard.classList.remove('is-dragging'); }
-  if (_td.activeCol) { _td.activeCol.classList.remove('drag-over'); }
-  _td.dragId = _td.srcCard = _td.activeCol = _td.container = null;
-}
-
-// Listeners no document — adicionados uma única vez
-document.addEventListener('touchmove', e => {
-  if (!_td.ghost || !_td.dragId) return;
-  e.preventDefault();
-
-  const touch = e.touches[0];
-  const gh    = _td.ghost.getBoundingClientRect();
-  _td.ghost.style.top  = (touch.clientY - gh.height / 2) + 'px';
-  _td.ghost.style.left = (touch.clientX - gh.width  / 2) + 'px';
-
-  _td.ghost.style.display = 'none';
-  const el = document.elementFromPoint(touch.clientX, touch.clientY);
-  _td.ghost.style.display = '';
-
-  // Procura coluna dentro do container ativo
-  const colSelector = _td.container ? `#${_td.container.id} .board-col-body` : '.board-col-body';
-  const col = el?.closest('.board-col-body');
-  const validCol = col && _td.container?.contains(col) ? col : null;
-
-  if (validCol !== _td.activeCol) {
-    if (_td.activeCol) _td.activeCol.classList.remove('drag-over');
-    _td.activeCol = validCol;
-    if (_td.activeCol) _td.activeCol.classList.add('drag-over');
-  }
-}, { passive: false });
-
-document.addEventListener('touchend', async () => {
-  if (!_td.dragId) return;
-
-  const dragId   = _td.dragId;
-  const col      = _td.activeCol;
-  const container = _td.container;
-  _tdReset();
-
-  if (col) {
-    const novoStatus = _tarefaStatusMap[col.id];
-    if (novoStatus && container) {
-      const card = container.querySelector(`.tarefa-card[data-id="${dragId}"]`);
-      if (card?.dataset.status !== novoStatus) {
-        await alterarStatusTarefa(dragId, novoStatus);
-      }
-    }
-  }
+// Touch drag — usa o sistema genérico de core.js
+registerTouchKanban('#subtab-tarefas', {
+  colTarefasPendentes:  'pendente',
+  colTarefasAndamento:  'em_andamento',
+  colTarefasConcluidas: 'concluida',
+}, async (id, novoStatus) => {
+  const card = document.querySelector(`#subtab-tarefas .tarefa-card[data-id="${id}"]`);
+  if (card?.dataset.status !== novoStatus) await alterarStatusTarefa(id, novoStatus);
 });
 
-document.addEventListener('touchcancel', _tdReset);
-
-function initTouchKanbanDrag(containerSelector) {
-  const container = document.querySelector(containerSelector);
-  if (!container) return;
-
-  container.addEventListener('touchstart', e => {
-    const card = e.target.closest('.tarefa-card[data-id]');
-    if (!card) return;
-    if (e.target.closest('button, select, a, input')) return;
-
-    _td.dragId    = card.dataset.id;
-    _td.srcCard   = card;
-    _td.container = container;
-
-    const touch = e.touches[0];
-    const rect  = card.getBoundingClientRect();
-
-    _td.ghost = card.cloneNode(true);
-    Object.assign(_td.ghost.style, {
-      position:      'fixed',
-      width:         rect.width + 'px',
-      top:           (touch.clientY - rect.height / 2) + 'px',
-      left:          (touch.clientX - rect.width  / 2) + 'px',
-      opacity:       '0.85',
-      pointerEvents: 'none',
-      zIndex:        '9999',
-      transform:     'rotate(2deg) scale(1.03)',
-      boxShadow:     '0 10px 28px rgba(0,0,0,.25)',
-      transition:    'none',
-      borderRadius:  '8px',
-    });
-    document.body.appendChild(_td.ghost);
-    card.classList.add('is-dragging');
-  }, { passive: true });
-}
-
-initTouchKanbanDrag('#subtab-tarefas');
-initTouchKanbanDrag('#ptab-tarefas');
+registerTouchKanban('#ptab-tarefas', {
+  ptabTarefPendentes:  'pendente',
+  ptabTarefAndamento:  'em_andamento',
+  ptabTarefConcluidas: 'concluida',
+}, async (id, novoStatus) => {
+  const card = document.querySelector(`#ptab-tarefas .tarefa-card[data-id="${id}"]`);
+  if (card?.dataset.status !== novoStatus) await alterarStatusTarefa(id, novoStatus);
+});

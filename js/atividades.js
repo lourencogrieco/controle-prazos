@@ -118,6 +118,21 @@ function renderAtividades() {
 
   initKanbanDrag();
 
+  // Touch drag — registrado uma vez, guard interno evita duplicata
+  registerTouchKanban('#subtab-todas', {
+    colunaPendentes:  'pendente',
+    colunaAndamento:  'em_andamento',
+    colunaConcluidos: 'concluido',
+    colunaCancelados: 'cancelado',
+  }, async (id, novoStatus) => {
+    const { error } = await db.from('prazos_lhub')
+      .update({ status: novoStatus })
+      .eq('id', id)
+      .eq('empresa_id', state.empresaId);
+    if (error) { toast('Erro ao mover: ' + error.message, 'error'); return; }
+    await carregarDados();
+  });
+
   const total    = lista.length || 1;
   const urgentes = lista.filter(i => i.status !== 'Concluído' && i.status !== 'Concluída' &&
     (i.prioridade === 'Urgente' || daysUntil(i.dataFatal) <= 1)).length;

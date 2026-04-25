@@ -68,6 +68,20 @@ function renderPipeline() {
   });
 
   _initPipelineDrag();
+
+  // Touch drag — registrado uma vez, guard interno evita duplicata
+  const _pipelineStatusMap = {};
+  PIPELINE_COLUNAS.forEach(col => { _pipelineStatusMap[col.elId] = col.status; });
+  registerTouchKanban('#view-pipeline', _pipelineStatusMap, async (id, novoStatus) => {
+    const { error } = await db.from('oportunidades_crm')
+      .update({ status: novoStatus })
+      .eq('id', id)
+      .eq('empresa_id', state.empresaId);
+    if (error) { toast('Erro ao mover: ' + error.message, 'error'); return; }
+    const item = state.oportunidades.find(o => o.id === id);
+    if (item) item.status = novoStatus;
+    renderPipeline();
+  }, 'data-opo-id');
 }
 
 // ── Drag & Drop ───────────────────────────────────────────────────────

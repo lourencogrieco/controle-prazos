@@ -305,3 +305,102 @@ function toast(msg, tipo = 'success') {
     el.addEventListener('transitionend', () => el.remove(), { once: true });
   }, 2500);
 }
+
+// ── TOUCH KANBAN DRAG ─────────────────────────────────────────────────
+// Sistema genérico de drag-and-drop por toque para qualquer kanban.
+// Usage: registerTouchKanban(containerSelector, statusMap, onDropFn, idAttr?)
+//   statusMap  : { [colId]: status }
+//   onDropFn   : async (id, novoStatus) => void
+//   idAttr     : atributo do card que guarda o ID (default: 'data-id')
+const _tdk = {
+  ghost: null, dragId: null, srcCard: null, activeCol: null,
+  container: null, ghostW: 0, ghostH: 0,
+  statusMap: null, onDrop: null, idAttr: 'data-id', timer: null,
+};
+
+function _tdkReset() {
+  clearTimeout(_tdk.timer);
+  if (_tdk.ghost)     { _tdk.ghost.remove(); _tdk.ghost = null; }
+  if (_tdk.srcCard)   _tdk.srcCard.classList.remove('is-dragging');
+  if (_tdk.activeCol) _tdk.activeCol.classList.remove('drag-over');
+  Object.assign(_tdk, {
+    ghost: null, dragId: null, srcCard: null, activeCol: null,
+    container: null, statusMap: null, onDrop: null, idAttr: 'data-id', timer: null,
+  });
+}
+
+document.addEventListener('touchmove', e => {
+  if (!_tdk.ghost) return;
+  e.preventDefault();
+  const t = e.touches[0];
+  _tdk.ghost.style.top  = (t.clientY - _tdk.ghostH / 2) + 'px';
+  _tdk.ghost.style.left = (t.clientX - _tdk.ghostW  / 2) + 'px';
+  _tdk.ghost.style.display = 'none';
+  const el = document.elementFromPoint(t.clientX, t.clientY);
+  _tdk.ghost.style.display = '';
+  const col      = el?.closest('.board-col-body');
+  const validCol = col && _tdk.container?.contains(col) ? col : null;
+  if (validCol !== _tdk.activeCol) {
+    _tdk.activeCol?.classList.remove('drag-over');
+    _tdk.activeCol = validCol;
+    _tdk.activeCol?.classList.add('drag-over');
+  }
+}, { passive: false });
+
+document.addEventListener('touchend', async () => {
+  const { dragId, activeCol, statusMap, onDrop } = _tdk;
+  _tdkReset();
+  if (!dragId || !activeCol || !statusMap || !onDrop) return;
+  const novoStatus = statusMap[activeCol.id];
+  if (novoStatus) await onDrop(dragId, novoStatus);
+});
+
+document.addEventListener('touchcancel', _tdkReset);
+
+function registerTouchKanban(containerSelector, statusMap, onDrop, idAttr = 'data-id') {
+  const container = document.querySelector(containerSelector);
+  if (!container || container._tkBound) return;
+  container._tkBound = true;
+
+  // Cancela drag pendente quando o dedo se move antes dos 180ms (= scroll)
+  container.addEventListener('touchmove', () => {
+    if (_tdk.timer) { clearTimeout(_tdk.timer); _tdk.timer = null; }
+  }, { passive: true });
+
+  container.addEventListener('touchstart', e => {
+    const card = e.target.closest(`[${idAttr}]`);
+    if (!card || !card.closest('.board-col-body')) return;
+    if (e.target.closest('button, select, a, input')) return;
+    if (_tdk.dragId || _tdk.timer) return;
+
+    const startX = e.touches[0].clientX;
+    const startY = e.touches[0].clientY;
+    const rect   = card.getBoundingClientRect();
+
+    _tdk.timer = setTimeout(() => {
+      _tdk.timer     = null;
+      _tdk.dragId    = card.getAttribute(idAttr);
+      _tdk.srcCard   = card;
+      _tdk.container = container;
+      _tdk.statusMap = statusMap;
+      _tdk.onDrop    = onDrop;
+      _tdk.idAttr    = idAttr;
+      _tdk.ghostW    = rect.width;
+      _tdk.ghostH    = rect.height;
+
+      const ghost = card.cloneNode(true);
+      Object.assign(ghost.style, {
+        position: 'fixed', pointerEvents: 'none', zIndex: '9999',
+        width:    rect.width + 'px',
+        top:      (startY - rect.height / 2) + 'px',
+        left:     (startX - rect.width  / 2) + 'px',
+        opacity:  '0.85', transition: 'none', borderRadius: '8px',
+        transform: 'rotate(2deg) scale(1.03)',
+        boxShadow: '0 10px 28px rgba(0,0,0,.25)',
+      });
+      document.body.appendChild(ghost);
+      _tdk.ghost = ghost;
+      card.classList.add('is-dragging');
+    }, 180);
+  }, { passive: true });
+}

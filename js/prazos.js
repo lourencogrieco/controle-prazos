@@ -235,6 +235,19 @@ document.getElementById('novoPrazoForm').addEventListener('submit', async e => {
     if (!data?.length) { toast('Prazo não salvo: falta política INSERT no Supabase (execute o SQL de RLS).', 'error'); return; }
     const novo = dbParaPrazo(data[0]); _enrichPrazo(novo);
     _stateUpsert(state.prazos, novo);
+    if (obj.intimacao_id) {
+      const { error: intErro } = await db.from('intimacoes_pje')
+        .update({ status_lhub: 'prazo_agendado', lida: true })
+        .eq('id', obj.intimacao_id)
+        .eq('empresa_id', state.empresaId);
+      if (intErro) {
+        toast('Prazo salvo, mas não foi possível atualizar a intimação: ' + intErro.message, 'error');
+      } else {
+        const intim = state.intimacoes.find(i => i.id === obj.intimacao_id);
+        if (intim) intim.status = 'prazo_agendado';
+        if (typeof renderIntimacoesAba === 'function') renderIntimacoesAba();
+      }
+    }
     logAuditoria(prazoId ? 'editar' : 'criar', 'prazos_lhub', obj.id, `Prazo ${prazoId ? 'editado' : 'criado'}: ${obj.tipo} — ${obj.cliente || '—'}`);
     fecharModalNovoPrazo();
     toast('Prazo salvo!');

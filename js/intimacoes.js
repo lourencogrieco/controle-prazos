@@ -119,7 +119,7 @@ function renderIntimacoesAba() {
           ? `<a class="int-link" href="#" onclick="event.preventDefault();navegarPara('pastas');setTimeout(()=>abrirPasta('${pasta.numero}'),100)">${pasta.numero}</a>`
           : `<button class="btn-link-sm" onclick='abrirModalVincularIntimacao(${iJson})' title="Vincular esta intimação a uma pasta">Vincular</button>`;
         const linkDireto = linkProcesso(i.processo, i.tribunal);
-        return `<tr style="cursor:default">
+        return `<tr data-intimacao-id="${i.id}" style="cursor:default">
           <td style="font-family:'IBM Plex Mono',monospace;font-size:.7rem;white-space:nowrap">
             <button class="btn-link-sm" onclick='lerIntimacao(${iJson})' title="Ler intimação" style="font-family:inherit;text-align:left">${i.processo}</button>
           </td>
@@ -159,6 +159,7 @@ function renderIntimacoesAba() {
 async function alterarStatusIntimacao(id, novoStatus, selectEl) {
   const item = state.intimacoes.find(i => i.id === id);
   const statusAnterior = item?.status || 'pendente';
+  const rowEl = document.querySelector(`tr[data-intimacao-id="${CSS.escape(id)}"]`);
   if (selectEl) selectEl.disabled = true;
 
   const { data, error } = await db.from('intimacoes_pje')
@@ -176,6 +177,12 @@ async function alterarStatusIntimacao(id, novoStatus, selectEl) {
   }
 
   if (item) item.status = data.status_lhub || (data.lida ? 'cumprida' : 'pendente');
+  const statusFiltro = document.getElementById('filtroIntimacoesStatus')?.value ?? '';
+  if (novoStatus === 'arquivada' && statusFiltro !== 'arquivada' && rowEl) {
+    rowEl.style.transition = 'opacity .18s ease, transform .18s ease';
+    rowEl.style.opacity = '0';
+    rowEl.style.transform = 'translateX(8px)';
+  }
   renderIntimacoesAba();
   renderDashboard();
   toast(novoStatus === 'arquivada' ? 'Intimação arquivada e removida do acompanhamento.' : 'Status atualizado!');

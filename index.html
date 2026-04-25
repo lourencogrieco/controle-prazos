@@ -1568,6 +1568,31 @@
 
       </div>
 
+      <div class="cfg-card" id="cfgModelosCard" style="margin-top:16px">
+        <div class="cfg-card-head">
+          <span class="cfg-card-title">MODELOS DE DOCUMENTOS</span>
+          <button class="btn-primary btn-sm" onclick="abrirModalModeloDocumento()">+ Novo modelo</button>
+        </div>
+        <div class="modelos-toolbar">
+          <span>Use variáveis como <code>{{cliente.nome}}</code>, <code>{{cliente.cpf_cnpj}}</code>, <code>{{pasta.processo}}</code>.</span>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table modelos-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Categoria</th>
+                <th>Descrição</th>
+                <th style="width:180px">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyModelosDocumentos">
+              <tr><td colspan="4" class="tbl-empty">Nenhum modelo cadastrado.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- Log de Auditoria (visível apenas para admin/socio) -->
       <div class="cfg-card" id="cfgAuditCard" style="margin-top:16px">
         <div class="cfg-card-head">
@@ -2317,6 +2342,79 @@
       <div class="form-foot" style="margin-top:20px">
         <button class="btn-outline" id="cfgReset">↺ Restaurar padrão</button>
         <button class="btn-primary" id="cfgSalvar">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL MODELO DE DOCUMENTO ===== -->
+<div id="modalModeloDocumento" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-head">
+      <h3 id="modeloModalTitulo">Novo modelo</h3>
+      <button class="modal-close" onclick="fecharModalModeloDocumento()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="formModeloDocumento">
+        <input type="hidden" id="modeloId">
+        <div class="form-grid" style="grid-template-columns:1fr 180px;gap:14px">
+          <div class="field">
+            <span class="field-label">Nome *</span>
+            <input type="text" id="modeloNome" required placeholder="Ex: Procuração Judicial Geral">
+          </div>
+          <div class="field">
+            <span class="field-label">Categoria</span>
+            <input type="text" id="modeloCategoria" placeholder="Procuração">
+          </div>
+        </div>
+        <div class="field">
+          <span class="field-label">Descrição</span>
+          <input type="text" id="modeloDescricao" placeholder="Uso interno para identificar o modelo">
+        </div>
+        <div class="field">
+          <span class="field-label">Texto do modelo *</span>
+          <textarea id="modeloConteudo" rows="12" required placeholder="Eu, {{cliente.nome}}, inscrito(a) no CPF/CNPJ {{cliente.cpf_cnpj}}..."></textarea>
+        </div>
+        <div class="modelo-vars">
+          <strong>Variáveis disponíveis</strong>
+          <span>{{cliente.nome}}</span><span>{{cliente.cpf_cnpj}}</span><span>{{cliente.email}}</span><span>{{cliente.telefone}}</span><span>{{cliente.endereco}}</span><span>{{pasta.numero}}</span><span>{{pasta.processo}}</span><span>{{pasta.comarca}}</span>
+        </div>
+        <div class="form-foot" style="margin-top:18px">
+          <button type="button" class="btn-outline" onclick="fecharModalModeloDocumento()">Cancelar</button>
+          <button type="submit" class="btn-primary" id="btnSalvarModelo">Salvar modelo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL GERAR DOCUMENTO ===== -->
+<div id="modalGerarDocumento" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-head">
+      <h3 id="gerarDocTitulo">Gerar documento</h3>
+      <button class="modal-close" onclick="fecharModalGerarDocumento()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="gerarModeloId">
+      <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:14px">
+        <div class="field">
+          <span class="field-label">Cliente</span>
+          <select id="gerarClienteSelect"></select>
+        </div>
+        <div class="field">
+          <span class="field-label">Pasta / Processo</span>
+          <select id="gerarPastaSelect"></select>
+        </div>
+      </div>
+      <div id="gerarCamposExtras" class="modelo-extra-grid"></div>
+      <div class="field">
+        <span class="field-label">Documento preenchido</span>
+        <textarea id="gerarDocumentoResultado" rows="12"></textarea>
+      </div>
+      <div class="form-foot" style="margin-top:18px">
+        <button type="button" class="btn-outline" onclick="copiarDocumentoGerado()">Copiar</button>
+        <button type="button" class="btn-primary" onclick="baixarDocumentoGerado()">Baixar .txt</button>
       </div>
     </div>
   </div>

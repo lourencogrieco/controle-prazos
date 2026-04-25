@@ -46,7 +46,16 @@ function abrirRisco(tipo) {
   }
   if (tipo === 'intimacoes_pendentes') {
     navegarPara('atividades');
-    setTimeout(() => document.querySelector('[data-subtab=intimacoes]')?.click(), 80);
+    setTimeout(() => {
+      document.querySelector('[data-subtab=intimacoes]')?.click();
+      const st = document.getElementById('filtroIntimacoesStatus');
+      const de = document.getElementById('filtroIntimacoesDe');
+      const ate = document.getElementById('filtroIntimacoesAte');
+      if (st) st.value = 'pendente';
+      if (de) de.value = '';
+      if (ate) ate.value = '';
+      renderIntimacoesAba();
+    }, 80);
     return;
   }
   if (tipo === 'tarefas_sem_responsavel') {

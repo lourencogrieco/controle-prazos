@@ -217,6 +217,17 @@ function dbParaHonorario(row) {
   };
 }
 
+function dbParaModeloDocumento(row) {
+  return {
+    id: row.id,
+    nome: row.nome || '',
+    categoria: row.categoria || '',
+    descricao: row.descricao || '',
+    conteudo: row.conteudo || '',
+    createdAt: row.created_at || null,
+  };
+}
+
 // ──────────────────────────────────────────────────────────────────────
 // CARREGAR DADOS
 // ──────────────────────────────────────────────────────────────────────
@@ -248,9 +259,10 @@ async function carregarDados() {
     db.from('contas_pagar').select('*').eq('empresa_id', eid).order('data_vencimento'),
     db.from('despesas').select('*').eq('empresa_id', eid).order('data', { ascending: false }),
     db.from('oportunidades_crm').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
+    db.from('modelos_documentos').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
   ];
 
-  const [pr, pz, tf, tp, cl, ar, it, cfg, ev, us, hon, cob, ctp, dep, opo] = await Promise.all(queries);
+  const [pr, pz, tf, tp, cl, ar, it, cfg, ev, us, hon, cob, ctp, dep, opo, mod] = await Promise.all(queries);
 
   state.pastas     = (pr.data || []).map(dbParaPasta);
   _reconstruirIndicePastas();
@@ -289,6 +301,7 @@ async function carregarDados() {
   state.contasPagar = (ctp.data || []).map(dbParaContaPagar);
   state.despesas    = (dep.data || []).map(dbParaDespesa);
   state.oportunidades = (opo.data || []).map(dbParaOportunidade);
+  state.modelosDocumentos = (mod.data || []).map(dbParaModeloDocumento);
   // Carrega eventos da agenda no array local
   agendaEventos.length = 0;
   (ev.data || []).forEach(e => agendaEventos.push({

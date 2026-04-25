@@ -455,6 +455,7 @@ async function renderConfiguracoes() {
   }).join('');
 
   // Carrega audit log (admins/socios apenas)
+  renderModelosDocumentos();
   renderAuditLog();
 }
 
@@ -588,4 +589,165 @@ async function renderAuditLog() {
         }).join('')}
       </tbody>
     </table>`;
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// MODELOS DE DOCUMENTOS
+// ──────────────────────────────────────────────────────────────────────
+function renderModelosDocumentos() {
+  const tbody = document.getElementById('tbodyModelosDocumentos');
+  if (!tbody) return;
+  const modelos = state.modelosDocumentos || [];
+  tbody.innerHTML = modelos.length ? modelos.map(m => `
+    <tr>
+      <td><strong>${m.nome}</strong></td>
+      <td>${m.categoria ? `<span class="modelo-cat">${m.categoria}</span>` : '—'}</td>
+      <td style="max-width:360px;color:var(--mu)">${m.descricao || '—'}</td>
+      <td>
+        <div class="row-actions" style="justify-content:flex-start">
+          <button class="btn-link-sm" onclick="abrirModalGerarDocumento('${m.id}')">Gerar</button>
+          <button class="btn-link-sm" onclick="abrirModalModeloDocumento('${m.id}')">Editar</button>
+          <button class="btn-link-sm btn-link-danger" onclick="excluirModeloDocumento('${m.id}')">Excluir</button>
+        </div>
+      </td>
+    </tr>`).join('') : '<tr><td colspan="4" class="tbl-empty">Nenhum modelo cadastrado.</td></tr>';
+}
+
+function abrirModalModeloDocumento(id) {
+  const m = id ? state.modelosDocumentos.find(x => x.id === id) : null;
+  document.getElementById('modeloModalTitulo').textContent = m ? 'Editar modelo' : 'Novo modelo';
+  document.getElementById('modeloId').value = m?.id || '';
+  document.getElementById('modeloNome').value = m?.nome || '';
+  document.getElementById('modeloCategoria').value = m?.categoria || '';
+  document.getElementById('modeloDescricao').value = m?.descricao || '';
+  document.getElementById('modeloConteudo').value = m?.conteudo || '';
+  document.getElementById('modalModeloDocumento').classList.add('open');
+}
+
+function fecharModalModeloDocumento() {
+  document.getElementById('modalModeloDocumento').classList.remove('open');
+  document.getElementById('formModeloDocumento').reset();
+}
+
+document.getElementById('formModeloDocumento')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('btnSalvarModelo');
+  btn.disabled = true; btn.textContent = 'Salvando…';
+  try {
+    const id = document.getElementById('modeloId').value;
+    const obj = {
+      id: id || uid(),
+      empresa_id: state.empresaId,
+      nome: document.getElementById('modeloNome').value.trim(),
+      categoria: document.getElementById('modeloCategoria').value.trim() || null,
+      descricao: document.getElementById('modeloDescricao').value.trim() || null,
+      conteudo: document.getElementById('modeloConteudo').value,
+      updated_at: new Date().toISOString(),
+    };
+    const { data, error } = await db.from('modelos_documentos').upsert(obj).select();
+    if (error) { toast('Erro ao salvar modelo: ' + error.message, 'error'); return; }
+    _stateUpsert(state.modelosDocumentos, dbParaModeloDocumento(data[0]));
+    fecharModalModeloDocumento();
+    renderModelosDocumentos();
+    toast('Modelo salvo!');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Salvar modelo';
+  }
+});
+
+async function excluirModeloDocumento(id) {
+  if (!confirm('Excluir este modelo?')) return;
+  const { error } = await db.from('modelos_documentos').delete().eq('id', id).eq('empresa_id', state.empresaId);
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+  _stateRemove(state.modelosDocumentos, id);
+  renderModelosDocumentos();
+  toast('Modelo excluído.');
+}
+
+function montarEnderecoCliente(c) {
+  return [c.rua, c.numero, c.complemento, c.bairro, c.cidade, c.estado, c.cep].filter(Boolean).join(', ');
+}
+
+function modeloContexto(cliente, pasta, extras = {}) {
+  return {
+    'cliente.nome': cliente?.nome || '',
+    'cliente.cpf_cnpj': cliente?.cpfCnpj || '',
+    'cliente.email': cliente?.email || '',
+    'cliente.telefone': cliente?.telefone || '',
+    'cliente.endereco': montarEnderecoCliente(cliente || {}),
+    'cliente.cidade': cliente?.cidade || '',
+    'cliente.estado': cliente?.estado || '',
+    'pasta.numero': pasta?.numero || '',
+    'pasta.processo': pasta?.processo || '',
+    'pasta.comarca': pasta?.comarca || '',
+    'pasta.parte_contraria': pasta?.parteContraria || '',
+    'pasta.valor_causa': pasta?.valorCausa || '',
+    ...extras,
+  };
+}
+
+function extrairVariaveisModelo(texto) {
+  return [...new Set([...String(texto || '').matchAll(/{{\s*([^}]+?)\s*}}/g)].map(m => m[1].trim()))];
+}
+
+function preencherModelo(texto, ctx) {
+  return String(texto || '').replace(/{{\s*([^}]+?)\s*}}/g, (_, key) => ctx[key.trim()] ?? '');
+}
+
+function abrirModalGerarDocumento(modeloId) {
+  const modelo = state.modelosDocumentos.find(m => m.id === modeloId);
+  if (!modelo) return;
+  document.getElementById('gerarModeloId').value = modeloId;
+  document.getElementById('gerarDocTitulo').textContent = `Gerar: ${modelo.nome}`;
+  document.getElementById('gerarClienteSelect').innerHTML =
+    '<option value="">— Selecionar cliente —</option>' + state.clientes.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+  document.getElementById('gerarPastaSelect').innerHTML =
+    '<option value="">— Sem processo —</option>' + state.pastas.map(p => `<option value="${p.id}">${p.numero} — ${p.cliente}</option>`).join('');
+  renderCamposExtrasModelo(modelo);
+  document.getElementById('modalGerarDocumento').classList.add('open');
+  atualizarDocumentoGerado();
+}
+
+function fecharModalGerarDocumento() {
+  document.getElementById('modalGerarDocumento').classList.remove('open');
+  document.getElementById('gerarDocumentoResultado').value = '';
+}
+
+function renderCamposExtrasModelo(modelo) {
+  const wrap = document.getElementById('gerarCamposExtras');
+  const conhecidos = new Set(Object.keys(modeloContexto({}, {})));
+  const extras = extrairVariaveisModelo(modelo.conteudo).filter(v => !conhecidos.has(v));
+  wrap.innerHTML = extras.map(v => `
+    <label class="field modelo-extra-field">
+      <span class="field-label">{{${v}}}</span>
+      <input type="text" data-modelo-var="${v}" placeholder="Preencher ${v}">
+    </label>`).join('');
+  wrap.querySelectorAll('input').forEach(i => i.addEventListener('input', atualizarDocumentoGerado));
+}
+
+function atualizarDocumentoGerado() {
+  const modelo = state.modelosDocumentos.find(m => m.id === document.getElementById('gerarModeloId').value);
+  if (!modelo) return;
+  const cliente = state.clientes.find(c => c.id === document.getElementById('gerarClienteSelect').value) || null;
+  const pasta = state.pastas.find(p => p.id === document.getElementById('gerarPastaSelect').value) || null;
+  const extras = {};
+  document.querySelectorAll('[data-modelo-var]').forEach(i => { extras[i.dataset.modeloVar] = i.value; });
+  document.getElementById('gerarDocumentoResultado').value = preencherModelo(modelo.conteudo, modeloContexto(cliente, pasta, extras));
+}
+
+document.getElementById('gerarClienteSelect')?.addEventListener('change', atualizarDocumentoGerado);
+document.getElementById('gerarPastaSelect')?.addEventListener('change', atualizarDocumentoGerado);
+
+async function copiarDocumentoGerado() {
+  await navigator.clipboard.writeText(document.getElementById('gerarDocumentoResultado').value || '');
+  toast('Documento copiado.');
+}
+
+function baixarDocumentoGerado() {
+  const blob = new Blob([document.getElementById('gerarDocumentoResultado').value || ''], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'documento_preenchido.txt';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }

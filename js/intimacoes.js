@@ -71,6 +71,8 @@ function renderIntimacoesAba() {
   const ate    = document.getElementById('filtroIntimacoesAte')?.value ?? '';
 
   const lista = state.intimacoes.filter(i => {
+    const st = i.status || 'pendente';
+    if (!status && st === 'arquivada') return false;
     const m = !busca ||
       i.processo.toLowerCase().includes(busca) ||
       i.orgao.toLowerCase().includes(busca) ||
@@ -78,7 +80,7 @@ function renderIntimacoesAba() {
       i.nomeClasse.toLowerCase().includes(busca) ||
       i.tipoDocumento.toLowerCase().includes(busca);
     const dataOk = (!de || i.dataPublicacao >= de) && (!ate || i.dataPublicacao <= ate);
-    return m && (!status || i.status === status) && dataOk;
+    return m && (!status || st === status) && dataOk;
   });
 
   const cfg = state.pjeConfig;
@@ -134,20 +136,34 @@ function renderIntimacoesAba() {
   // Bind status dropdowns
   document.querySelectorAll('.intim-status-sel').forEach(sel => {
     sel.addEventListener('change', e => {
-      alterarStatusIntimacao(sel.dataset.id, e.target.value);
+      alterarStatusIntimacao(sel.dataset.id, e.target.value, sel);
     });
   });
 }
 
-async function alterarStatusIntimacao(id, novoStatus) {
-  const { error } = await db.from('intimacoes_pje')
+async function alterarStatusIntimacao(id, novoStatus, selectEl) {
+  const item = state.intimacoes.find(i => i.id === id);
+  const statusAnterior = item?.status || 'pendente';
+  if (selectEl) selectEl.disabled = true;
+
+  const { data, error } = await db.from('intimacoes_pje')
     .update({ status_lhub: novoStatus, lida: novoStatus !== 'pendente' })
     .eq('id', id)
-    .eq('empresa_id', state.empresaId);
-  if (error) { toast('Erro ao atualizar status: ' + error.message, 'error'); return; }
-  const item = state.intimacoes.find(i => i.id === id);
-  if (item) item.status = novoStatus;
-  toast('Status atualizado!');
+    .eq('empresa_id', state.empresaId)
+    .select('id,status_lhub,lida')
+    .maybeSingle();
+
+  if (selectEl) selectEl.disabled = false;
+  if (error || !data) {
+    if (selectEl) selectEl.value = statusAnterior;
+    toast('Erro ao atualizar status: ' + (error?.message || 'registro não encontrado'), 'error');
+    return;
+  }
+
+  if (item) item.status = data.status_lhub || (data.lida ? 'cumprida' : 'pendente');
+  renderIntimacoesAba();
+  renderDashboard();
+  toast(novoStatus === 'arquivada' ? 'Intimação arquivada e removida do acompanhamento.' : 'Status atualizado!');
 }
 
 function criarPrazoDaIntimacao(intim) {

@@ -176,7 +176,11 @@ async function alterarStatusIntimacao(id, novoStatus, selectEl) {
     return;
   }
 
-  if (item) item.status = data.status_lhub || (data.lida ? 'cumprida' : 'pendente');
+  if (novoStatus === 'arquivada') {
+    state.intimacoes = state.intimacoes.filter(i => i.id !== id);
+  } else if (item) {
+    item.status = data.status_lhub || (data.lida ? 'cumprida' : 'pendente');
+  }
   const statusFiltro = document.getElementById('filtroIntimacoesStatus')?.value ?? '';
   if (novoStatus === 'arquivada' && statusFiltro !== 'arquivada' && rowEl) {
     rowEl.style.transition = 'opacity .18s ease, transform .18s ease';
@@ -185,6 +189,9 @@ async function alterarStatusIntimacao(id, novoStatus, selectEl) {
   }
   renderIntimacoesAba();
   renderDashboard();
+  if (state.currentPastaId && typeof carregarAndamentosCNJ === 'function') {
+    carregarAndamentosCNJ(state.currentPastaId);
+  }
   toast(novoStatus === 'arquivada' ? 'Intimação arquivada e removida do acompanhamento.' : 'Status atualizado!');
 }
 

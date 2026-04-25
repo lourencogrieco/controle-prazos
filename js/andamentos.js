@@ -58,10 +58,13 @@ function renderAndamentosNasInstancias(andamentos) {
   const count2  = document.getElementById('andamentosCount2');
   const infoEl  = document.getElementById('cnjSyncInfo');
   const badgeEl = document.getElementById('cnjTribunalBadge');
+  const num2El  = document.getElementById('instanciaNumero2');
   if (!body1) return;
 
   const g1 = andamentos.filter(a => !a.grau || a.grau === 'G1' || a.grau === 'JE');
   const g2 = andamentos.filter(a => a.grau === 'G2' || a.grau === 'SUP');
+  const processoRecursal = g2.find(a => a.numero_processo)?.numero_processo || '';
+  if (num2El) num2El.textContent = processoRecursal || '—';
 
   const tribunal = andamentos[0]?.tribunal || '';
   if (badgeEl) badgeEl.textContent = tribunal.replace('api_publica_', '').toUpperCase();

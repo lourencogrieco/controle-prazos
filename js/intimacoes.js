@@ -436,6 +436,38 @@ function lerIntimacao(intim) {
   document.getElementById('modalLerIntimacao').classList.add('open');
 }
 
+function linhaPJeParaDb(i) {
+  return {
+    id: String(i.id),
+    empresa_id: state.empresaId,
+    data_disponibilizacao: i.data_disponibilizacao,
+    sigla_tribunal: i.siglaTribunal,
+    tipo_comunicacao: i.tipoComunicacao,
+    nome_orgao: i.nomeOrgao,
+    texto: i.texto,
+    numero_processo: i.numero_processo,
+    numero_processo_mascara: i.numeroprocessocommascara,
+    link: i.link,
+    tipo_documento: i.tipoDocumento,
+    nome_classe: i.nomeClasse,
+    status: i.status,
+    meio_completo: i.meiocompleto,
+    hash: i.hash,
+  };
+}
+
+async function importarIntimacoesPJe(rows) {
+  if (!rows.length) return { inseridas: 0, atualizadas: 0, ignoradas_arquivadas: 0 };
+  const { data, error } = await db.rpc('importar_intimacoes_pje', { p_rows: rows });
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  return {
+    inseridas: Number(row?.inseridas || 0),
+    atualizadas: Number(row?.atualizadas || 0),
+    ignoradas_arquivadas: Number(row?.ignoradas_arquivadas || 0),
+  };
+}
+
 async function sincronizarPJeData() {
   const de  = document.getElementById('filtroIntimacoesDe')?.value;
   const ate = document.getElementById('filtroIntimacoesAte')?.value;
@@ -446,7 +478,7 @@ async function sincronizarPJeData() {
     const nomes = state.pjeConfig?.nomes ?? [];
     if (!nomes.length) { toast('Nenhum nome configurado para busca de intimações.', 'error'); return; }
 
-    let total = 0;
+    const resumo = { inseridas: 0, atualizadas: 0, ignoradas_arquivadas: 0 };
     for (const nome of nomes) {
       let pagina = 1;
       let totalApi = Infinity;
@@ -461,33 +493,18 @@ async function sincronizarPJeData() {
         const json = await res.json();
         totalApi = json.count ?? 0;
         const items = json.items ?? [];
-        const rows = items.map(i => ({
-          id: String(i.id),
-          empresa_id: state.empresaId,
-          data_disponibilizacao: i.data_disponibilizacao,
-          sigla_tribunal: i.siglaTribunal,
-          tipo_comunicacao: i.tipoComunicacao,
-          nome_orgao: i.nomeOrgao,
-          texto: i.texto,
-          numero_processo: i.numero_processo,
-          numero_processo_mascara: i.numeroprocessocommascara,
-          link: i.link,
-          tipo_documento: i.tipoDocumento,
-          nome_classe: i.nomeClasse,
-          status: i.status,
-          meio_completo: i.meiocompleto,
-          hash: i.hash,
-        }));
+        const rows = items.map(linhaPJeParaDb);
         if (rows.length) {
-          const { error } = await db.from('intimacoes_pje').upsert(rows, { onConflict: 'id', ignoreDuplicates: true });
-          if (error) console.error('Upsert intimacoes erro:', error);
-          else total += rows.length;
+          const parcial = await importarIntimacoesPJe(rows);
+          resumo.inseridas += parcial.inseridas;
+          resumo.atualizadas += parcial.atualizadas;
+          resumo.ignoradas_arquivadas += parcial.ignoradas_arquivadas;
         }
         pagina++;
         if (items.length < 50) break;
       }
     }
-    toast(`${total} intimação(ões) importada(s)!`);
+    toast(`${resumo.inseridas} nova(s), ${resumo.atualizadas} atualizada(s), ${resumo.ignoradas_arquivadas} arquivada(s) preservada(s).`);
     await carregarDados();
     renderIntimacoesAba();
   } catch (e) { console.error('Erro ao buscar PJe:', e); toast('Erro: ' + e.message, 'error'); }
@@ -508,7 +525,7 @@ async function sincronizarPJe() {
     const nomes = state.pjeConfig?.nomes ?? [];
     if (!nomes.length) { toast('Nenhum nome configurado para busca de intimações.', 'error'); return; }
 
-    let total = 0;
+    const resumo = { inseridas: 0, atualizadas: 0, ignoradas_arquivadas: 0 };
     for (const nome of nomes) {
       let pagina = 1;
       let totalApi = Infinity;
@@ -520,26 +537,18 @@ async function sincronizarPJe() {
         const json = await res.json();
         totalApi = json.count ?? 0;
         const items = json.items ?? [];
-        const rows = items.map(i => ({
-          id: String(i.id), empresa_id: state.empresaId,
-          data_disponibilizacao: i.data_disponibilizacao,
-          sigla_tribunal: i.siglaTribunal, tipo_comunicacao: i.tipoComunicacao,
-          nome_orgao: i.nomeOrgao, texto: i.texto,
-          numero_processo: i.numero_processo,
-          numero_processo_mascara: i.numeroprocessocommascara,
-          link: i.link, tipo_documento: i.tipoDocumento,
-          nome_classe: i.nomeClasse, status: i.status,
-          meio_completo: i.meiocompleto, hash: i.hash,
-        }));
+        const rows = items.map(linhaPJeParaDb);
         if (rows.length) {
-          const { error } = await db.from('intimacoes_pje').upsert(rows, { onConflict: 'id', ignoreDuplicates: true });
-          if (!error) total += rows.length;
+          const parcial = await importarIntimacoesPJe(rows);
+          resumo.inseridas += parcial.inseridas;
+          resumo.atualizadas += parcial.atualizadas;
+          resumo.ignoradas_arquivadas += parcial.ignoradas_arquivadas;
         }
         pagina++;
         if (items.length < 50) break;
       }
     }
-    toast(`${total} intimação(ões) de hoje importada(s)!`);
+    toast(`${resumo.inseridas} nova(s), ${resumo.atualizadas} atualizada(s), ${resumo.ignoradas_arquivadas} arquivada(s) preservada(s).`);
     await carregarDados();
     renderIntimacoesAba();
   } catch (e) {

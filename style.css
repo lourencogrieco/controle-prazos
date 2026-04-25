@@ -1898,6 +1898,45 @@ tbody td {
   white-space: nowrap;
   word-break: keep-all;
 }
+.calc-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--green-soft);
+  color: var(--green);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.calc-badge--manual {
+  background: var(--gold-soft);
+  color: var(--mu);
+}
+.prazo-calc-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -2px 0 12px;
+  padding: 9px 11px;
+  border: 1px solid var(--br);
+  border-left: 3px solid var(--green);
+  border-radius: var(--r-sm);
+  background: var(--green-soft);
+  color: var(--tx);
+  font-size: .76rem;
+}
+.prazo-calc-info strong {
+  color: var(--green);
+  font-weight: 800;
+}
+.prazo-calc-info span {
+  color: var(--tx);
+}
 
 /* ─── TAREFAS CARD ────────────────────────────────────────────── */
 .tarefa-card {

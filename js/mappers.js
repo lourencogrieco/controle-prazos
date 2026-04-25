@@ -58,6 +58,11 @@ function dbParaPrazo(row) {
     prazoFatal:  row.prazo,
     descricao:   row.descricao || '',
     intimacaoId: row.intimacao_id || null,
+    prazoDataBase: row.prazo_data_base || null,
+    prazoDiasUteis: row.prazo_dias_uteis || null,
+    prazoRegra: row.prazo_regra || '',
+    prazoCalculado: !!row.prazo_calculado,
+    prazoMetadados: row.prazo_metadados || {},
     responsavel: row.responsavel || '',
     status:      row.status === 'concluido'    ? 'Concluído'
                : row.status === 'atrasado'    ? 'Atrasado'

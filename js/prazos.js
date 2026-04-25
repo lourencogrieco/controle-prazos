@@ -49,12 +49,16 @@ function abrirModalNovoPrazo(id) {
     : p?.status === 'Em andamento' ? 'em_andamento' : 'pendente';
   document.getElementById('prazoDescricao').value    = p?.descricao || '';
   const fatalEl = document.getElementById('prazoFatal');
-  fatalEl.dataset.dataBase = '';
-  fatalEl.dataset.calculado = '';
-  fatalEl.dataset.diasUteis = '';
-  fatalEl.dataset.regra = '';
-  fatalEl.dataset.metadados = '';
-  fatalEl.dataset.sugerida = '';
+  limparPrazoCalculoDataset(fatalEl);
+  if (p?.prazoCalculado) {
+    fatalEl.dataset.dataBase = p.prazoDataBase || '';
+    fatalEl.dataset.calculado = '1';
+    fatalEl.dataset.diasUteis = String(p.prazoDiasUteis || '');
+    fatalEl.dataset.regra = p.prazoRegra || '';
+    fatalEl.dataset.metadados = JSON.stringify(p.prazoMetadados || {});
+    fatalEl.dataset.sugerida = p.prazoFatal || '';
+  }
+  renderPrazoCalculoInfo(p);
   popularSelectsPastas();
   popularRespPicker('prazoRespPicker', p?.responsavel || '', state.usuarios);
 
@@ -70,6 +74,7 @@ function abrirModalNovoPrazo(id) {
 function fecharModalNovoPrazo() {
   document.getElementById('modalNovoPrazo').classList.remove('open');
   document.getElementById('novoPrazoForm').reset();
+  renderPrazoCalculoInfo(null);
 }
 
 document.getElementById('btnNovoPrazo').addEventListener('click', () => abrirModalNovoPrazo(null));
@@ -86,6 +91,43 @@ document.getElementById('prazoPastaSelect').addEventListener('change', e => {
     document.getElementById('prazoCliente').value = pasta.cliente;
   }
 });
+
+function limparPrazoCalculoDataset(el) {
+  if (!el) return;
+  el.dataset.dataBase = '';
+  el.dataset.calculado = '';
+  el.dataset.diasUteis = '';
+  el.dataset.regra = '';
+  el.dataset.metadados = '';
+  el.dataset.sugerida = '';
+}
+
+function renderPrazoCalculoInfo(prazoOuSugestao) {
+  const el = document.getElementById('prazoCalculoInfo');
+  if (!el) return;
+  const calculado = prazoOuSugestao?.prazoCalculado || prazoOuSugestao?.calculado;
+  const regra = prazoOuSugestao?.prazoRegra || prazoOuSugestao?.regra || '';
+  const dataBase = prazoOuSugestao?.prazoDataBase || prazoOuSugestao?.dataBase || '';
+  if (!calculado && !regra) {
+    el.classList.add('hidden');
+    el.innerHTML = '';
+    return;
+  }
+  el.classList.remove('hidden');
+  el.innerHTML = `
+    <strong>Prazo calculado automaticamente</strong>
+    <span>${regra || 'Regra não informada'}${dataBase ? ` · data-base ${formatDate(dataBase)}` : ''}</span>
+  `;
+}
+
+function prazoCalculoBadge(p) {
+  if (!p?.prazoCalculado) return '<span class="calc-badge calc-badge--manual">Manual</span>';
+  const title = [
+    p.prazoRegra || 'Prazo calculado',
+    p.prazoDataBase ? `Data-base: ${formatDate(p.prazoDataBase)}` : '',
+  ].filter(Boolean).join(' · ');
+  return `<span class="calc-badge" title="${title}">Auto</span>`;
+}
 
 async function calcularPrazoAuditavel(tipo, dataBase) {
   if (!tipo || !dataBase) return null;
@@ -127,6 +169,7 @@ async function preencherPrazoSugerido() {
   fatalEl.dataset.diasUteis = String(sugestao.diasUteis || '');
   fatalEl.dataset.regra = sugestao.regra || '';
   fatalEl.dataset.metadados = JSON.stringify(sugestao);
+  renderPrazoCalculoInfo({ ...sugestao, calculado: true });
   const nota = `Prazo sugerido automaticamente: ${sugestao.regra} a partir da publicação/intimação.`;
   if (descEl && !descEl.value.includes(nota)) {
     descEl.value = [descEl.value.trim(), nota].filter(Boolean).join('\n');
@@ -138,6 +181,7 @@ document.getElementById('prazoFatal').addEventListener('change', e => {
   const el = e.target;
   if (el.dataset.sugerida && el.value !== el.dataset.sugerida) {
     el.dataset.calculado = '';
+    renderPrazoCalculoInfo(null);
   }
 });
 
@@ -316,6 +360,7 @@ function renderPrazosAba() {
           <td>${p.comarca || '—'}</td>
           <td>${p.tipoPrazo}</td>
           <td>${formatDate(p.prazoFatal)}</td>
+          <td>${prazoCalculoBadge(p)}</td>
           <td>${diasRestantesHtml(p.prazoFatal)}</td>
           <td style="max-width:200px;font-size:.76rem">${p.descricao}</td>
           <td>${intimData ? formatDate(intimData) : '—'}</td>
@@ -324,7 +369,7 @@ function renderPrazosAba() {
           <td>${acoes}</td>
         </tr>`;
       }).join('')
-    : `<tr><td colspan="12" class="tbl-empty">Nenhum prazo cadastrado.</td></tr>`;
+    : `<tr><td colspan="13" class="tbl-empty">Nenhum prazo cadastrado.</td></tr>`;
 }
 
 function irParaIntimacao(id) {

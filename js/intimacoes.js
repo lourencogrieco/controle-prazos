@@ -71,6 +71,10 @@ const INTIM_STATUS_CLASS = {
 
 let _intimacaoVinculoAtual = null;
 
+function mesmoIdIntimacao(a, b) {
+  return String(a ?? '') === String(b ?? '');
+}
+
 function textoLegivelIntimacao(texto) {
   const raw = String(texto || '').trim();
   if (!raw) return '';
@@ -179,7 +183,7 @@ function renderIntimacoesAba() {
 }
 
 async function alterarStatusIntimacao(id, novoStatus, selectEl) {
-  const item = state.intimacoes.find(i => i.id === id);
+  const item = state.intimacoes.find(i => mesmoIdIntimacao(i.id, id));
   const statusAnterior = item?.status || 'pendente';
   const rowEl = document.querySelector(`tr[data-intimacao-id="${CSS.escape(id)}"]`);
   if (selectEl) selectEl.disabled = true;
@@ -198,7 +202,7 @@ async function alterarStatusIntimacao(id, novoStatus, selectEl) {
   }
 
   if (novoStatus === 'arquivada') {
-    state.intimacoes = state.intimacoes.filter(i => i.id !== id);
+    state.intimacoes = state.intimacoes.filter(i => !mesmoIdIntimacao(i.id, id));
   } else if (item) {
     item.status = row.status_lhub || (row.lida ? 'cumprida' : 'pendente');
   }
@@ -316,7 +320,7 @@ async function salvarVinculoIntimacao() {
       return;
     }
 
-    const item = state.intimacoes.find(i => i.id === id);
+    const item = state.intimacoes.find(i => mesmoIdIntimacao(i.id, id));
     if (item) item.pastaId = row.pasta_id;
     fecharModalVincularIntimacao();
     renderIntimacoesAba();
@@ -344,7 +348,7 @@ async function removerVinculoIntimacao() {
     toast('Erro ao remover vínculo: ' + (error?.message || 'registro não encontrado'), 'error');
     return;
   }
-  const item = state.intimacoes.find(i => i.id === id);
+  const item = state.intimacoes.find(i => mesmoIdIntimacao(i.id, id));
   if (item) item.pastaId = null;
   fecharModalVincularIntimacao();
   renderIntimacoesAba();

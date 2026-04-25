@@ -48,6 +48,13 @@ function abrirModalNovoPrazo(id) {
   document.getElementById('prazoStatus').value       = p?.status === 'Concluído' ? 'concluido'
     : p?.status === 'Em andamento' ? 'em_andamento' : 'pendente';
   document.getElementById('prazoDescricao').value    = p?.descricao || '';
+  const fatalEl = document.getElementById('prazoFatal');
+  fatalEl.dataset.dataBase = '';
+  fatalEl.dataset.calculado = '';
+  fatalEl.dataset.diasUteis = '';
+  fatalEl.dataset.regra = '';
+  fatalEl.dataset.metadados = '';
+  fatalEl.dataset.sugerida = '';
   popularSelectsPastas();
   popularRespPicker('prazoRespPicker', p?.responsavel || '', state.usuarios);
 
@@ -80,6 +87,60 @@ document.getElementById('prazoPastaSelect').addEventListener('change', e => {
   }
 });
 
+async function calcularPrazoAuditavel(tipo, dataBase) {
+  if (!tipo || !dataBase) return null;
+  try {
+    if (typeof db !== 'undefined' && db?.rpc) {
+      const { data, error } = await db.rpc('calcular_prazo_juridico', {
+        p_tipo: tipo,
+        p_data_base: dataBase,
+      });
+      if (!error && data) return data;
+      if (error) console.warn('[prazo] fallback cálculo local:', error.message);
+    }
+  } catch (err) {
+    console.warn('[prazo] fallback cálculo local:', err.message);
+  }
+
+  const local = window.PrazoJuridico?.sugerirPrazo({ tipo, dataBase });
+  return local ? {
+    dataFatal: local.dataFatal,
+    dataBase,
+    diasUteis: local.diasUteis,
+    regra: local.regra,
+    metodo: 'frontend_fallback',
+    excluiDiaBase: true,
+  } : null;
+}
+
+async function preencherPrazoSugerido() {
+  const tipoEl  = document.getElementById('prazoTipo');
+  const fatalEl = document.getElementById('prazoFatal');
+  const descEl  = document.getElementById('prazoDescricao');
+  const dataBase = fatalEl?.dataset?.dataBase || '';
+  const sugestao = await calcularPrazoAuditavel(tipoEl?.value, dataBase);
+  if (!sugestao) return;
+
+  fatalEl.value = sugestao.dataFatal;
+  fatalEl.dataset.calculado = '1';
+  fatalEl.dataset.sugerida = sugestao.dataFatal;
+  fatalEl.dataset.diasUteis = String(sugestao.diasUteis || '');
+  fatalEl.dataset.regra = sugestao.regra || '';
+  fatalEl.dataset.metadados = JSON.stringify(sugestao);
+  const nota = `Prazo sugerido automaticamente: ${sugestao.regra} a partir da publicação/intimação.`;
+  if (descEl && !descEl.value.includes(nota)) {
+    descEl.value = [descEl.value.trim(), nota].filter(Boolean).join('\n');
+  }
+}
+
+document.getElementById('prazoTipo').addEventListener('change', () => { preencherPrazoSugerido(); });
+document.getElementById('prazoFatal').addEventListener('change', e => {
+  const el = e.target;
+  if (el.dataset.sugerida && el.value !== el.dataset.sugerida) {
+    el.dataset.calculado = '';
+  }
+});
+
 document.getElementById('novoPrazoForm').addEventListener('submit', async e => {
   e.preventDefault();
   const btn = document.getElementById('btnSalvarPrazo');
@@ -100,6 +161,8 @@ document.getElementById('novoPrazoForm').addEventListener('submit', async e => {
 
     if (!tipo)  { toast('Selecione o tipo de prazo.', 'error'); return; }
     if (!prazo) { toast('Informe a data fatal.', 'error'); return; }
+    const fatalEl = document.getElementById('prazoFatal');
+    const prazoCalculado = fatalEl.dataset.calculado === '1';
 
     const obj = {
       id:           prazoId || uid(),
@@ -112,6 +175,13 @@ document.getElementById('novoPrazoForm').addEventListener('submit', async e => {
       status:       document.getElementById('prazoStatus').value || 'pendente',
       descricao:    document.getElementById('prazoDescricao').value.trim() || null,
       intimacao_id: document.getElementById('prazoIntimacaoId')?.value || null,
+      prazo_data_base: prazoCalculado ? (fatalEl.dataset.dataBase || null) : null,
+      prazo_dias_uteis: prazoCalculado ? (Number(fatalEl.dataset.diasUteis) || null) : null,
+      prazo_regra: prazoCalculado ? (fatalEl.dataset.regra || null) : null,
+      prazo_calculado: prazoCalculado,
+      prazo_metadados: prazoCalculado && fatalEl.dataset.metadados
+        ? JSON.parse(fatalEl.dataset.metadados)
+        : {},
     };
 
     const saveReq  = db.from('prazos_lhub').upsert(obj).select();

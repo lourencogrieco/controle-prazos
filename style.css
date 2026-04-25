@@ -1888,6 +1888,16 @@ tbody td {
 .prazos-table .int-link:hover { text-decoration: underline; }
 .prazos-table .no-int { color: var(--mu); font-style: italic; font-size: .75rem; }
 .prazos-table td { font-size: .8rem; }
+.prazos-table th:first-child,
+.prazos-table td:first-child {
+  min-width: 92px;
+  white-space: nowrap;
+}
+.prazos-table td:first-child .table-link {
+  display: inline-block;
+  white-space: nowrap;
+  word-break: keep-all;
+}
 
 /* ─── TAREFAS CARD ────────────────────────────────────────────── */
 .tarefa-card {

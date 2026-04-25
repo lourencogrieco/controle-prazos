@@ -157,12 +157,14 @@ function criarPrazoDaIntimacao(intim) {
   const pasta = _pastaPorProcesso(intim.processo);
   document.getElementById('prazoIntimacaoId').value = intim.id || '';
   document.getElementById('prazoTipo').value        = 'Manifestação';
+  document.getElementById('prazoFatal').dataset.dataBase = intim.dataPublicacao || '';
   document.getElementById('prazoDescricao').value   =
     `Intimação ${intim.tipoDocumento || intim.nomeClasse || ''} — ${intim.orgao} (${formatDate(intim.dataPublicacao)})`.trim();
   if (pasta) {
     document.getElementById('prazoPastaSelect').value = pasta.id;
     document.getElementById('prazoCliente').value     = pasta.cliente || '';
   }
+  preencherPrazoSugerido();
 }
 
 function criarTarefaDaIntimacao(intim) {

@@ -19,7 +19,8 @@ Evoluir o Legal Hub de sistema interno para SaaS jurídico escalável, seguro e 
 
 - Criar fluxo guiado: cliente -> pasta/processo -> prazo/tarefa -> cobrança.
 - Criar dashboard de risco: prazos vencidos, intimações pendentes, tarefas sem responsável, cobranças vencidas.
-- Implementar cálculo de prazos em backend com dias úteis, feriados nacionais e recesso.
+- [x] Iniciar motor de cálculo de prazos com dias úteis, feriados nacionais e recesso.
+- [ ] Evoluir cálculo de prazos para backend auditável com regras por tribunal/UF.
 - Criar linha do tempo completa da pasta com andamentos, prazos, tarefas, documentos e financeiro.
 - Melhorar CRM: origem do lead, próximo contato, motivo de perda, conversão em pasta e contrato.
 - Implementar paginação server-side nas principais listas.

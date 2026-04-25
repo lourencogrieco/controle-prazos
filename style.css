@@ -4073,7 +4073,7 @@ tbody td {
     left: 0;
     right: 0;
     /* altura fixa + espaço para o chrome do Safari iOS */
-    height: calc(54px + env(safe-area-inset-bottom, 0px));
+    height: calc(64px + env(safe-area-inset-bottom, 0px));
     padding-bottom: env(safe-area-inset-bottom, 0px);
     z-index: 200;
     background: var(--navy);
@@ -4121,13 +4121,13 @@ tbody td {
   .nav-tab.active::after { color: #fff; }
   .nav-tab.active { border-top-color: var(--ac); }
 
-  /* badge de pendências: abaixo do label, ancorado no bottom do tab */
+  /* badge de pendências: abaixo do label, posicionado a partir do centro */
   .nav-tab .nav-badge {
     position: absolute;
-    bottom: 5px;
+    top: calc(50% + 7px);  /* centro do tab + 7px → abaixo do texto */
     left: 50%;
-    top: auto;
     right: auto;
+    bottom: auto;
     transform: translateX(-50%);
     font-size: .55rem;
     margin: 0;
@@ -4151,7 +4151,7 @@ tbody td {
   /* ── App main — padding para não ficar sob bottom nav ───────────────── */
   .app-main {
     padding: 14px 12px;
-    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
     max-width: 100vw;
     overflow-x: hidden;
     box-sizing: border-box;

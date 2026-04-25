@@ -2301,6 +2301,12 @@ tbody td {
   white-space: nowrap;
 }
 .int-link:hover { text-decoration: underline; }
+.mono-muted {
+  margin: 0;
+  color: var(--tx);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .82rem;
+}
 
 /* ─── FINANCEIRO ──────────────────────────────────────────────── */
 .app-main:has(#view-financeiro.is-active) {

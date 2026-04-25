@@ -1554,14 +1554,14 @@
             </div>
           </div>
 
-          <!-- PJe Config -->
+          <!-- Busca de intimações -->
           <div class="cfg-card">
             <div class="cfg-card-head">
-              <span class="cfg-card-title">INTEGRAÇÃO PJe</span>
+              <span class="cfg-card-title">NOMES NO SISTEMA DE BUSCA</span>
             </div>
             <div class="cfg-field-group">
               <div>
-                <label class="cfg-label">Nomes para busca <small>(um por linha)</small></label>
+                <label class="cfg-label">Advogados monitorados <small>(um por linha)</small></label>
                 <textarea id="cfgPjeNomes" class="cfg-textarea" rows="4" placeholder="lourenço grieco neto&#10;outro advogado"></textarea>
               </div>
               <button class="btn-primary btn-sm" onclick="salvarPjeConfig()">Salvar configuração</button>
@@ -2932,6 +2932,35 @@
   </div>
 </div>
 
+<!-- ===== MODAL VINCULAR INTIMAÇÃO À PASTA ===== -->
+<div id="modalVincularIntimacao" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-head">
+      <div>
+        <h3 style="margin:0;font-size:.95rem">Vincular intimação à pasta</h3>
+        <p id="vincularIntimacaoMeta" style="margin:4px 0 0;font-size:.75rem;color:var(--mu)"></p>
+      </div>
+      <button class="modal-close" onclick="fecharModalVincularIntimacao()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="vincularIntimacaoId">
+      <div class="field">
+        <span class="field-label">Processo da intimação</span>
+        <p id="vincularIntimacaoProcesso" class="mono-muted">—</p>
+      </div>
+      <div class="field">
+        <span class="field-label">Pasta correta</span>
+        <select id="vincularIntimacaoPasta"></select>
+      </div>
+    </div>
+    <div class="form-foot" style="display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn-outline" onclick="removerVinculoIntimacao()">Remover vínculo</button>
+      <button class="btn-outline" onclick="fecharModalVincularIntimacao()">Cancelar</button>
+      <button class="btn-primary" id="btnSalvarVinculoIntimacao" onclick="salvarVinculoIntimacao()">Vincular pasta</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Detalhe do andamento -->
 <div id="modalDetalheAndamento" class="modal-overlay" role="dialog" aria-modal="true">
   <div class="modal" style="max-width:560px">
@@ -3072,7 +3101,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/core.js?v=59"></script>
 <script src="js/auth.js?v=57"></script>
-<script src="js/mappers.js?v=52"></script>
+<script src="js/mappers.js?v=53"></script>
 <script src="js/dashboard.js?v=58"></script>
 <script src="js/nav.js?v=59"></script>
 <script src="js/atividades.js?v=50"></script>
@@ -3080,7 +3109,7 @@
 <script src="js/configuracoes.js?v=57"></script>
 <script src="js/agenda.js?v=51"></script>
 <script src="js/prazo-calculo.js?v=1"></script>
-<script src="js/intimacoes.js?v=53"></script>
+<script src="js/intimacoes.js?v=54"></script>
 <script src="js/prazos.js?v=56"></script>
 <script src="js/tarefas.js?v=62"></script>
 <script src="js/pastas.js?v=59"></script>

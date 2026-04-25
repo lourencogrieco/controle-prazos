@@ -46,9 +46,14 @@ function linkProcesso(processo, tribunal) {
   return null;
 }
 
-// Encontra pasta vinculada pelo número do processo — O(1) via índice
-function pastaDaIntimacao(numeroProcesso) {
-  return _pastaPorProcesso(numeroProcesso);
+// Encontra pasta vinculada: primeiro por vínculo manual, depois por CNJ.
+function pastaDaIntimacao(intim) {
+  if (!intim) return null;
+  if (intim.pastaId) {
+    const manual = state.pastas.find(p => p.id === intim.pastaId);
+    if (manual) return manual;
+  }
+  return _pastaPorProcesso(intim.processo);
 }
 
 const INTIM_STATUS_LABEL = {
@@ -99,12 +104,12 @@ function renderIntimacoesAba() {
         const opts = Object.entries(INTIM_STATUS_LABEL)
           .map(([v, t]) => `<option value="${v}"${v === st ? ' selected' : ''}>${t}</option>`)
           .join('');
-        const pasta = pastaDaIntimacao(i.processo);
+        const iJson = JSON.stringify(i).replace(/'/g, '&#39;');
+        const pasta = pastaDaIntimacao(i);
         const pastaCell = pasta
           ? `<a class="int-link" href="#" onclick="event.preventDefault();navegarPara('pastas');setTimeout(()=>abrirPasta('${pasta.numero}'),100)">${pasta.numero}</a>`
-          : '<span style="color:var(--mu);font-size:.7rem">—</span>';
+          : `<button class="btn-link-sm" onclick='abrirModalVincularIntimacao(${iJson})' title="Vincular esta intimação a uma pasta">Vincular</button>`;
         const linkDireto = linkProcesso(i.processo, i.tribunal);
-        const iJson = JSON.stringify(i).replace(/'/g, '&#39;');
         return `<tr style="cursor:default">
           <td style="font-family:'IBM Plex Mono',monospace;font-size:.7rem;white-space:nowrap">
             <button class="btn-link-sm" onclick='lerIntimacao(${iJson})' title="Ler intimação" style="font-family:inherit;text-align:left">${i.processo}</button>
@@ -122,6 +127,7 @@ function renderIntimacoesAba() {
           </td>
           <td style="white-space:nowrap">
             <button class="btn-link-sm" onclick='lerIntimacao(${iJson})' title="Ler texto">Ler</button>
+            <button class="btn-link-sm" onclick='abrirModalVincularIntimacao(${iJson})' title="Vincular pasta" style="margin-left:6px">Vincular</button>
             <button class="btn-link-sm" onclick='criarPrazoDaIntimacao(${iJson})' title="Criar prazo" style="margin-left:6px">+ Prazo</button>
             <button class="btn-link-sm" onclick='criarTarefaDaIntimacao(${iJson})' title="Criar tarefa" style="margin-left:4px">+ Tarefa</button>
           </td>
@@ -166,11 +172,86 @@ async function alterarStatusIntimacao(id, novoStatus, selectEl) {
   toast(novoStatus === 'arquivada' ? 'Intimação arquivada e removida do acompanhamento.' : 'Status atualizado!');
 }
 
+function abrirModalVincularIntimacao(intim) {
+  document.getElementById('vincularIntimacaoId').value = intim.id || '';
+  document.getElementById('vincularIntimacaoProcesso').textContent = intim.processo || '—';
+  document.getElementById('vincularIntimacaoMeta').textContent =
+    `${intim.tribunal || 'Tribunal'} · ${formatDate(intim.dataPublicacao)} · ${intim.orgao || '—'}`;
+
+  const select = document.getElementById('vincularIntimacaoPasta');
+  const atual = pastaDaIntimacao(intim);
+  select.innerHTML = '<option value="">— Selecionar pasta —</option>' + state.pastas
+    .filter(p => p.status !== 'arquivado')
+    .map(p => `<option value="${p.id}"${p.id === atual?.id ? ' selected' : ''}>${p.numero} — ${p.cliente || '—'}${p.processo ? ' · ' + p.processo : ''}</option>`)
+    .join('');
+
+  document.getElementById('modalVincularIntimacao').classList.add('open');
+}
+
+function fecharModalVincularIntimacao() {
+  document.getElementById('modalVincularIntimacao').classList.remove('open');
+  document.getElementById('vincularIntimacaoId').value = '';
+  document.getElementById('vincularIntimacaoPasta').value = '';
+}
+
+async function salvarVinculoIntimacao() {
+  const id = document.getElementById('vincularIntimacaoId').value;
+  const pastaId = document.getElementById('vincularIntimacaoPasta').value;
+  if (!id || !pastaId) { toast('Selecione uma pasta para vincular.', 'error'); return; }
+
+  const btn = document.getElementById('btnSalvarVinculoIntimacao');
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
+  try {
+    const { data, error } = await db.from('intimacoes_pje')
+      .update({ pasta_id: pastaId })
+      .eq('id', id)
+      .eq('empresa_id', state.empresaId)
+      .select('id,pasta_id')
+      .maybeSingle();
+
+    if (error || !data) {
+      toast('Erro ao vincular pasta: ' + (error?.message || 'registro não encontrado'), 'error');
+      return;
+    }
+
+    const item = state.intimacoes.find(i => i.id === id);
+    if (item) item.pastaId = data.pasta_id;
+    fecharModalVincularIntimacao();
+    renderIntimacoesAba();
+    toast('Intimação vinculada à pasta.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Vincular pasta'; }
+  }
+}
+
+async function removerVinculoIntimacao() {
+  const id = document.getElementById('vincularIntimacaoId').value;
+  if (!id) return;
+  if (!confirm('Remover vínculo desta intimação com a pasta?')) return;
+
+  const { data, error } = await db.from('intimacoes_pje')
+    .update({ pasta_id: null })
+    .eq('id', id)
+    .eq('empresa_id', state.empresaId)
+    .select('id,pasta_id')
+    .maybeSingle();
+
+  if (error || !data) {
+    toast('Erro ao remover vínculo: ' + (error?.message || 'registro não encontrado'), 'error');
+    return;
+  }
+  const item = state.intimacoes.find(i => i.id === id);
+  if (item) item.pastaId = null;
+  fecharModalVincularIntimacao();
+  renderIntimacoesAba();
+  toast('Vínculo removido.');
+}
+
 function criarPrazoDaIntimacao(intim) {
   // Abre o modal via função oficial (configura pickers, permissões, etc.)
   abrirModalNovoPrazo(null);
   // Sobrescreve campos com dados da intimação
-  const pasta = _pastaPorProcesso(intim.processo);
+  const pasta = pastaDaIntimacao(intim);
   document.getElementById('prazoIntimacaoId').value = intim.id || '';
   document.getElementById('prazoTipo').value        = 'Manifestação';
   document.getElementById('prazoFatal').dataset.dataBase = intim.dataPublicacao || '';
@@ -187,7 +268,7 @@ function criarTarefaDaIntimacao(intim) {
   // Abre o modal via função oficial (configura pickers, seletores, etc.)
   abrirModalNovaTarefa(null);
   // Sobrescreve campos com dados da intimação
-  const pasta = _pastaPorProcesso(intim.processo);
+  const pasta = pastaDaIntimacao(intim);
   document.getElementById('tTitulo').value     = `Intimação: ${intim.tipoDocumento || intim.nomeClasse || intim.orgao}`;
   document.getElementById('tTipo').value       = 'Diligência interna';
   document.getElementById('tPrioridade').value = 'alta';
@@ -221,7 +302,7 @@ async function sincronizarPJeData() {
   if (btn) { btn.disabled = true; btn.textContent = 'Buscando…'; }
   try {
     const nomes = state.pjeConfig?.nomes ?? [];
-    if (!nomes.length) { toast('Nenhum advogado configurado no PJe.', 'error'); return; }
+    if (!nomes.length) { toast('Nenhum nome configurado para busca de intimações.', 'error'); return; }
 
     let total = 0;
     for (const nome of nomes) {
@@ -283,7 +364,7 @@ async function sincronizarPJe() {
   if (btn) { btn.disabled = true; btn.textContent = 'Sincronizando…'; }
   try {
     const nomes = state.pjeConfig?.nomes ?? [];
-    if (!nomes.length) { toast('Nenhum advogado configurado no PJe.', 'error'); return; }
+    if (!nomes.length) { toast('Nenhum nome configurado para busca de intimações.', 'error'); return; }
 
     let total = 0;
     for (const nome of nomes) {

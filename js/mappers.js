@@ -76,6 +76,7 @@ function dbParaPrazo(row) {
 function dbParaIntimacao(row) {
   return {
     id:               row.id,
+    pastaId:          row.pasta_id || null,
     dataPublicacao:   row.data_disponibilizacao,
     tribunal:         row.sigla_tribunal || '',
     tipoComunicacao:  row.tipo_comunicacao || 'Intimação',

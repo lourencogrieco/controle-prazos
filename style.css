@@ -72,26 +72,29 @@ a { text-decoration: none; color: inherit; }
   z-index: 100;
   display: flex;
   align-items: center;
-  gap: 0;
-  height: 56px;
-  background: var(--navy);
-  border-bottom: 1px solid rgba(255,255,255,.08);
+  gap: 8px;
+  height: 64px;
+  padding-right: 10px;
+  background: linear-gradient(180deg, #085865 0%, var(--navy) 100%);
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  box-shadow: 0 8px 24px rgba(8,80,93,.12);
 }
 
 /* Brand */
 .hdr-brand {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 0 12px;
+  gap: 10px;
+  padding: 0 16px 0 14px;
   border-right: 1px solid rgba(255,255,255,.1);
   height: 100%;
+  min-width: 226px;
   flex-shrink: 0;
 }
 
 .brand-mark {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
   background: rgba(255,255,255,.12);
@@ -113,14 +116,14 @@ a { text-decoration: none; color: inherit; }
 
 .brand-text strong {
   color: #fff;
-  font-size: .78rem;
+  font-size: .82rem;
   font-weight: 700;
   letter-spacing: .02em;
 }
 
 .brand-text span {
   color: rgba(255,255,255,.45);
-  font-size: .61rem;
+  font-size: .62rem;
   font-family: "IBM Plex Mono", monospace;
   letter-spacing: .04em;
 }
@@ -128,9 +131,11 @@ a { text-decoration: none; color: inherit; }
 /* Nav tabs */
 .hdr-nav {
   display: flex;
-  align-items: stretch;
+  align-items: center;
+  gap: 4px;
   height: 100%;
   flex: 1;
+  padding: 0 4px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -138,27 +143,34 @@ a { text-decoration: none; color: inherit; }
 .hdr-nav::-webkit-scrollbar { display: none; }
 
 .nav-tab {
-  height: 100%;
-  padding: 0 12px;
-  color: rgba(255,255,255,.55);
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 11px;
+  color: rgba(255,255,255,.66);
   font-family: "IBM Plex Mono", monospace;
-  font-size: .63rem;
+  font-size: .62rem;
   font-weight: 500;
-  letter-spacing: .06em;
+  letter-spacing: .055em;
   white-space: nowrap;
-  border-bottom: 3px solid transparent;
-  transition: color .15s, border-color .15s, background .15s;
+  border-radius: var(--r-sm);
+  border: 1px solid transparent;
+  transition: color .15s, border-color .15s, background .15s, box-shadow .15s;
 }
 
 .nav-tab:hover {
-  color: rgba(255,255,255,.85);
-  background: rgba(255,255,255,.05);
+  color: rgba(255,255,255,.95);
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.08);
 }
 
 .nav-tab.active {
   color: #fff;
-  border-bottom-color: rgba(255,255,255,.85);
-  background: rgba(255,255,255,.07);
+  border-color: rgba(255,255,255,.18);
+  background: rgba(255,255,255,.13);
+  box-shadow: inset 0 -2px 0 rgba(255,255,255,.72);
 }
 
 /* Nav badge (prazos urgentes) */
@@ -175,7 +187,7 @@ a { text-decoration: none; color: inherit; }
   font-size: .62rem;
   font-weight: 700;
   line-height: 1;
-  margin-left: 5px;
+  margin-left: 0;
   vertical-align: middle;
 }
 .nav-badge.hidden { display: none; }
@@ -213,8 +225,8 @@ a { text-decoration: none; color: inherit; }
 .hdr-user {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 10px;
+  gap: 10px;
+  padding: 0 0 0 12px;
   border-left: 1px solid rgba(255,255,255,.1);
   flex-shrink: 0;
 }
@@ -224,7 +236,8 @@ a { text-decoration: none; color: inherit; }
   flex-direction: column;
   align-items: flex-end;
   line-height: 1.2;
-  margin-right: 4px;
+  min-width: 0;
+  max-width: 170px;
 }
 
 .user-info strong {
@@ -232,6 +245,10 @@ a { text-decoration: none; color: inherit; }
   font-size: .68rem;
   font-weight: 700;
   letter-spacing: .04em;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .user-info span {
@@ -243,8 +260,8 @@ a { text-decoration: none; color: inherit; }
 
 /* Avatar com iniciais do usuário */
 .hdr-user-avatar {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: rgba(255,255,255,.15);
   border: 1.5px solid rgba(255,255,255,.28);
@@ -259,12 +276,18 @@ a { text-decoration: none; color: inherit; }
   user-select: none;
 }
 
-.hdr-actions { display: flex; gap: 2px; }
+.hdr-actions {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding-left: 8px;
+  border-left: 1px solid rgba(255,255,255,.08);
+}
 
 .hdr-btn {
   position: relative;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
   color: rgba(255,255,255,.55);

@@ -87,6 +87,7 @@ function dbParaIntimacao(row) {
     tipoDocumento:    row.tipo_documento || '',
     nomeClasse:       row.nome_classe || '',
     status:           row.status_lhub || (row.lida ? 'cumprida' : 'pendente'),
+    arquivadaEm:      row.arquivada_em || null,
     meioCompleto:     row.meio_completo || '',
   };
 }
@@ -234,6 +235,13 @@ function dbParaModeloDocumento(row) {
 // ──────────────────────────────────────────────────────────────────────
 async function carregarDados() {
   const eid = state.empresaId;
+
+  if (eid) {
+    await db.rpc('limpar_intimacoes_arquivadas', { p_dias: 14 })
+      .then(({ error }) => {
+        if (error) console.warn('Limpeza de intimações arquivadas indisponível:', error.message);
+      });
+  }
 
   // Chaves de cache por empresa
   const cacheKeyAreas  = `lhub_areas_${eid}`;

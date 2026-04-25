@@ -218,6 +218,7 @@ async function alterarStatusIntimacao(id, novoStatus, selectEl) {
     state.intimacoes = state.intimacoes.filter(i => !mesmoIdIntimacao(i.id, id));
   } else if (item) {
     item.status = row.status_lhub || (row.lida ? 'cumprida' : 'pendente');
+    item.arquivadaEm = row.arquivada_em || null;
   }
   const statusFiltro = document.getElementById('filtroIntimacoesStatus')?.value ?? '';
   if (novoStatus === 'arquivada' && statusFiltro !== 'arquivada' && rowEl) {

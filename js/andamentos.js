@@ -22,6 +22,11 @@ function grauDaIntimacao(intim) {
   return foro === '0000' ? 'G2' : 'G1';
 }
 
+function textoAndamentoIntimacao(texto) {
+  if (typeof textoLegivelIntimacao === 'function') return textoLegivelIntimacao(texto);
+  return String(texto || '').replace(/<[^>]+>/g, ' ').replace(/\s{2,}/g, ' ').trim();
+}
+
 function montarAndamentosComIntimacoesVinculadas(andamentos, pastaId) {
   const base = [...(andamentos || [])];
   const vinculadas = (state.intimacoes || [])
@@ -38,7 +43,7 @@ function montarAndamentosComIntimacoesVinculadas(andamentos, pastaId) {
       complemento: [
         i.nomeClasse ? `Classe: ${i.nomeClasse}` : '',
         i.orgao ? `Órgão: ${i.orgao}` : '',
-        i.texto || '',
+        textoAndamentoIntimacao(i.texto) || '',
       ].filter(Boolean).join('\n'),
       codigo: null,
       is_intimacao: true,

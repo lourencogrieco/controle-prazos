@@ -71,6 +71,28 @@ const INTIM_STATUS_CLASS = {
 
 let _intimacaoVinculoAtual = null;
 
+function textoLegivelIntimacao(texto) {
+  const raw = String(texto || '').trim();
+  if (!raw) return '';
+  const normalizado = raw
+    .replace(/\\n/g, '\n')
+    .replace(/\\t/g, ' ')
+    .replace(/\\"/g, '"');
+  if (!/[<][a-z!/][\s\S]*[>]/i.test(normalizado)) {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = normalizado;
+    return txt.value.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+  const doc = new DOMParser().parseFromString(normalizado, 'text/html');
+  doc.querySelectorAll('script,style').forEach(el => el.remove());
+  return (doc.body?.innerText || doc.documentElement?.textContent || '')
+    .replace(/\u00a0/g, ' ')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 function renderIntimacoesAba() {
   const busca  = (document.getElementById('buscaIntimacoes')?.value ?? '').toLowerCase();
   const status = document.getElementById('filtroIntimacoesStatus')?.value ?? '';
@@ -162,15 +184,14 @@ async function alterarStatusIntimacao(id, novoStatus, selectEl) {
   const rowEl = document.querySelector(`tr[data-intimacao-id="${CSS.escape(id)}"]`);
   if (selectEl) selectEl.disabled = true;
 
-  const { data, error } = await db.from('intimacoes_pje')
-    .update({ status_lhub: novoStatus, lida: novoStatus !== 'pendente' })
-    .eq('id', id)
-    .eq('empresa_id', state.empresaId)
-    .select('id,status_lhub,lida')
-    .maybeSingle();
+  const { data, error } = await db.rpc('atualizar_status_intimacao', {
+    p_intimacao_id: id,
+    p_status: novoStatus,
+  });
+  const row = Array.isArray(data) ? data[0] : data;
 
   if (selectEl) selectEl.disabled = false;
-  if (error || !data) {
+  if (error || !row) {
     if (selectEl) selectEl.value = statusAnterior;
     toast('Erro ao atualizar status: ' + (error?.message || 'registro não encontrado'), 'error');
     return;
@@ -179,7 +200,7 @@ async function alterarStatusIntimacao(id, novoStatus, selectEl) {
   if (novoStatus === 'arquivada') {
     state.intimacoes = state.intimacoes.filter(i => i.id !== id);
   } else if (item) {
-    item.status = data.status_lhub || (data.lida ? 'cumprida' : 'pendente');
+    item.status = row.status_lhub || (row.lida ? 'cumprida' : 'pendente');
   }
   const statusFiltro = document.getElementById('filtroIntimacoesStatus')?.value ?? '';
   if (novoStatus === 'arquivada' && statusFiltro !== 'arquivada' && rowEl) {
@@ -259,7 +280,7 @@ function criarPastaDaIntimacaoVinculada() {
     orgao: intim.orgao || '',
     tribunal: intim.tribunal || '',
     dataPublicacao: intim.dataPublicacao || '',
-    texto: intim.texto || '',
+    texto: textoLegivelIntimacao(intim.texto) || '',
   };
   fecharModalVincularIntimacao();
   abrirModalNovaPasta(null);
@@ -272,7 +293,7 @@ function criarPastaDaIntimacaoVinculada() {
     `Pasta criada a partir de intimação vinculada.`,
     intim.tribunal ? `Tribunal: ${intim.tribunal}` : '',
     intim.orgao ? `Órgão: ${intim.orgao}` : '',
-    intim.texto || '',
+    textoLegivelIntimacao(intim.texto) || '',
   ].filter(Boolean).join('\n');
 }
 
@@ -370,7 +391,7 @@ function lerIntimacao(intim) {
 
   document.getElementById('lerIntimTitulo').textContent = titulo;
   document.getElementById('lerIntimMeta').textContent   = meta;
-  document.getElementById('lerIntimTexto').textContent  = intim.texto || 'Texto não disponível.';
+  document.getElementById('lerIntimTexto').textContent  = textoLegivelIntimacao(intim.texto) || 'Texto não disponível.';
 
   const link = linkProcesso(intim.processo, intim.tribunal) || intim.link || '#';
   const linkEl = document.getElementById('lerIntimLink');

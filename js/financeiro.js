@@ -535,7 +535,10 @@ document.getElementById('formCobranca').addEventListener('submit', async e => {
 
 async function excluirCobranca(id) {
   if (!confirm('Excluir esta cobrança?')) return;
-  const { error } = await db.from('cobrancas').delete().eq('id', id);
+  const { error } = await db.from('cobrancas')
+    .delete()
+    .eq('id', id)
+    .eq('empresa_id', state.empresaId);
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
   _stateRemove(state.cobrancas, id);
   toast('Cobrança excluída.');
@@ -600,7 +603,10 @@ document.getElementById('formContaPagar').addEventListener('submit', async e => 
 
 async function excluirContaPagar(id) {
   if (!confirm('Excluir esta conta a pagar?')) return;
-  const { error } = await db.from('contas_pagar').delete().eq('id', id);
+  const { error } = await db.from('contas_pagar')
+    .delete()
+    .eq('id', id)
+    .eq('empresa_id', state.empresaId);
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
   _stateRemove(state.contasPagar, id);
   toast('Conta excluída.');
@@ -669,7 +675,10 @@ document.getElementById('formDespesa').addEventListener('submit', async e => {
 
 async function excluirDespesa(id) {
   if (!confirm('Excluir esta despesa?')) return;
-  const { error } = await db.from('despesas').delete().eq('id', id);
+  const { error } = await db.from('despesas')
+    .delete()
+    .eq('id', id)
+    .eq('empresa_id', state.empresaId);
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
   _stateRemove(state.despesas, id);
   toast('Despesa excluída.');
@@ -713,7 +722,10 @@ document.getElementById('formDarBaixa').addEventListener('submit', async e => {
     if (valor) upd.valor_pago = valor;
     if (tipo === 'desp') { delete upd.data_pagamento; upd.data = data; }
 
-    const { error } = await db.from(tabela).update(upd).eq('id', id);
+    const { error } = await db.from(tabela)
+      .update(upd)
+      .eq('id', id)
+      .eq('empresa_id', state.empresaId);
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
 
     document.getElementById('modalDarBaixa').classList.remove('open');

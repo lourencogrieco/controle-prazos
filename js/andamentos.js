@@ -7,6 +7,7 @@ async function carregarAndamentosCNJ(pastaId) {
     .from('andamentos_processo')
     .select('*')
     .eq('pasta_id', pastaId)
+    .eq('empresa_id', state.empresaId)
     .order('data_hora', { ascending: false });
 
   if (error) { console.error('Erro ao carregar andamentos:', error); return; }
@@ -144,6 +145,7 @@ async function sincronizarAndamentos(silencioso = false) {
       .from('andamentos_processo')
       .select('*')
       .eq('pasta_id', pasta.id)
+      .eq('empresa_id', state.empresaId)
       .order('data_hora', { ascending: false });
     state.andamentosCNJ = data || [];
     renderAndamentosNasInstancias(state.andamentosCNJ);
@@ -200,7 +202,7 @@ document.getElementById('formAndamentoManual').addEventListener('submit', async 
         complemento:  desc,
         grau,
         is_intimacao: /intima[çc]/i.test(tipo),
-      }).eq('id', andId);
+      }).eq('id', andId).eq('empresa_id', state.empresaId);
       if (error) { toast('Erro ao atualizar: ' + error.message, 'error'); return; }
       toast('Andamento atualizado!');
     } else {
@@ -226,7 +228,10 @@ document.getElementById('formAndamentoManual').addEventListener('submit', async 
     document.getElementById('modalAndamentoManual').classList.remove('open');
 
     const { data: rows } = await db.from('andamentos_processo')
-      .select('*').eq('pasta_id', pastaId).order('data_hora', { ascending: false });
+      .select('*')
+      .eq('pasta_id', pastaId)
+      .eq('empresa_id', state.empresaId)
+      .order('data_hora', { ascending: false });
     state.andamentosCNJ = rows || [];
     renderAndamentosNasInstancias(state.andamentosCNJ);
   } catch (err) {
@@ -281,12 +286,18 @@ async function excluirAndamentoAtual() {
   const a = state.currentAndamento;
   if (!a || a.tribunal !== 'manual') return;
   if (!confirm('Excluir este andamento? Esta ação não pode ser desfeita.')) return;
-  const { error } = await db.from('andamentos_processo').delete().eq('id', a.id);
+  const { error } = await db.from('andamentos_processo')
+    .delete()
+    .eq('id', a.id)
+    .eq('empresa_id', state.empresaId);
   if (error) { toast('Erro ao excluir: ' + error.message, 'error'); return; }
   document.getElementById('modalDetalheAndamento').classList.remove('open');
   toast('Andamento excluído.');
   const { data: rows } = await db.from('andamentos_processo')
-    .select('*').eq('pasta_id', a.pasta_id).order('data_hora', { ascending: false });
+    .select('*')
+    .eq('pasta_id', a.pasta_id)
+    .eq('empresa_id', state.empresaId)
+    .order('data_hora', { ascending: false });
   state.andamentosCNJ = rows || [];
   renderAndamentosNasInstancias(state.andamentosCNJ);
 }
@@ -312,7 +323,10 @@ async function carregarDocumentosDetalhe(andamentoId) {
   if (!el) return;
   el.innerHTML = '<div style="color:var(--mu);font-size:.78rem;padding:6px 0">Carregando…</div>';
   const { data } = await db.from('documentos_pasta')
-    .select('*').eq('andamento_id', andamentoId).order('created_at', { ascending: false });
+    .select('*')
+    .eq('andamento_id', andamentoId)
+    .eq('empresa_id', state.empresaId)
+    .order('created_at', { ascending: false });
   const docs = data || [];
   if (!docs.length) {
     el.innerHTML = '<div style="color:var(--mu);font-size:.78rem;padding:6px 0">Nenhum documento vinculado</div>';

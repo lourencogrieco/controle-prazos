@@ -30,6 +30,7 @@ async function carregarDocumentos(pastaId) {
   const { data } = await db.from('documentos_pasta')
     .select('*')
     .eq('pasta_id', pastaId)
+    .eq('empresa_id', state.empresaId)
     .is('andamento_id', null)
     .order('created_at', { ascending: false });
   renderDocumentos(data || []);
@@ -127,7 +128,10 @@ async function baixarDocumento(path, nome) {
 async function excluirDocumento(id, path) {
   if (!confirm('Excluir este documento?')) return;
   await db.storage.from('documentos').remove([path]);
-  await db.from('documentos_pasta').delete().eq('id', id);
+  await db.from('documentos_pasta')
+    .delete()
+    .eq('id', id)
+    .eq('empresa_id', state.empresaId);
   toast('Documento excluído.');
   await carregarDocumentos(state.currentPastaId);
 }
@@ -136,7 +140,10 @@ async function excluirDocumento(id, path) {
 async function excluirDocumentoAndamento(id, path, andamentoId) {
   if (!confirm('Excluir este documento?')) return;
   await db.storage.from('documentos').remove([path]);
-  await db.from('documentos_pasta').delete().eq('id', id);
+  await db.from('documentos_pasta')
+    .delete()
+    .eq('id', id)
+    .eq('empresa_id', state.empresaId);
   toast('Documento excluído.');
   if (andamentoId) await carregarDocumentosDetalhe(andamentoId);
 }

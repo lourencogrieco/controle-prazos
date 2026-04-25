@@ -142,7 +142,8 @@ function renderIntimacoesAba() {
 async function alterarStatusIntimacao(id, novoStatus) {
   const { error } = await db.from('intimacoes_pje')
     .update({ status_lhub: novoStatus, lida: novoStatus !== 'pendente' })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('empresa_id', state.empresaId);
   if (error) { toast('Erro ao atualizar status: ' + error.message, 'error'); return; }
   const item = state.intimacoes.find(i => i.id === id);
   if (item) item.status = novoStatus;

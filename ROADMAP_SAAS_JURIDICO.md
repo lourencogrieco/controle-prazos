@@ -6,11 +6,12 @@ Evoluir o Legal Hub de sistema interno para SaaS jurídico escalável, seguro e 
 
 ## Fase 0 - Fundação Crítica (1 a 2 semanas)
 
-- Remover segredos hardcoded e exigir variáveis de ambiente para integrações.
-- Versionar schema do Supabase com migrations.
-- Revisar e testar RLS em todas as tabelas com `empresa_id`.
-- Garantir filtros de tenant em todos os deletes/updates diretos.
-- Criar índices mínimos por `empresa_id`, datas, status, pasta e processo.
+- [x] Remover segredos hardcoded e exigir variáveis de ambiente para integrações.
+- [x] Versionar base de RLS e índices do Supabase com migrations.
+- [x] Criar políticas RLS multi-tenant iniciais para tabelas com `empresa_id`.
+- [x] Garantir filtros de tenant nos deletes/updates diretos encontrados no cliente.
+- [x] Criar índices mínimos por `empresa_id`, datas, status, pasta e processo.
+- [ ] Aplicar a migration no banco remoto e validar políticas em produção.
 - Criar suíte de testes para proxies, permissões e cálculo de prazo.
 - Sanitizar renderizações com dados vindos do usuário.
 

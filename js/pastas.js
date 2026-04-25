@@ -122,6 +122,7 @@ function abrirModalNovaPasta(numero) {
 function fecharModalNovaPasta() {
   document.getElementById('modalNovaPasta').classList.remove('open');
   document.getElementById('novaPastaForm').reset();
+  state.intimacaoParaVincularNovaPasta = null;
 }
 
 document.getElementById('btnNovaPasta').addEventListener('click', () => abrirModalNovaPasta(null));
@@ -193,9 +194,25 @@ document.getElementById('novaPastaForm').addEventListener('submit', async e => {
 
     const { error } = await db.from('pastas').upsert(obj);
     if (error) { toast('Erro ao salvar: ' + error.message, 'error'); return; }
+
+    const intimacaoPendente = state.intimacaoParaVincularNovaPasta;
+    if (intimacaoPendente?.id) {
+      const { error: vinculoError } = await db.rpc('vincular_intimacao_pasta', {
+        p_intimacao_id: intimacaoPendente.id,
+        p_pasta_id: obj.id,
+      });
+      if (vinculoError) {
+        toast('Pasta criada, mas não foi possível vincular a intimação: ' + vinculoError.message, 'error');
+      } else {
+        const intim = state.intimacoes.find(i => i.id === intimacaoPendente.id);
+        if (intim) intim.pastaId = obj.id;
+      }
+      state.intimacaoParaVincularNovaPasta = null;
+    }
+
     logAuditoria(pastaId ? 'editar' : 'criar', 'pastas', obj.id, `Pasta ${pastaId ? 'editada' : 'criada'}: ${numero} — ${clienteNome || '—'}`);
     fecharModalNovaPasta();
-    toast('Pasta salva com sucesso');
+    toast(intimacaoPendente?.id ? 'Pasta criada e vinculada à intimação.' : 'Pasta salva com sucesso');
     await carregarDados();
   } catch (err) {
     toast('Erro inesperado: ' + err.message, 'error');

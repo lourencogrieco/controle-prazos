@@ -2348,6 +2348,33 @@ tbody td {
   font-size: .72rem;
 }
 
+.modal-vincular-intimacao {
+  border-radius: 10px;
+}
+.modal-vincular-intimacao .modal-head {
+  padding: 24px 30px 18px;
+}
+.modal-vincular-intimacao .modal-body {
+  padding: 26px 30px 30px;
+  gap: 20px;
+}
+.modal-vincular-intimacao .vincular-intimacao-summary {
+  padding: 16px 18px;
+}
+.modal-vincular-intimacao .field {
+  gap: 9px;
+}
+.modal-vincular-intimacao .form-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.modal-vincular-intimacao .modal-action-left {
+  margin-right: auto;
+}
+
 /* ─── FINANCEIRO ──────────────────────────────────────────────── */
 .app-main:has(#view-financeiro.is-active) {
   padding: 0;
@@ -3281,6 +3308,14 @@ tbody td {
   border-top: 1px solid var(--br);
   border-radius: 0 0 var(--r-lg) var(--r-lg);
   z-index: 1;
+}
+
+.modal-vincular-intimacao .form-foot {
+  position: static;
+  bottom: auto;
+  margin: 4px -30px -30px;
+  padding: 18px 30px;
+  border-radius: 0 0 10px 10px;
 }
 
 .modal-full { grid-column: 1 / -1; }

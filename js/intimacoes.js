@@ -235,6 +235,33 @@ function fecharModalVincularIntimacao() {
   _intimacaoVinculoAtual = null;
 }
 
+function criarPastaDaIntimacaoVinculada() {
+  const intim = _intimacaoVinculoAtual;
+  if (!intim?.id) { toast('Intimação não encontrada para criar pasta.', 'error'); return; }
+  state.intimacaoParaVincularNovaPasta = {
+    id: intim.id,
+    processo: intim.processo || '',
+    classe: intim.nomeClasse || '',
+    orgao: intim.orgao || '',
+    tribunal: intim.tribunal || '',
+    dataPublicacao: intim.dataPublicacao || '',
+    texto: intim.texto || '',
+  };
+  fecharModalVincularIntimacao();
+  abrirModalNovaPasta(null);
+  document.getElementById('pCategoria').value = 'Contencioso Judicial';
+  document.getElementById('pProcesso').value = intim.processo || '';
+  document.getElementById('pTipoAcao').value = (intim.nomeClasse || intim.tipoDocumento || 'Intimação').toUpperCase();
+  document.getElementById('pComarca').value = intim.orgao || '';
+  document.getElementById('pDataAb').value = intim.dataPublicacao || '';
+  document.getElementById('pObs').value = [
+    `Pasta criada a partir de intimação vinculada.`,
+    intim.tribunal ? `Tribunal: ${intim.tribunal}` : '',
+    intim.orgao ? `Órgão: ${intim.orgao}` : '',
+    intim.texto || '',
+  ].filter(Boolean).join('\n');
+}
+
 async function salvarVinculoIntimacao() {
   const id = document.getElementById('vincularIntimacaoId').value;
   const pastaId = document.getElementById('vincularIntimacaoPasta').value;
@@ -258,6 +285,9 @@ async function salvarVinculoIntimacao() {
     if (item) item.pastaId = row.pasta_id;
     fecharModalVincularIntimacao();
     renderIntimacoesAba();
+    if (state.currentPastaId === row.pasta_id && typeof carregarAndamentosCNJ === 'function') {
+      carregarAndamentosCNJ(row.pasta_id);
+    }
     toast('Intimação vinculada à pasta.');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Vincular pasta'; }
@@ -283,6 +313,9 @@ async function removerVinculoIntimacao() {
   if (item) item.pastaId = null;
   fecharModalVincularIntimacao();
   renderIntimacoesAba();
+  if (state.currentPastaId && typeof carregarAndamentosCNJ === 'function') {
+    carregarAndamentosCNJ(state.currentPastaId);
+  }
   toast('Vínculo removido.');
 }
 

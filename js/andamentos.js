@@ -12,8 +12,43 @@ async function carregarAndamentosCNJ(pastaId) {
 
   if (error) { console.error('Erro ao carregar andamentos:', error); return; }
 
-  state.andamentosCNJ = data || [];
+  state.andamentosCNJ = montarAndamentosComIntimacoesVinculadas(data || [], pastaId);
   renderAndamentosNasInstancias(state.andamentosCNJ);
+}
+
+function grauDaIntimacao(intim) {
+  const digits = (intim?.processo || '').replace(/\D/g, '');
+  const foro = digits.length >= 20 ? digits.slice(16) : '';
+  return foro === '0000' ? 'G2' : 'G1';
+}
+
+function montarAndamentosComIntimacoesVinculadas(andamentos, pastaId) {
+  const base = [...(andamentos || [])];
+  const vinculadas = (state.intimacoes || [])
+    .filter(i => i.pastaId === pastaId && (i.status || 'pendente') !== 'arquivada')
+    .map(i => ({
+      id: `intimacao-${i.id}`,
+      _virtualIntimacao: true,
+      intimacao_id: i.id,
+      empresa_id: state.empresaId,
+      pasta_id: pastaId,
+      numero_processo: i.processo || '',
+      data_hora: i.dataPublicacao ? `${i.dataPublicacao}T12:00:00` : null,
+      nome: i.tipoDocumento || i.tipoComunicacao || 'Intimação',
+      complemento: [
+        i.nomeClasse ? `Classe: ${i.nomeClasse}` : '',
+        i.orgao ? `Órgão: ${i.orgao}` : '',
+        i.texto || '',
+      ].filter(Boolean).join('\n'),
+      codigo: null,
+      is_intimacao: true,
+      grau: grauDaIntimacao(i),
+      tribunal: i.tribunal || 'intimacoes_pje',
+      sincronizado_em: null,
+    }));
+
+  return [...base, ...vinculadas]
+    .sort((a, b) => String(b.data_hora || '').localeCompare(String(a.data_hora || '')));
 }
 
 function renderAndamentosNasInstancias(andamentos) {
@@ -39,11 +74,15 @@ function renderAndamentosNasInstancias(andamentos) {
   const rowHtml = a => {
     const data = a.data_hora ? new Date(a.data_hora).toLocaleDateString('pt-BR') : '—';
     const isManual = a.tribunal === 'manual';
+    const isVirtual = !!a._virtualIntimacao;
     const tipoBadge = a.is_intimacao
       ? '<span style="background:rgba(255,170,0,.15);color:#ffaa00;padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase">Intimação</span>'
       : '<span style="background:var(--s2);color:var(--mu);padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase">Movimento</span>';
     const manualBadge = isManual
       ? '<span style="background:rgba(0,200,150,.12);color:#00c896;padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase;margin-left:4px">Manual</span>'
+      : '';
+    const vinculoBadge = isVirtual
+      ? '<span style="background:var(--ac-soft);color:var(--ac);padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase;margin-left:4px">Vinculada</span>'
       : '';
     const snippet = a.complemento ? `<div style="font-size:.72rem;color:var(--mu);margin-top:2px">${a.complemento.slice(0,80)}${a.complemento.length > 80 ? '…' : ''}</div>` : '';
     return `<tr style="cursor:pointer" onclick="abrirDetalheAndamento('${a.id}')">
@@ -52,13 +91,13 @@ function renderAndamentosNasInstancias(andamentos) {
         <div style="font-size:.82rem">${a.nome || '—'}</div>
         ${snippet}
       </td>
-      <td style="white-space:nowrap">${tipoBadge}${manualBadge}</td>
+      <td style="white-space:nowrap">${tipoBadge}${manualBadge}${vinculoBadge}</td>
     </tr>`;
   };
 
   if (g1.length) {
     body1.innerHTML = g1.map(rowHtml).join('');
-    if (count1) count1.textContent = `${g1.length} movimentação(ões) · CNJ DataJud`;
+    if (count1) count1.textContent = `${g1.length} movimentação(ões) · CNJ/DataJud + intimações vinculadas`;
   } else {
     body1.innerHTML = '<tr><td colspan="3" class="tbl-empty">Nenhum andamento de 1ª instância. Clique em "Sincronizar CNJ".</td></tr>';
     if (count1) count1.textContent = '';
@@ -147,7 +186,7 @@ async function sincronizarAndamentos(silencioso = false) {
       .eq('pasta_id', pasta.id)
       .eq('empresa_id', state.empresaId)
       .order('data_hora', { ascending: false });
-    state.andamentosCNJ = data || [];
+    state.andamentosCNJ = montarAndamentosComIntimacoesVinculadas(data || [], pasta.id);
     renderAndamentosNasInstancias(state.andamentosCNJ);
 
     if (!silencioso) {
@@ -232,7 +271,7 @@ document.getElementById('formAndamentoManual').addEventListener('submit', async 
       .eq('pasta_id', pastaId)
       .eq('empresa_id', state.empresaId)
       .order('data_hora', { ascending: false });
-    state.andamentosCNJ = rows || [];
+    state.andamentosCNJ = montarAndamentosComIntimacoesVinculadas(rows || [], pastaId);
     renderAndamentosNasInstancias(state.andamentosCNJ);
   } catch (err) {
     toast('Erro inesperado: ' + err.message, 'error');
@@ -249,6 +288,7 @@ function abrirDetalheAndamento(andamentoId) {
   state.currentAndamento = a;
 
   const isManual = a.tribunal === 'manual';
+  const isVirtual = !!a._virtualIntimacao;
   const grauMap  = { G1: '1ª Instância', G2: '2ª Instância', SUP: 'Superior', JE: 'Juizado Especial' };
   const data     = a.data_hora ? new Date(a.data_hora).toLocaleDateString('pt-BR') : '—';
 
@@ -264,21 +304,28 @@ function abrirDetalheAndamento(andamentoId) {
     </div>
     <div>
       <div class="field-label">Tipo</div>
-      <div style="font-size:.85rem;margin-top:4px">${a.is_intimacao ? 'Intimação' : 'Movimento'}</div>
+      <div style="font-size:.85rem;margin-top:4px">${a.is_intimacao ? 'Intimação' : 'Movimento'}${isVirtual ? ' vinculada' : ''}</div>
     </div>
     <div>
       <div class="field-label">Origem</div>
-      <div style="font-size:.85rem;margin-top:4px">${isManual ? 'Manual' : (a.tribunal || '—').replace('api_publica_', '').toUpperCase()}</div>
+      <div style="font-size:.85rem;margin-top:4px">${isVirtual ? 'Intimações' : (isManual ? 'Manual' : (a.tribunal || '—').replace('api_publica_', '').toUpperCase())}</div>
     </div>
   `;
   document.getElementById('detalheAndDesc').textContent = a.complemento || '(sem descrição)';
 
   const editBtn   = document.getElementById('btnEditarAndamento');
   const excluirBtn = document.getElementById('btnExcluirAndamento');
+  const uploadBtn = document.getElementById('btnUploadDocAndamento');
   if (editBtn)    editBtn.style.display    = isManual ? '' : 'none';
   if (excluirBtn) excluirBtn.style.display = isManual ? '' : 'none';
+  if (uploadBtn)  uploadBtn.style.display  = isVirtual ? 'none' : '';
 
-  carregarDocumentosDetalhe(andamentoId);
+  if (isVirtual) {
+    const docs = document.getElementById('detalheAndDocs');
+    if (docs) docs.innerHTML = '<p class="tbl-empty">Documentos devem ser anexados pela pasta ou por um andamento lançado manualmente.</p>';
+  } else {
+    carregarDocumentosDetalhe(andamentoId);
+  }
   document.getElementById('modalDetalheAndamento').classList.add('open');
 }
 
@@ -298,7 +345,7 @@ async function excluirAndamentoAtual() {
     .eq('pasta_id', a.pasta_id)
     .eq('empresa_id', state.empresaId)
     .order('data_hora', { ascending: false });
-  state.andamentosCNJ = rows || [];
+  state.andamentosCNJ = montarAndamentosComIntimacoesVinculadas(rows || [], state.currentPastaId);
   renderAndamentosNasInstancias(state.andamentosCNJ);
 }
 

@@ -69,15 +69,21 @@ const INTIM_STATUS_CLASS = {
   arquivada:      'status-pill--muted',
 };
 
+let _intimacaoVinculoAtual = null;
+
 function renderIntimacoesAba() {
   const busca  = (document.getElementById('buscaIntimacoes')?.value ?? '').toLowerCase();
   const status = document.getElementById('filtroIntimacoesStatus')?.value ?? '';
+  const vinculo = document.getElementById('filtroIntimacoesVinculo')?.value ?? '';
   const de     = document.getElementById('filtroIntimacoesDe')?.value ?? '';
   const ate    = document.getElementById('filtroIntimacoesAte')?.value ?? '';
 
   const lista = state.intimacoes.filter(i => {
     const st = i.status || 'pendente';
     if (!status && st === 'arquivada') return false;
+    const temPasta = !!pastaDaIntimacao(i);
+    if (vinculo === 'vinculadas' && !temPasta) return false;
+    if (vinculo === 'sem_vinculo' && temPasta) return false;
     const m = !busca ||
       i.processo.toLowerCase().includes(busca) ||
       i.orgao.toLowerCase().includes(busca) ||
@@ -92,9 +98,12 @@ function renderIntimacoesAba() {
   const ultimaSync = cfg?.ultima_sync
     ? `Última sync: ${new Date(cfg.ultima_sync).toLocaleString('pt-BR')}`
     : 'Nenhuma sincronização realizada';
+  const semVinculo = state.intimacoes.filter(i =>
+    (i.status || 'pendente') !== 'arquivada' && !pastaDaIntimacao(i)
+  ).length;
 
   document.getElementById('intimacoesInfo').textContent =
-    `${lista.length} registro${lista.length !== 1 ? 's' : ''} · ${ultimaSync}`;
+    `${lista.length} registro${lista.length !== 1 ? 's' : ''} · ${semVinculo} sem pasta · ${ultimaSync}`;
 
   document.getElementById('tabelaIntimacoes').innerHTML = lista.length
     ? lista.map(i => {
@@ -172,26 +181,58 @@ async function alterarStatusIntimacao(id, novoStatus, selectEl) {
   toast(novoStatus === 'arquivada' ? 'Intimação arquivada e removida do acompanhamento.' : 'Status atualizado!');
 }
 
+function renderOpcoesVinculoIntimacao(busca = '') {
+  const select = document.getElementById('vincularIntimacaoPasta');
+  const info = document.getElementById('vincularIntimacaoPastaInfo');
+  if (!select) return;
+  const atual = pastaDaIntimacao(_intimacaoVinculoAtual);
+  const termo = busca.trim().toLowerCase();
+  const pastas = state.pastas
+    .filter(p => p.status !== 'arquivado')
+    .filter(p => !termo ||
+      (p.numero || '').toLowerCase().includes(termo) ||
+      (p.cliente || '').toLowerCase().includes(termo) ||
+      (p.processo || '').toLowerCase().includes(termo) ||
+      (p.parteContraria || '').toLowerCase().includes(termo)
+    )
+    .slice(0, 80);
+
+  select.innerHTML = '<option value="">— Selecionar pasta —</option>' + pastas
+    .map(p => `<option value="${p.id}"${p.id === atual?.id ? ' selected' : ''}>${p.numero} — ${p.cliente || '—'}${p.processo ? ' · ' + p.processo : ''}</option>`)
+    .join('');
+
+  if (atual && !pastas.some(p => p.id === atual.id)) {
+    select.insertAdjacentHTML('beforeend', `<option value="${atual.id}" selected>${atual.numero} — ${atual.cliente || '—'}${atual.processo ? ' · ' + atual.processo : ''}</option>`);
+  }
+  if (info) {
+    const totalAtivas = state.pastas.filter(p => p.status !== 'arquivado').length;
+    info.textContent = termo
+      ? `${pastas.length} resultado${pastas.length !== 1 ? 's' : ''} encontrado${pastas.length !== 1 ? 's' : ''}`
+      : `${totalAtivas} pasta${totalAtivas !== 1 ? 's' : ''} disponível${totalAtivas !== 1 ? 'is' : ''}`;
+  }
+}
+
 function abrirModalVincularIntimacao(intim) {
+  _intimacaoVinculoAtual = intim;
   document.getElementById('vincularIntimacaoId').value = intim.id || '';
   document.getElementById('vincularIntimacaoProcesso').textContent = intim.processo || '—';
   document.getElementById('vincularIntimacaoMeta').textContent =
     `${intim.tribunal || 'Tribunal'} · ${formatDate(intim.dataPublicacao)} · ${intim.orgao || '—'}`;
-
-  const select = document.getElementById('vincularIntimacaoPasta');
-  const atual = pastaDaIntimacao(intim);
-  select.innerHTML = '<option value="">— Selecionar pasta —</option>' + state.pastas
-    .filter(p => p.status !== 'arquivado')
-    .map(p => `<option value="${p.id}"${p.id === atual?.id ? ' selected' : ''}>${p.numero} — ${p.cliente || '—'}${p.processo ? ' · ' + p.processo : ''}</option>`)
-    .join('');
+  const busca = document.getElementById('buscaVincularIntimacaoPasta');
+  if (busca) busca.value = '';
+  renderOpcoesVinculoIntimacao();
 
   document.getElementById('modalVincularIntimacao').classList.add('open');
+  setTimeout(() => busca?.focus(), 80);
 }
 
 function fecharModalVincularIntimacao() {
   document.getElementById('modalVincularIntimacao').classList.remove('open');
   document.getElementById('vincularIntimacaoId').value = '';
   document.getElementById('vincularIntimacaoPasta').value = '';
+  const busca = document.getElementById('buscaVincularIntimacaoPasta');
+  if (busca) busca.value = '';
+  _intimacaoVinculoAtual = null;
 }
 
 async function salvarVinculoIntimacao() {
@@ -202,20 +243,19 @@ async function salvarVinculoIntimacao() {
   const btn = document.getElementById('btnSalvarVinculoIntimacao');
   if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
   try {
-    const { data, error } = await db.from('intimacoes_pje')
-      .update({ pasta_id: pastaId })
-      .eq('id', id)
-      .eq('empresa_id', state.empresaId)
-      .select('id,pasta_id')
-      .maybeSingle();
+    const { data, error } = await db.rpc('vincular_intimacao_pasta', {
+      p_intimacao_id: id,
+      p_pasta_id: pastaId,
+    });
+    const row = Array.isArray(data) ? data[0] : data;
 
-    if (error || !data) {
+    if (error || !row) {
       toast('Erro ao vincular pasta: ' + (error?.message || 'registro não encontrado'), 'error');
       return;
     }
 
     const item = state.intimacoes.find(i => i.id === id);
-    if (item) item.pastaId = data.pasta_id;
+    if (item) item.pastaId = row.pasta_id;
     fecharModalVincularIntimacao();
     renderIntimacoesAba();
     toast('Intimação vinculada à pasta.');
@@ -229,14 +269,13 @@ async function removerVinculoIntimacao() {
   if (!id) return;
   if (!confirm('Remover vínculo desta intimação com a pasta?')) return;
 
-  const { data, error } = await db.from('intimacoes_pje')
-    .update({ pasta_id: null })
-    .eq('id', id)
-    .eq('empresa_id', state.empresaId)
-    .select('id,pasta_id')
-    .maybeSingle();
+  const { data, error } = await db.rpc('vincular_intimacao_pasta', {
+    p_intimacao_id: id,
+    p_pasta_id: null,
+  });
+  const row = Array.isArray(data) ? data[0] : data;
 
-  if (error || !data) {
+  if (error || !row) {
     toast('Erro ao remover vínculo: ' + (error?.message || 'registro não encontrado'), 'error');
     return;
   }
@@ -419,5 +458,7 @@ function irParaPrazo(pastaNr) {
 
 document.getElementById('buscaIntimacoes')?.addEventListener('input', renderIntimacoesAba);
 document.getElementById('filtroIntimacoesStatus')?.addEventListener('change', renderIntimacoesAba);
+document.getElementById('filtroIntimacoesVinculo')?.addEventListener('change', renderIntimacoesAba);
 document.getElementById('filtroIntimacoesDe')?.addEventListener('change', renderIntimacoesAba);
 document.getElementById('filtroIntimacoesAte')?.addEventListener('change', renderIntimacoesAba);
+document.getElementById('buscaVincularIntimacaoPasta')?.addEventListener('input', e => renderOpcoesVinculoIntimacao(e.target.value));

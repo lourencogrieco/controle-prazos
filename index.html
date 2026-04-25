@@ -537,6 +537,13 @@
               <option value="arquivada">Arquivada</option>
             </select>
           </label>
+          <label class="select-field">
+            <select id="filtroIntimacoesVinculo">
+              <option value="">Todas as pastas</option>
+              <option value="vinculadas">Com pasta vinculada</option>
+              <option value="sem_vinculo">Sem pasta vinculada</option>
+            </select>
+          </label>
           <label style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--mu)">
             De <input type="date" id="filtroIntimacoesDe" class="input-sm">
             até <input type="date" id="filtroIntimacoesAte" class="input-sm">
@@ -2934,7 +2941,7 @@
 
 <!-- ===== MODAL VINCULAR INTIMAÇÃO À PASTA ===== -->
 <div id="modalVincularIntimacao" class="modal-overlay" role="dialog" aria-modal="true">
-  <div class="modal" style="max-width:560px">
+  <div class="modal modal-vincular-intimacao">
     <div class="modal-head">
       <div>
         <h3 style="margin:0;font-size:.95rem">Vincular intimação à pasta</h3>
@@ -2944,13 +2951,18 @@
     </div>
     <div class="modal-body">
       <input type="hidden" id="vincularIntimacaoId">
+      <div class="vincular-intimacao-summary">
+        <span>Processo da intimação</span>
+        <strong id="vincularIntimacaoProcesso">—</strong>
+      </div>
       <div class="field">
-        <span class="field-label">Processo da intimação</span>
-        <p id="vincularIntimacaoProcesso" class="mono-muted">—</p>
+        <span class="field-label">Buscar pasta</span>
+        <input type="search" id="buscaVincularIntimacaoPasta" placeholder="Buscar por cliente, número da pasta ou processo">
       </div>
       <div class="field">
         <span class="field-label">Pasta correta</span>
         <select id="vincularIntimacaoPasta"></select>
+        <small id="vincularIntimacaoPastaInfo" class="field-help"></small>
       </div>
     </div>
     <div class="form-foot" style="display:flex;justify-content:flex-end;gap:8px">
@@ -3109,7 +3121,7 @@
 <script src="js/configuracoes.js?v=57"></script>
 <script src="js/agenda.js?v=51"></script>
 <script src="js/prazo-calculo.js?v=1"></script>
-<script src="js/intimacoes.js?v=54"></script>
+<script src="js/intimacoes.js?v=56"></script>
 <script src="js/prazos.js?v=56"></script>
 <script src="js/tarefas.js?v=62"></script>
 <script src="js/pastas.js?v=59"></script>

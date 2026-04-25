@@ -2307,6 +2307,46 @@ tbody td {
   font-family: "IBM Plex Mono", monospace;
   font-size: .82rem;
 }
+.modal-vincular-intimacao {
+  max-width: 720px;
+}
+.modal-vincular-intimacao .modal-body {
+  display: grid;
+  gap: 14px;
+}
+.vincular-intimacao-summary {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--br);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+}
+.vincular-intimacao-summary span {
+  color: var(--mu);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.vincular-intimacao-summary strong {
+  color: var(--tx);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .86rem;
+  line-height: 1.35;
+}
+.modal-vincular-intimacao input[type="search"],
+.modal-vincular-intimacao select {
+  width: 100%;
+  min-height: 42px;
+}
+.field-help {
+  display: block;
+  margin-top: 5px;
+  color: var(--mu);
+  font-size: .72rem;
+}
 
 /* ─── FINANCEIRO ──────────────────────────────────────────────── */
 .app-main:has(#view-financeiro.is-active) {

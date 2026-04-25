@@ -127,6 +127,12 @@ function renderIntimacoesAba() {
   const semVinculo = state.intimacoes.filter(i =>
     (i.status || 'pendente') !== 'arquivada' && !pastaDaIntimacao(i)
   ).length;
+  const arquivadas = state.intimacoes.filter(i => (i.status || 'pendente') === 'arquivada').length;
+  const btnArquivadas = document.getElementById('btnVerArquivadas');
+  if (btnArquivadas) {
+    btnArquivadas.textContent = status === 'arquivada' ? 'Voltar ao acompanhamento' : `Arquivadas (${arquivadas})`;
+    btnArquivadas.classList.toggle('is-active', status === 'arquivada');
+  }
 
   document.getElementById('intimacoesInfo').textContent =
     `${lista.length} registro${lista.length !== 1 ? 's' : ''} · ${semVinculo} sem pasta · ${ultimaSync}`;
@@ -180,6 +186,13 @@ function renderIntimacoesAba() {
       alterarStatusIntimacao(sel.dataset.id, e.target.value, sel);
     });
   });
+}
+
+function alternarIntimacoesArquivadas() {
+  const status = document.getElementById('filtroIntimacoesStatus');
+  if (!status) return;
+  status.value = status.value === 'arquivada' ? '' : 'arquivada';
+  renderIntimacoesAba();
 }
 
 async function alterarStatusIntimacao(id, novoStatus, selectEl) {

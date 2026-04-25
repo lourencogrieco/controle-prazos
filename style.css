@@ -408,6 +408,11 @@ h2 {
 }
 
 .btn-outline:hover { border-color: var(--ac); color: var(--ac); }
+.btn-outline.is-active {
+  background: var(--ac);
+  border-color: var(--ac);
+  color: #fff;
+}
 
 /* ─── INPUTS ──────────────────────────────────────────────────── */
 .search-field {

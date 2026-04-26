@@ -3390,7 +3390,6 @@ tbody td {
   width: auto;
   max-width: 44px;
   object-fit: contain;
-  filter: brightness(0) invert(1);
   opacity: .92;
 }
 

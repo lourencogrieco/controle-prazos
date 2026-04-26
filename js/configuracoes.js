@@ -438,10 +438,11 @@ function aplicarTema(tema) {
     root.style.setProperty('--gold',      tema.accent);
     root.style.setProperty('--gold-soft', lighten(tema.accent, 82));
   }
-  if (tema.logoUrl) {
-    const img = document.getElementById('brandLogo');
-    if (img) { img.src = tema.logoUrl; img.style.display = ''; }
-  }
+  const logoUrl = tema.logoUrl && tema.logoUrl !== 'logo.png' ? tema.logoUrl : 'logo.svg';
+  const img = document.getElementById('brandLogo');
+  const fallback = document.getElementById('brandLogoFallback');
+  if (img) { img.src = logoUrl; img.style.display = ''; }
+  if (fallback) fallback.style.display = 'none';
 }
 
 const _temaSalvo = JSON.parse(localStorage.getItem(TEMA_KEY) || 'null');
@@ -472,7 +473,7 @@ document.getElementById('cfgColorAccent').addEventListener('input', e => {
 });
 document.getElementById('cfgLogoUrl').addEventListener('input', e => {
   const img = document.getElementById('cfgLogoPreview');
-  img.src = e.target.value || 'logo.png';
+  img.src = e.target.value || 'logo.svg';
   img.style.display = '';
 });
 document.getElementById('cfgSalvar').addEventListener('click', () => {

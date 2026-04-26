@@ -555,11 +555,17 @@ async function salvarPjeConfig() {
   const ta = document.getElementById('cfgPjeNomes');
   const nomes = ta.value.split('\n').map(n => n.trim()).filter(Boolean);
   if (!nomes.length) { toast('Informe ao menos um nome.', 'error'); return; }
-  const { error } = await db.from('pje_config')
-    .update({ nomes })
-    .eq('empresa_id', state.empresaId);
-  if (error) { toast('Erro ao salvar.', 'error'); return; }
-  state.pjeConfig = { ...state.pjeConfig, nomes };
+  const payload = {
+    empresa_id: state.empresaId,
+    nomes,
+    ativo: true,
+  };
+  const { data, error } = await db.from('pje_config')
+    .upsert(payload, { onConflict: 'empresa_id' })
+    .select()
+    .maybeSingle();
+  if (error) { toast('Erro ao salvar: ' + error.message, 'error'); return; }
+  state.pjeConfig = data || { ...(state.pjeConfig || {}), ...payload };
   toast('Configuração PJe salva!');
 }
 

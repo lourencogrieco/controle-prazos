@@ -128,6 +128,14 @@ function uid() {
   return crypto.randomUUID();
 }
 
+async function salvarRegistroEmpresa(tabela, obj, existingId, timeoutMsg = 'Sem resposta do banco em 12s') {
+  const req = existingId
+    ? db.from(tabela).update(obj).eq('id', existingId).eq('empresa_id', state.empresaId)
+    : db.from(tabela).insert(obj);
+  const tOut = new Promise((_, reject) => setTimeout(() => reject(new Error(timeoutMsg)), 12000));
+  return Promise.race([req, tOut]);
+}
+
 function formatDate(iso) {
   if (!iso) return '—';
   const [y, m, d] = String(iso).slice(0, 10).split('-').map(Number);

@@ -188,12 +188,12 @@ async function registrarLogSyncPJe({ origem, dataInicio, dataFim, nomes, resumo,
     erros,
     ok: !erros.length,
   };
-  const { data, error } = await db.from('pje_sync_logs').insert(row).select().single();
+  const { error } = await db.from('pje_sync_logs').insert(row);
   if (error) {
     console.warn('[pje_sync_logs] falha ao registrar:', error.message);
     return;
   }
-  state.pjeSyncLogs = [data, ...(state.pjeSyncLogs || [])].slice(0, 20);
+  state.pjeSyncLogs = [{ ...row, created_at: new Date().toISOString() }, ...(state.pjeSyncLogs || [])].slice(0, 20);
   renderHistoricoPJe();
 }
 
@@ -647,10 +647,17 @@ async function sincronizarPJeData() {
       }
     }
     await registrarLogSyncPJe({ origem: 'manual_data', dataInicio: de, dataFim: ate || de, nomes, resumo, erros });
+    if (erros.length) {
+      toast(`PJe indisponível para ${erros.length} consulta(s). Registrei o log e mantive os dados atuais.`, 'error');
+      return;
+    }
     toast(`${resumo.inseridas} nova(s), ${resumo.atualizadas} atualizada(s), ${resumo.ignoradas_arquivadas} arquivada(s) preservada(s).`);
     await carregarDados();
     renderIntimacoesAba();
-  } catch (e) { console.error('Erro ao buscar PJe:', e); toast('Erro: ' + e.message, 'error'); }
+  } catch (e) {
+    console.warn('[pje] Falha na busca por data:', e?.message || e);
+    toast('PJe indisponível no momento. Tente novamente mais tarde.', 'error');
+  }
   finally { if (btn) { btn.disabled = false; btn.textContent = '↻ Buscar por data'; } }
 }
 
@@ -696,12 +703,16 @@ async function sincronizarPJe() {
       }
     }
     await registrarLogSyncPJe({ origem: 'manual_hoje', dataInicio: hoje, dataFim: hoje, nomes, resumo, erros });
+    if (erros.length) {
+      toast(`PJe indisponível para ${erros.length} consulta(s). Registrei o log e mantive os dados atuais.`, 'error');
+      return;
+    }
     toast(`${resumo.inseridas} nova(s), ${resumo.atualizadas} atualizada(s), ${resumo.ignoradas_arquivadas} arquivada(s) preservada(s).`);
     await carregarDados();
     renderIntimacoesAba();
   } catch (e) {
-    console.error('Erro sincronizar PJe:', e);
-    toast('Erro ao sincronizar: ' + e.message, 'error');
+    console.warn('[pje] Falha na sincronização:', e?.message || e);
+    toast('PJe indisponível no momento. Tente novamente mais tarde.', 'error');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '↻ Sincronizar'; }
   }

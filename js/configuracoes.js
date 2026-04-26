@@ -218,11 +218,8 @@ document.getElementById('novoClienteForm').addEventListener('submit', async e =>
       estado:      g('cEstado')?.value || null,
     };
 
-    const saveReq = db.from('clientes_lhub').upsert(obj).select();
-    const tOut    = new Promise((_, r) => setTimeout(() => r(new Error('Sem resposta do banco em 12s. Verifique as políticas RLS da tabela clientes_lhub.')), 12000));
-    const { data, error } = await Promise.race([saveReq, tOut]);
+    const { error } = await salvarRegistroEmpresa('clientes_lhub', obj, existingId, 'Sem resposta do banco em 12s. Verifique as políticas RLS da tabela clientes_lhub.');
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
-    if (!data?.length) { toast('Cliente não salvo: falta política INSERT no Supabase (tabela clientes_lhub).', 'error'); return; }
 
     if (existingId) {
       const idx = state.clientes.findIndex(c => c.id === existingId);
@@ -560,12 +557,10 @@ async function salvarPjeConfig() {
     nomes,
     ativo: true,
   };
-  const { data, error } = await db.from('pje_config')
-    .upsert(payload, { onConflict: 'empresa_id' })
-    .select()
-    .maybeSingle();
+  const { error } = await db.from('pje_config')
+    .upsert(payload, { onConflict: 'empresa_id' });
   if (error) { toast('Erro ao salvar: ' + error.message, 'error'); return; }
-  state.pjeConfig = data || { ...(state.pjeConfig || {}), ...payload };
+  state.pjeConfig = { ...(state.pjeConfig || {}), ...payload };
   toast('Configuração PJe salva!');
 }
 
@@ -809,9 +804,9 @@ document.getElementById('formModeloDocumento')?.addEventListener('submit', async
       conteudo: document.getElementById('modeloConteudo').value,
       updated_at: new Date().toISOString(),
     };
-    const { data, error } = await db.from('modelos_documentos').upsert(obj).select();
+    const { error } = await salvarRegistroEmpresa('modelos_documentos', obj, id, 'Sem resposta ao salvar modelo em 12s');
     if (error) { toast('Erro ao salvar modelo: ' + error.message, 'error'); return; }
-    _stateUpsert(state.modelosDocumentos, dbParaModeloDocumento(data[0]));
+    _stateUpsert(state.modelosDocumentos, dbParaModeloDocumento(obj));
     fecharModalModeloDocumento();
     renderModelosDocumentos();
     toast('Modelo salvo!');

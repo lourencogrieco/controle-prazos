@@ -231,11 +231,10 @@ document.getElementById('formOportunidade').addEventListener('submit', async e =
         : 'oportunidade',
     };
 
-    const { data, error } = await db.from('oportunidades_crm').upsert(obj).select();
+    const { error } = await salvarRegistroEmpresa('oportunidades_crm', obj, id, 'Sem resposta ao salvar oportunidade em 12s');
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
-    if (!data?.length) { toast('Não foi possível salvar.', 'error'); return; }
 
-    const nova = dbParaOportunidade(data[0]);
+    const nova = dbParaOportunidade(obj);
     _stateUpsert(state.oportunidades, nova);
     fecharModalOportunidade();
     toast(id ? 'Oportunidade atualizada!' : 'Oportunidade criada!');

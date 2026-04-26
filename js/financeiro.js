@@ -520,13 +520,10 @@ document.getElementById('formCobranca').addEventListener('submit', async e => {
     };
     if (!id) delete obj.status; // let DB default apply
 
-    const saveReq = db.from('cobrancas').upsert(obj).select();
-    const tOut    = new Promise((_, r) => setTimeout(() => r(new Error('Sem resposta em 12s')), 12000));
-    const { data, error } = await Promise.race([saveReq, tOut]);
+    const { error } = await salvarRegistroEmpresa('cobrancas', obj, id, 'Sem resposta ao salvar cobrança em 12s');
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
-    if (!data?.length) { toast('Não foi possível salvar. Verifique as permissões.', 'error'); return; }
 
-    const nova = dbParaCobranca(data[0]);
+    const nova = dbParaCobranca(obj);
     _stateUpsert(state.cobrancas, nova);
     fecharModalCobranca();
     toast(id ? 'Cobrança atualizada!' : 'Cobrança criada!');
@@ -588,13 +585,10 @@ document.getElementById('formContaPagar').addEventListener('submit', async e => 
       observacoes:     document.getElementById('contObservacoes').value.trim() || null,
     };
 
-    const saveReq = db.from('contas_pagar').upsert(obj).select();
-    const tOut    = new Promise((_, r) => setTimeout(() => r(new Error('Sem resposta em 12s')), 12000));
-    const { data, error } = await Promise.race([saveReq, tOut]);
+    const { error } = await salvarRegistroEmpresa('contas_pagar', obj, id, 'Sem resposta ao salvar conta em 12s');
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
-    if (!data?.length) { toast('Não foi possível salvar. Verifique as permissões.', 'error'); return; }
 
-    const nova = dbParaContaPagar(data[0]);
+    const nova = dbParaContaPagar(obj);
     _stateUpsert(state.contasPagar, nova);
     fecharModalContaPagar();
     toast(id ? 'Conta atualizada!' : 'Conta criada!');
@@ -660,13 +654,10 @@ document.getElementById('formDespesa').addEventListener('submit', async e => {
       observacoes: document.getElementById('despObservacoes').value.trim() || null,
     };
 
-    const saveReq = db.from('despesas').upsert(obj).select();
-    const tOut    = new Promise((_, r) => setTimeout(() => r(new Error('Sem resposta em 12s')), 12000));
-    const { data, error } = await Promise.race([saveReq, tOut]);
+    const { error } = await salvarRegistroEmpresa('despesas', obj, id, 'Sem resposta ao salvar despesa em 12s');
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
-    if (!data?.length) { toast('Não foi possível salvar. Verifique as permissões.', 'error'); return; }
 
-    const nova = dbParaDespesa(data[0]);
+    const nova = dbParaDespesa(obj);
     _stateUpsert(state.despesas, nova);
     fecharModalDespesa();
     toast(id ? 'Despesa atualizada!' : 'Despesa criada!');

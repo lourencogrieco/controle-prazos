@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="NG">
+  <rect width="96" height="96" rx="14" fill="#155c67"/>
+  <rect x="13" y="13" width="70" height="70" rx="10" fill="#ffffff" opacity=".08"/>
+  <rect x="13.5" y="13.5" width="69" height="69" rx="9.5" fill="none" stroke="#ffffff" opacity=".24"/>
+  <text x="48" y="57" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="32" font-weight="800" fill="#ffffff" letter-spacing="1">NG</text>
+</svg>

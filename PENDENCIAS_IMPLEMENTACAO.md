@@ -30,6 +30,7 @@ Este arquivo registra o que ainda falta implementar ou revisar para continuar a 
 - Invocacao remota da function confirmou resposta com `total_inseridas`, `total_atualizadas` e `total_ignoradas_arquivadas`.
 - Validacao pela UI local com usuario temporario confirmou: arquivar remove da lista pendente, reimportacao preserva arquivada, reload nao traz de volta como pendente e a intimação aparece apenas em "Arquivadas". Usuario e intimação fake foram removidos apos o teste.
 - Sanitizacao inicial de `js/intimacoes.js`: tabela deixou de usar handlers inline com JSON, campos externos passam por escape, links externos aceitam apenas http/https e `javascript:` e bloqueado. Teste com payload HTML/script fake confirmou que a UI nao cria `img`, `script`, `svg`, `iframe` nem link `javascript:`.
+- Sanitizacao expandida para helpers comuns em `js/core.js` e para renders de `js/documentos.js`, `js/financeiro.js` e `js/configuracoes.js`: textos/atributos vindos de usuario passam por escape, recibos nao recebem mais payload JSON no `onclick` e selects/tabelas de clientes, modelos, auditoria, documentos e financeiro foram revisados.
 - Observabilidade inicial da sincronizacao PJe: criada tabela `pje_sync_logs`, cron e sincronizacao manual registram contadores/erros, UI exibe ultima importacao com status e totais. Validado com login de teste e Edge Function remota.
 
 ## Revisao da auditoria de 26/04/2026
@@ -38,7 +39,7 @@ O que faz sentido manter como prioridade:
 
 - Performance: `carregarDados()` ainda busca muitas tabelas inteiras no carregamento inicial. Apenas intimacoes tem limite parcial de 200 registros.
 - Sincronizacao PJe: o cron agora usa a RPC de importacao preservando status e registra log resumido; migration/deploy/teste tecnico e validacao pela UI com intimação controlada foram feitos. Falta apenas repetir em rotina real com uma intimação real quando houver caso adequado.
-- Sanitizacao: intimações e andamentos ja escapam os pontos mais expostos; ainda falta repetir o padrao nos demais renders que usam dados de usuario/externos.
+- Sanitizacao: intimações, documentos, financeiro e configuracoes ja escapam os pontos mais expostos; ainda falta revisar dashboard, pastas, tarefas, agenda e relatorios para fechar o padrao em todo o frontend.
 - Numero de pasta: `gerarNumeroPasta()` continua client-side e pode gerar duplicidade com usuarios simultaneos.
 - Produto: area do cliente, onboarding, billing, notificacoes confiaveis e DRE/fluxo de caixa seguem sendo os maiores gaps para SaaS publico.
 - QA/seguranca: RLS esta versionado em migration, mas ainda precisa ser validado no banco remoto/producao com testes reais de isolamento entre empresas.
@@ -51,10 +52,11 @@ O que estava desatualizado ou deve sair do foco imediato:
 
 ## Pendencias criticas
 
-1. Expandir sanitizacao para os demais renders
-   - Promover helper de escape para uso comum fora de `js/intimacoes.js`.
-   - Revisar tabelas de financeiro, documentos, configuracoes e dashboard que interpolam dados de usuario.
-   - Trocar handlers inline com payload dinamico por `data-*` + event listeners onde houver dados externos.
+1. Expandir sanitizacao para os demais renders restantes
+   - Helpers comuns `escHtml`, `escAttr` e `safeExternalUrl` ja foram promovidos para `js/core.js`.
+   - Financeiro, documentos, configuracoes e intimacoes ja tiveram os principais pontos revisados.
+   - Revisar dashboard, pastas, tarefas, agenda e relatorios que ainda interpolam dados de usuario.
+   - Trocar handlers inline com payload dinamico por `data-*` + event listeners onde ainda houver dados externos.
 
 2. Melhorar historico visual da sincronizacao PJe
    - Criar painel/modal simples com ultimas sincronizacoes.
@@ -132,7 +134,7 @@ O que estava desatualizado ou deve sair do foco imediato:
    - Criar indexes para consultas frequentes.
 
 3. Frontend
-   - Centralizar helper de escape/sanitize para HTML.
+   - Helpers de escape/sanitize ja centralizados em `js/core.js`; continuar aplicando nos modulos restantes.
    - Remover estilos inline gradualmente.
    - Criar classes reutilizaveis para modais, tabelas e botoes.
    - Padronizar modais grandes e pequenos.
@@ -152,19 +154,18 @@ O que estava desatualizado ou deve sair do foco imediato:
 
 Prioridade 1:
 
-Expandir sanitizacao para os demais renders.
+Continuar a sanitizacao nos renders restantes.
 
 Motivo:
 
-A correcao de intimações arquivadas, a sanitizacao inicial de intimações e a observabilidade basica do PJe ja foram validadas. O proximo risco transversal e repetir o padrao de escape/event listeners nos demais modulos que ainda interpolam dados de usuario em `innerHTML`.
+A correcao de intimações arquivadas, a sanitizacao inicial de intimações, a observabilidade basica do PJe e a expansao para documentos/financeiro/configuracoes ja foram encaminhadas. O proximo risco transversal e repetir o padrao de escape/event listeners nos modulos restantes que ainda interpolam dados de usuario em `innerHTML`.
 
 Passos sugeridos:
 
-1. Mover helpers de escape para local comum.
-2. Revisar primeiro `js/financeiro.js`, `js/documentos.js` e `js/configuracoes.js`.
-3. Substituir interpolacao direta de dados por `escHtml`/`escAttr`.
-4. Remover handlers inline com objetos/payloads dinamicos onde houver dados externos.
-5. Validar com payload HTML/script fake em cada tela principal.
+1. Revisar `js/dashboard.js`, `js/pastas.js`, `js/tarefas.js`, `js/agenda.js` e relatorios.
+2. Substituir interpolacao direta de dados por `escHtml`/`escAttr`.
+3. Remover handlers inline com objetos/payloads dinamicos onde houver dados externos.
+4. Validar com payload HTML/script fake em cada tela principal.
 
 ## Arquivos mais relevantes
 

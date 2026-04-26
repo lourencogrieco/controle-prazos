@@ -173,8 +173,8 @@ function renderFinVisaoGeral() {
           const label = dias === 0 ? 'Hoje' : dias === 1 ? 'Amanhã' : `${dias}d`;
           return `<div class="prox-item" onclick="finMudarAba('cobrancas')">
             <div class="prox-info">
-              <span class="prox-desc">${c.descricao}</span>
-              <span class="prox-cliente">${c.clienteNome || '—'}</span>
+              <span class="prox-desc">${escHtml(c.descricao || '—')}</span>
+              <span class="prox-cliente">${escHtml(c.clienteNome || '—')}</span>
             </div>
             <div class="prox-right">
               <span class="prox-valor">${formatCurrency(c.valor)}</span>
@@ -200,8 +200,8 @@ function renderFinVisaoGeral() {
           const label = dias === 0 ? 'Hoje' : dias === 1 ? 'Amanhã' : `${dias}d`;
           return `<div class="prox-item" onclick="finMudarAba('contaspagar')">
             <div class="prox-info">
-              <span class="prox-desc">${c.descricao}</span>
-              <span class="prox-cliente">${c.tipo || '—'}</span>
+              <span class="prox-desc">${escHtml(c.descricao || '—')}</span>
+              <span class="prox-cliente">${escHtml(c.tipo || '—')}</span>
             </div>
             <div class="prox-right">
               <span class="prox-valor">${formatCurrency(c.valor)}</span>
@@ -225,8 +225,8 @@ function renderFinVisaoGeral() {
           const label = d.data ? formatDate(d.data) : '—';
           return `<div class="prox-item" onclick="finMudarAba('despesas')">
             <div class="prox-info">
-              <span class="prox-desc">${d.descricao}</span>
-              <span class="prox-cliente">${d.clienteNome || '—'}</span>
+              <span class="prox-desc">${escHtml(d.descricao || '—')}</span>
+              <span class="prox-cliente">${escHtml(d.clienteNome || '—')}</span>
             </div>
             <div class="prox-right">
               <span class="prox-valor">${formatCurrency(d.valor)}</span>
@@ -300,10 +300,11 @@ function renderFinCobrancas() {
   tbody.innerHTML = lista.map(c => {
     const st = _statusCob(c);
     const parc = c.parcelaNum ? ` ${c.parcelaNum}/${c.parcelaTotal}` : '';
+    const id = escAttr(c.id);
     return `<tr>
       <td>
-        <span class="fin-row-title">${c.clienteNome || '—'}</span>
-        <span class="fin-row-sub">${c.descricao}${parc}</span>
+        <span class="fin-row-title">${escHtml(c.clienteNome || '—')}</span>
+        <span class="fin-row-sub">${escHtml(`${c.descricao || '—'}${parc}`)}</span>
       </td>
       <td>
         ${_catBadge(c.categoria)}
@@ -315,17 +316,17 @@ function renderFinCobrancas() {
       <td>${_badgeStatus(st)}</td>
       <td class="fin-actions"><div class="fin-actions-inner">
         ${st !== 'pago'
-          ? `<button class="fin-icon-btn fin-icon-btn--pay" title="Dar baixa" onclick="abrirDarBaixa('${c.id}','cob')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>`
-          : `<button class="fin-icon-btn" title="Gerar recibo" onclick="gerarRecibo(${JSON.stringify(c).replace(/"/g,'&quot;')},'cob')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>`}
-        <button class="fin-icon-btn" title="Editar" onclick="abrirModalCobranca('${c.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-        <button class="fin-icon-btn fin-icon-btn--del" title="Excluir" onclick="excluirCobranca('${c.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+          ? `<button class="fin-icon-btn fin-icon-btn--pay" title="Dar baixa" onclick="abrirDarBaixa('${id}','cob')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>`
+          : `<button class="fin-icon-btn" title="Gerar recibo" onclick="gerarReciboPorId('${id}','cob')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>`}
+        <button class="fin-icon-btn" title="Editar" onclick="abrirModalCobranca('${id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <button class="fin-icon-btn fin-icon-btn--del" title="Excluir" onclick="excluirCobranca('${id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
       </div></td>
     </tr>`;
   }).join('');
 
   // Populate clientes datalist
   const dl = document.getElementById('cobClientesList');
-  if (dl) dl.innerHTML = (state.clientes || []).map(c => `<option value="${c.nome}">`).join('');
+  if (dl) dl.innerHTML = (state.clientes || []).map(c => `<option value="${escAttr(c.nome)}">`).join('');
 }
 
 // ── Contas a Pagar ────────────────────────────────────────────────────
@@ -372,13 +373,14 @@ function renderFinContasPagar() {
   }
   tbody.innerHTML = lista.map(c => {
     const st = _statusCont(c);
+    const id = escAttr(c.id);
     return `<tr>
       <td>
-        <span class="fin-row-title">${c.descricao}</span>
-        <span class="fin-row-sub">${c.tipo || ''}</span>
+        <span class="fin-row-title">${escHtml(c.descricao || '—')}</span>
+        <span class="fin-row-sub">${escHtml(c.tipo || '')}</span>
       </td>
       <td>
-        ${c.tipo ? `<span class="fin-cat">${c.tipo}</span>` : '<span style="color:var(--mu)">—</span>'}
+        ${c.tipo ? `<span class="fin-cat">${escHtml(c.tipo)}</span>` : '<span style="color:var(--mu)">—</span>'}
         ${st === 'pago' && c.dataPagamento ? `<span class="fin-row-sub fin-row-sub--pago" style="display:block;margin-top:2px">Pago em ${formatDate(c.dataPagamento)}</span>` : ''}
       </td>
       <td class="fin-cell-date">${c.vencimento ? formatDate(c.vencimento) : '—'}</td>
@@ -387,10 +389,10 @@ function renderFinContasPagar() {
       <td>${_badgeStatus(st)}</td>
       <td class="fin-actions"><div class="fin-actions-inner">
         ${st !== 'pago'
-          ? `<button class="fin-icon-btn fin-icon-btn--pay" title="Dar baixa" onclick="abrirDarBaixa('${c.id}','cont')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>`
-          : `<button class="fin-icon-btn" title="Gerar recibo" onclick="gerarRecibo(${JSON.stringify(c).replace(/"/g,'&quot;')},'cont')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>`}
-        <button class="fin-icon-btn" title="Editar" onclick="abrirModalContaPagar('${c.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-        <button class="fin-icon-btn fin-icon-btn--del" title="Excluir" onclick="excluirContaPagar('${c.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+          ? `<button class="fin-icon-btn fin-icon-btn--pay" title="Dar baixa" onclick="abrirDarBaixa('${id}','cont')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>`
+          : `<button class="fin-icon-btn" title="Gerar recibo" onclick="gerarReciboPorId('${id}','cont')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>`}
+        <button class="fin-icon-btn" title="Editar" onclick="abrirModalContaPagar('${id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <button class="fin-icon-btn fin-icon-btn--del" title="Excluir" onclick="excluirContaPagar('${id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
       </div></td>
     </tr>`;
   }).join('');
@@ -419,10 +421,12 @@ function renderFinDespesas() {
     tbody.innerHTML = `<tr><td colspan="6" class="tbl-empty">Nenhuma despesa encontrada.</td></tr>`;
     return;
   }
-  tbody.innerHTML = lista.map(d => `<tr>
+  tbody.innerHTML = lista.map(d => {
+    const id = escAttr(d.id);
+    return `<tr>
     <td>
-      <span class="fin-row-title">${d.clienteNome || '—'}</span>
-      <span class="fin-row-sub">${d.descricao}</span>
+      <span class="fin-row-title">${escHtml(d.clienteNome || '—')}</span>
+      <span class="fin-row-sub">${escHtml(d.descricao || '—')}</span>
     </td>
     <td>
       ${_catBadge(d.categoria)}
@@ -433,16 +437,17 @@ function renderFinDespesas() {
     <td>${_badgeStatus(d.status)}</td>
     <td class="fin-actions"><div class="fin-actions-inner">
       ${d.status !== 'reembolsado'
-        ? `<button class="fin-icon-btn fin-icon-btn--pay" title="Registrar reembolso" onclick="abrirDarBaixa('${d.id}','desp')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>`
-        : `<button class="fin-icon-btn" title="Gerar recibo" onclick="gerarRecibo(${JSON.stringify(d).replace(/"/g,'&quot;')},'desp')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>`}
-      <button class="fin-icon-btn" title="Editar" onclick="abrirModalDespesa('${d.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-      <button class="fin-icon-btn fin-icon-btn--del" title="Excluir" onclick="excluirDespesa('${d.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+        ? `<button class="fin-icon-btn fin-icon-btn--pay" title="Registrar reembolso" onclick="abrirDarBaixa('${id}','desp')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>`
+        : `<button class="fin-icon-btn" title="Gerar recibo" onclick="gerarReciboPorId('${id}','desp')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>`}
+      <button class="fin-icon-btn" title="Editar" onclick="abrirModalDespesa('${id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+      <button class="fin-icon-btn fin-icon-btn--del" title="Excluir" onclick="excluirDespesa('${id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
     </div></td>
-  </tr>`).join('');
+  </tr>`;
+  }).join('');
 
   // Populate clientes datalist
   const dl = document.getElementById('despClientesList');
-  if (dl) dl.innerHTML = (state.clientes || []).map(c => `<option value="${c.nome}">`).join('');
+  if (dl) dl.innerHTML = (state.clientes || []).map(c => `<option value="${escAttr(c.nome)}">`).join('');
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────
@@ -459,7 +464,7 @@ const _CAT_COLOR = {
 
 function _catBadge(cat) {
   if (!cat) return '<span style="color:var(--mu)">—</span>';
-  return `<span class="fin-cat">${cat}</span>`;
+  return `<span class="fin-cat">${escHtml(cat)}</span>`;
 }
 
 function _formatMes(ym) {
@@ -484,7 +489,7 @@ function abrirModalCobranca(id) {
 
   // Populate clientes datalist
   const dl = document.getElementById('cobClientesList');
-  if (dl) dl.innerHTML = (state.clientes || []).map(cl => `<option value="${cl.nome}">`).join('');
+  if (dl) dl.innerHTML = (state.clientes || []).map(cl => `<option value="${escAttr(cl.nome)}">`).join('');
 
   document.getElementById('modalCobrancaTitulo').textContent = c ? 'Editar Cobrança' : 'Nova Cobrança';
   document.getElementById('modalCobranca').classList.add('open');
@@ -627,7 +632,7 @@ function abrirModalDespesa(id) {
 
   // Populate clientes datalist
   const dl = document.getElementById('despClientesList');
-  if (dl) dl.innerHTML = (state.clientes || []).map(c => `<option value="${c.nome}">`).join('');
+  if (dl) dl.innerHTML = (state.clientes || []).map(c => `<option value="${escAttr(c.nome)}">`).join('');
 
   document.getElementById('modalDespesaTitulo').textContent = d ? 'Editar Despesa' : 'Nova Despesa Reembolsável';
   document.getElementById('modalDespesa').classList.add('open');
@@ -761,12 +766,26 @@ document.getElementById('formDarBaixa').addEventListener('submit', async e => {
 
 // ── Recibo ────────────────────────────────────────────────────────────
 
+function gerarReciboPorId(id, tipo) {
+  const fontes = {
+    cob: state.cobrancas || [],
+    cont: state.contasPagar || [],
+    desp: state.despesas || [],
+  };
+  const item = fontes[tipo]?.find(x => x.id === id);
+  if (!item) {
+    toast('Registro não encontrado para gerar recibo.', 'error');
+    return;
+  }
+  gerarRecibo(item, tipo);
+}
+
 function gerarRecibo(item, tipo) {
-  const empresa = state.meuPerfil?.empresa_nome || 'Escritório';
-  const dataPgto = item.dataPagamento ? formatDate(item.dataPagamento) : formatDate(item.data) || '—';
-  const valorPago = formatCurrency(item.valorPago || item.valor);
-  const cliente  = item.clienteNome || '—';
-  const descricao = item.descricao || '—';
+  const empresa = escHtml(state.meuPerfil?.empresa_nome || 'Escritório');
+  const dataPgto = escHtml(item.dataPagamento ? formatDate(item.dataPagamento) : formatDate(item.data) || '—');
+  const valorPago = escHtml(formatCurrency(item.valorPago || item.valor));
+  const cliente  = escHtml(item.clienteNome || '—');
+  const descricao = escHtml(item.descricao || '—');
 
   const html = `<!DOCTYPE html><html lang="pt-BR">
 <head><meta charset="UTF-8"><title>Recibo</title>
@@ -833,8 +852,8 @@ function renderFinRelatorio() {
     rowFn = c => {
       const st = _statusCob(c);
       return `<tr>
-        <td><span class="fin-row-title">${c.descricao}</span></td>
-        <td><span class="fin-row-sub" style="color:var(--fg)">${c.clienteNome || '—'}</span></td>
+        <td><span class="fin-row-title">${escHtml(c.descricao || '—')}</span></td>
+        <td><span class="fin-row-sub" style="color:var(--fg)">${escHtml(c.clienteNome || '—')}</span></td>
         <td>${_catBadge(c.categoria)}</td>
         <td class="fin-cell-date">${c.vencimento ? formatDate(c.vencimento) : '—'}</td>
         <td class="fin-cell-mono">${formatCurrency(c.valor)}</td>
@@ -864,8 +883,8 @@ function renderFinRelatorio() {
     rowFn = c => {
       const st = _statusCont(c);
       return `<tr>
-        <td><span class="fin-row-title">${c.descricao}</span></td>
-        <td>${c.tipo || '—'}</td>
+        <td><span class="fin-row-title">${escHtml(c.descricao || '—')}</span></td>
+        <td>${escHtml(c.tipo || '—')}</td>
         <td class="fin-cell-date">${c.vencimento ? formatDate(c.vencimento) : '—'}</td>
         <td class="fin-cell-mono">${formatCurrency(c.valor)}</td>
         <td>${_badgeRecorrencia(c.recorrencia, c.vencimento)}</td>
@@ -893,9 +912,9 @@ function renderFinRelatorio() {
       <th style="width:12%">Valor</th><th style="width:10%">Status</th>
     </tr>`;
     rowFn = d => `<tr>
-      <td><span class="fin-row-title">${d.descricao}</span></td>
-      <td><span class="fin-row-sub" style="color:var(--fg)">${d.clienteNome || '—'}</span></td>
-      <td>${d.categoria || '—'}</td>
+      <td><span class="fin-row-title">${escHtml(d.descricao || '—')}</span></td>
+      <td><span class="fin-row-sub" style="color:var(--fg)">${escHtml(d.clienteNome || '—')}</span></td>
+      <td>${escHtml(d.categoria || '—')}</td>
       <td class="fin-cell-date">${d.data ? formatDate(d.data) : '—'}</td>
       <td class="fin-cell-mono">${formatCurrency(d.valor)}</td>
       <td>${_badgeStatus(d.status)}</td>

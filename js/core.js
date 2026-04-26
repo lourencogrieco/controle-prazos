@@ -145,6 +145,27 @@ function initials(name) {
   return (name || '').trim().split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase();
 }
 
+function escHtml(value) {
+  const span = document.createElement('span');
+  span.textContent = value ?? '';
+  return span.innerHTML;
+}
+
+function escAttr(value) {
+  return escHtml(value).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function safeExternalUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  try {
+    const url = new URL(raw, window.location.origin);
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
 function statusClass(s) {
   if (s === 'Concluído' || s === 'Concluída') return 'concluido';
   if (s === 'Em andamento') return 'andamento';

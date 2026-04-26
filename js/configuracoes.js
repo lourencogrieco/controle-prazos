@@ -10,9 +10,9 @@ function renderListaAreas() {
   el.innerHTML = `<table style="width:100%;border-collapse:collapse">
     <tbody>${state.areas.map(a => `
       <tr>
-        <td style="padding:6px 8px;font-size:.875rem;font-weight:600">${a.nome}</td>
+        <td style="padding:6px 8px;font-size:.875rem;font-weight:600">${escHtml(a.nome)}</td>
         <td style="padding:6px 4px;text-align:right">
-          <button onclick="excluirArea('${a.id}')" style="background:none;border:none;color:var(--mu);cursor:pointer;font-size:.9rem" title="Excluir">✕</button>
+          <button onclick="excluirArea('${escAttr(a.id)}')" style="background:none;border:none;color:var(--mu);cursor:pointer;font-size:.9rem" title="Excluir">✕</button>
         </td>
       </tr>`).join('')}
     </tbody>
@@ -76,7 +76,7 @@ function popularSelectAreaTipos() {
   const sel = document.getElementById('tipoArea');
   if (!sel) return;
   sel.innerHTML = '<option value="">Selecionar área…</option>' +
-    state.areas.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
+    state.areas.map(a => `<option value="${escAttr(a.id)}">${escHtml(a.nome)}</option>`).join('');
 }
 
 function renderListaTipos() {
@@ -95,11 +95,11 @@ function renderListaTipos() {
     </tr></thead>
     <tbody>${state.tiposPasta.map(t => `
       <tr>
-        <td style="padding:6px 8px;font-size:.78rem;color:var(--mu)">${areaNome(t.areaId)}</td>
-        <td style="padding:6px 8px;font-weight:700;font-family:'IBM Plex Mono',monospace;font-size:.82rem">${t.codigo}</td>
-        <td style="padding:6px 8px;font-size:.875rem">${t.nome}</td>
+        <td style="padding:6px 8px;font-size:.78rem;color:var(--mu)">${escHtml(areaNome(t.areaId))}</td>
+        <td style="padding:6px 8px;font-weight:700;font-family:'IBM Plex Mono',monospace;font-size:.82rem">${escHtml(t.codigo)}</td>
+        <td style="padding:6px 8px;font-size:.875rem">${escHtml(t.nome)}</td>
         <td style="padding:6px 8px">
-          <button onclick="excluirTipoPasta('${t.id}')" style="background:none;border:none;color:var(--mu);cursor:pointer;font-size:.9rem" title="Excluir">✕</button>
+          <button onclick="excluirTipoPasta('${escAttr(t.id)}')" style="background:none;border:none;color:var(--mu);cursor:pointer;font-size:.9rem" title="Excluir">✕</button>
         </td>
       </tr>`).join('')}
     </tbody>
@@ -278,13 +278,13 @@ function renderListaClientes() {
     </tr></thead>
     <tbody>${state.clientes.map(c => `
       <tr>
-        <td style="padding:6px 8px;font-size:.82rem;font-weight:600">${c.nome}</td>
-        <td style="padding:6px 8px;font-size:.78rem;color:var(--mu)">${c.tipo}</td>
-        <td style="padding:6px 8px;font-size:.78rem;color:var(--mu)">${c.telefone || '—'}</td>
-        <td style="padding:6px 8px;font-size:.78rem;color:var(--mu)">${c.cidade || '—'}</td>
+        <td style="padding:6px 8px;font-size:.82rem;font-weight:600">${escHtml(c.nome)}</td>
+        <td style="padding:6px 8px;font-size:.78rem;color:var(--mu)">${escHtml(c.tipo)}</td>
+        <td style="padding:6px 8px;font-size:.78rem;color:var(--mu)">${escHtml(c.telefone || '—')}</td>
+        <td style="padding:6px 8px;font-size:.78rem;color:var(--mu)">${escHtml(c.cidade || '—')}</td>
         <td style="padding:6px 8px;display:flex;gap:6px">
-          <button onclick="editarCliente('${c.id}')" style="background:none;border:none;color:var(--mu);cursor:pointer;font-size:.85rem" title="Editar">✎</button>
-          <button onclick="excluirCliente('${c.id}')" style="background:none;border:none;color:var(--mu);cursor:pointer;font-size:.85rem" title="Excluir">✕</button>
+          <button onclick="editarCliente('${escAttr(c.id)}')" style="background:none;border:none;color:var(--mu);cursor:pointer;font-size:.85rem" title="Editar">✎</button>
+          <button onclick="excluirCliente('${escAttr(c.id)}')" style="background:none;border:none;color:var(--mu);cursor:pointer;font-size:.85rem" title="Excluir">✕</button>
         </td>
       </tr>`).join('')}
     </tbody>
@@ -446,11 +446,12 @@ async function renderConfiguracoes() {
   tbody.innerHTML = usuarios.map(u => {
     const perfil    = PERFIS_LABEL[u.perfil] || u.perfil || '—';
     const areaNome  = state.areas.find(a => a.id === u.area_id)?.nome || '—';
+    const id = escAttr(u.id);
     return `<tr>
-      <td>${u.nome || '—'}</td>
-      <td><span class="badge-perfil badge-perfil--${u.perfil}">${perfil}</span></td>
-      <td style="font-size:.78rem;color:var(--mu)">${areaNome}</td>
-      <td><button class="btn-icon-sm" onclick="editarPerfil('${u.id}','${u.perfil||''}','${(u.nome||'').replace(/'/g,'')}')">✎</button></td>
+      <td>${escHtml(u.nome || '—')}</td>
+      <td><span class="badge-perfil badge-perfil--${escAttr(u.perfil || '')}">${escHtml(perfil)}</span></td>
+      <td style="font-size:.78rem;color:var(--mu)">${escHtml(areaNome)}</td>
+      <td><button class="btn-icon-sm" onclick="editarPerfil('${id}')">✎</button></td>
     </tr>`;
   }).join('');
 
@@ -502,9 +503,10 @@ async function convidarUsuario() {
 }
 
 function editarPerfil(userId, perfilAtual, nome) {
+  const usuario = state.usuarios.find(u => u.id === userId);
   document.getElementById('editPerfilUserId').value = userId;
-  document.getElementById('editPerfilNome').textContent = nome || userId;
-  document.getElementById('editPerfilSelect').value = perfilAtual || 'advogado';
+  document.getElementById('editPerfilNome').textContent = nome || usuario?.nome || userId;
+  document.getElementById('editPerfilSelect').value = perfilAtual || usuario?.perfil || 'advogado';
   document.getElementById('modalEditarPerfil').classList.add('open');
 }
 
@@ -548,7 +550,7 @@ async function renderAuditLog() {
     .limit(100);
 
   if (error) {
-    container.innerHTML = `<p style="color:var(--danger);font-size:.8rem">${error.message}</p>`;
+    container.innerHTML = `<p style="color:var(--danger);font-size:.8rem">${escHtml(error.message)}</p>`;
     return;
   }
   if (!data?.length) {
@@ -559,7 +561,7 @@ async function renderAuditLog() {
   const acaoBadge = a => {
     const map = { criar: ['#dcfce7','#166534','Criar'], editar: ['#dbeafe','#1e3a8a','Editar'], excluir: ['#fee2e2','#7f1d1d','Excluir'] };
     const [bg, cor, label] = map[a] || ['#f3f4f6','#374151', a];
-    return `<span style="display:inline-block;padding:1px 7px;border-radius:9999px;font-size:.68rem;font-weight:700;background:${bg};color:${cor}">${label}</span>`;
+    return `<span style="display:inline-block;padding:1px 7px;border-radius:9999px;font-size:.68rem;font-weight:700;background:${bg};color:${cor}">${escHtml(label)}</span>`;
   };
 
   const tabelaLabel = t => ({ prazos_lhub: 'Prazo', tarefas_lhub: 'Tarefa', pastas: 'Pasta' }[t] || t);
@@ -580,11 +582,11 @@ async function renderAuditLog() {
           const dt = new Date(r.criado_em);
           const quando = dt.toLocaleDateString('pt-BR') + ' ' + dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
           return `<tr style="border-bottom:1px solid var(--br)">
-            <td style="padding:7px 8px;white-space:nowrap;font-family:'IBM Plex Mono',monospace;color:var(--mu)">${quando}</td>
-            <td style="padding:7px 8px;font-weight:600">${r.usuario_nome || '—'}</td>
+            <td style="padding:7px 8px;white-space:nowrap;font-family:'IBM Plex Mono',monospace;color:var(--mu)">${escHtml(quando)}</td>
+            <td style="padding:7px 8px;font-weight:600">${escHtml(r.usuario_nome || '—')}</td>
             <td style="padding:7px 8px">${acaoBadge(r.acao)}</td>
-            <td style="padding:7px 8px;color:var(--mu)">${tabelaLabel(r.tabela)}</td>
-            <td style="padding:7px 8px;color:var(--fg)">${r.descricao || '—'}</td>
+            <td style="padding:7px 8px;color:var(--mu)">${escHtml(tabelaLabel(r.tabela))}</td>
+            <td style="padding:7px 8px;color:var(--fg)">${escHtml(r.descricao || '—')}</td>
           </tr>`;
         }).join('')}
       </tbody>
@@ -610,13 +612,7 @@ const MODELO_VARIAVEIS = [
 ];
 
 function modeloEscapeHtml(v) {
-  return String(v ?? '').replace(/[&<>"']/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
-  }[c]));
+  return escHtml(v);
 }
 
 function renderModeloVariaveisDisponiveis() {
@@ -625,11 +621,11 @@ function renderModeloVariaveisDisponiveis() {
   const grupos = [...new Set(MODELO_VARIAVEIS.map(v => v.grupo))];
   wrap.innerHTML = '<strong>Variáveis disponíveis</strong>' + grupos.map(grupo => `
     <div class="modelo-var-group">
-      <span class="modelo-var-group-title">${grupo}</span>
+      <span class="modelo-var-group-title">${escHtml(grupo)}</span>
       <div class="modelo-var-buttons">
         ${MODELO_VARIAVEIS.filter(v => v.grupo === grupo).map(v => `
-          <button type="button" class="modelo-var-chip" onclick="inserirVariavelModelo('${v.chave}')" title="{{${v.chave}}}">
-            ${modeloEscapeHtml(v.label)}
+          <button type="button" class="modelo-var-chip" onclick="inserirVariavelModelo('${escAttr(v.chave)}')" title="{{${escAttr(v.chave)}}}">
+            ${escHtml(v.label)}
           </button>`).join('')}
       </div>
     </div>`).join('');
@@ -665,19 +661,22 @@ function renderModelosDocumentos() {
   const tbody = document.getElementById('tbodyModelosDocumentos');
   if (!tbody) return;
   const modelos = state.modelosDocumentos || [];
-  tbody.innerHTML = modelos.length ? modelos.map(m => `
+  tbody.innerHTML = modelos.length ? modelos.map(m => {
+    const id = escAttr(m.id);
+    return `
     <tr>
-      <td><strong>${m.nome}</strong></td>
-      <td>${m.categoria ? `<span class="modelo-cat">${m.categoria}</span>` : '—'}</td>
-      <td style="max-width:360px;color:var(--mu)">${m.descricao || '—'}</td>
+      <td><strong>${escHtml(m.nome)}</strong></td>
+      <td>${m.categoria ? `<span class="modelo-cat">${escHtml(m.categoria)}</span>` : '—'}</td>
+      <td style="max-width:360px;color:var(--mu)">${escHtml(m.descricao || '—')}</td>
       <td>
         <div class="row-actions" style="justify-content:flex-start">
-          <button class="btn-link-sm" onclick="abrirModalGerarDocumento('${m.id}')">Gerar</button>
-          <button class="btn-link-sm" onclick="abrirModalModeloDocumento('${m.id}')">Editar</button>
-          <button class="btn-link-sm btn-link-danger" onclick="excluirModeloDocumento('${m.id}')">Excluir</button>
+          <button class="btn-link-sm" onclick="abrirModalGerarDocumento('${id}')">Gerar</button>
+          <button class="btn-link-sm" onclick="abrirModalModeloDocumento('${id}')">Editar</button>
+          <button class="btn-link-sm btn-link-danger" onclick="excluirModeloDocumento('${id}')">Excluir</button>
         </div>
       </td>
-    </tr>`).join('') : '<tr><td colspan="4" class="tbl-empty">Nenhum modelo cadastrado.</td></tr>';
+    </tr>`;
+  }).join('') : '<tr><td colspan="4" class="tbl-empty">Nenhum modelo cadastrado.</td></tr>';
 }
 
 function abrirModalModeloDocumento(id) {
@@ -771,9 +770,9 @@ function abrirModalGerarDocumento(modeloId) {
   document.getElementById('gerarModeloId').value = modeloId;
   document.getElementById('gerarDocTitulo').textContent = `Gerar: ${modelo.nome}`;
   document.getElementById('gerarClienteSelect').innerHTML =
-    '<option value="">— Selecionar cliente —</option>' + state.clientes.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+    '<option value="">— Selecionar cliente —</option>' + state.clientes.map(c => `<option value="${escAttr(c.id)}">${escHtml(c.nome)}</option>`).join('');
   document.getElementById('gerarPastaSelect').innerHTML =
-    '<option value="">— Sem processo —</option>' + state.pastas.map(p => `<option value="${p.id}">${p.numero} — ${p.cliente}</option>`).join('');
+    '<option value="">— Sem processo —</option>' + state.pastas.map(p => `<option value="${escAttr(p.id)}">${escHtml(p.numero)} — ${escHtml(p.cliente)}</option>`).join('');
   renderCamposExtrasModelo(modelo);
   document.getElementById('modalGerarDocumento').classList.add('open');
   atualizarDocumentoGerado();
@@ -791,7 +790,7 @@ function renderCamposExtrasModelo(modelo) {
   wrap.innerHTML = extras.map(v => `
     <label class="field modelo-extra-field">
       <span class="field-label">{{${modeloEscapeHtml(v)}}}</span>
-      <input type="text" data-modelo-var="${modeloEscapeHtml(v)}" placeholder="Preencher ${modeloEscapeHtml(v)}">
+      <input type="text" data-modelo-var="${escAttr(v)}" placeholder="Preencher ${escAttr(v)}">
     </label>`).join('');
   wrap.querySelectorAll('input').forEach(i => i.addEventListener('input', atualizarDocumentoGerado));
 }

@@ -75,27 +75,6 @@ function mesmoIdIntimacao(a, b) {
   return String(a ?? '') === String(b ?? '');
 }
 
-function escHtml(value) {
-  const span = document.createElement('span');
-  span.textContent = value ?? '';
-  return span.innerHTML;
-}
-
-function escAttr(value) {
-  return escHtml(value).replace(/"/g, '&quot;');
-}
-
-function safeExternalUrl(value) {
-  const raw = String(value || '').trim();
-  if (!raw) return null;
-  try {
-    const url = new URL(raw, window.location.origin);
-    return ['http:', 'https:'].includes(url.protocol) ? url.href : null;
-  } catch {
-    return null;
-  }
-}
-
 function intimacaoPorId(id) {
   return state.intimacoes.find(i => mesmoIdIntimacao(i.id, id)) || null;
 }

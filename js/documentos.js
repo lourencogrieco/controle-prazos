@@ -49,16 +49,19 @@ function renderDocumentos(docs) {
         ? (d.tamanho_bytes / 1048576).toFixed(1) + ' MB'
         : Math.round(d.tamanho_bytes / 1024) + ' KB')
       : '—';
+    const id = escAttr(d.id);
+    const pathArg = escAttr(encodeURIComponent(d.storage_path || ''));
+    const nomeArg = escAttr(encodeURIComponent(d.nome || 'documento'));
     return `<tr>
-      <td>${d.nome}</td>
-      <td>${d.tipo || '—'}</td>
-      <td>${d.criado_por || '—'}</td>
+      <td>${escHtml(d.nome)}</td>
+      <td>${escHtml(d.tipo || '—')}</td>
+      <td>${escHtml(d.criado_por || '—')}</td>
       <td>—</td>
       <td>${tamanho}</td>
       <td>${formatDate(d.created_at?.slice(0,10))}</td>
       <td style="display:flex;align-items:center;gap:16px">
-        <button class="btn-link-sm" onclick="baixarDocumento('${d.storage_path}','${d.nome}')">⬇ Baixar</button>
-        <button class="btn-icon btn-icon--danger" title="Excluir documento" onclick="excluirDocumento('${d.id}','${d.storage_path}')">
+        <button class="btn-link-sm" onclick="baixarDocumento(decodeURIComponent('${pathArg}'),decodeURIComponent('${nomeArg}'))">⬇ Baixar</button>
+        <button class="btn-icon btn-icon--danger" title="Excluir documento" onclick="excluirDocumento('${id}',decodeURIComponent('${pathArg}'))">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
             <path d="M10 11v6M14 11v6M9 6V4h6v2"/>

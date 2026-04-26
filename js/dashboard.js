@@ -115,43 +115,200 @@ function abrirRisco(tipo) {
 // ──────────────────────────────────────────────────────────────────────
 // DASHBOARD
 // ──────────────────────────────────────────────────────────────────────
-function renderDashboard() {
-  const tarefasPendentes = state.tarefas.filter(t => t.status === 'Pendente').length;
-  const prazosSemana     = state.prazos.filter(p => {
-    if (p.status === 'Concluído') return false;
-    const d = daysUntil(p.prazoFatal);
-    return d >= 0 && d <= 7;
-  }).length;
-  const prazosVencidos = state.prazos.filter(p =>
-    p.status !== 'Concluído' && daysUntil(p.prazoFatal) < 0
-  ).length;
-  const pastasAtivas = state.pastas.filter(p => p.status === 'ativo').length;
+let _dashboardSeq = 0;
+
+function _dashIsoOffset(dias) {
+  const hoje = new Date();
+  const d = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  d.setDate(d.getDate() + dias);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function _dashPrazoFromRow(row) {
+  const p = dbParaPrazo(row);
+  if (row.pastas) {
+    p.pastaNr = row.pastas.numero || '';
+    p.processo = row.pastas.numero_processo || '';
+    p.comarca = row.pastas.comarca || '';
+  } else if (typeof _enrichPrazo === 'function') {
+    _enrichPrazo(p);
+  }
+  return p;
+}
+
+function _dashEventoFromRow(e) {
+  return {
+    id:            e.id,
+    data:          e.data,
+    titulo:        e.titulo,
+    tipo:          e.tipo,
+    hora:          e.hora || '',
+    responsavel:   e.responsavel || '',
+    local:         e.local || '',
+    participantes: e.participantes || '',
+  };
+}
+
+async function carregarDashboardResumo() {
+  const hojeIso = _dashIsoOffset(0);
+  const em3Iso  = _dashIsoOffset(3);
+  const em7Iso  = _dashIsoOffset(7);
+
+  const basePrazo = (opts) => db.from('prazos_lhub')
+    .select('*, pastas(numero, numero_processo, comarca)', opts)
+    .eq('empresa_id', state.empresaId)
+    .neq('status', 'concluido');
+
+  const [
+    tarefasPendentesRes,
+    prazosSemanaRes,
+    prazosVencidosCountRes,
+    alertasRes,
+    proximosRes,
+    tarefasListaRes,
+    agendaRes,
+    prazosVencidosRes,
+    tarefasSemRespRes,
+    cobrancasVencidasRes,
+  ] = await Promise.all([
+    db.from('tarefas_lhub')
+      .select('id', { count: 'exact', head: true })
+      .eq('empresa_id', state.empresaId)
+      .eq('status', 'pendente'),
+    db.from('prazos_lhub')
+      .select('id', { count: 'exact', head: true })
+      .eq('empresa_id', state.empresaId)
+      .neq('status', 'concluido')
+      .gte('prazo', hojeIso)
+      .lte('prazo', em7Iso),
+    db.from('prazos_lhub')
+      .select('id', { count: 'exact', head: true })
+      .eq('empresa_id', state.empresaId)
+      .neq('status', 'concluido')
+      .lt('prazo', hojeIso),
+    basePrazo({ count: 'exact' })
+      .lte('prazo', em3Iso)
+      .order('prazo', { ascending: true })
+      .limit(8),
+    basePrazo()
+      .gte('prazo', hojeIso)
+      .order('prazo', { ascending: true })
+      .limit(6),
+    db.from('tarefas_lhub')
+      .select('*')
+      .eq('empresa_id', state.empresaId)
+      .eq('status', 'pendente')
+      .limit(20),
+    db.from('agenda_eventos')
+      .select('*')
+      .eq('empresa_id', state.empresaId)
+      .gte('data', hojeIso)
+      .lte('data', em7Iso)
+      .order('data', { ascending: true })
+      .limit(6),
+    basePrazo()
+      .lt('prazo', hojeIso)
+      .order('prazo', { ascending: true })
+      .limit(3),
+    db.from('tarefas_lhub')
+      .select('*', { count: 'exact' })
+      .eq('empresa_id', state.empresaId)
+      .neq('status', 'concluida')
+      .or('responsavel.is.null,responsavel.eq.')
+      .limit(2),
+    db.from('cobrancas')
+      .select('*', { count: 'exact' })
+      .eq('empresa_id', state.empresaId)
+      .neq('status', 'pago')
+      .lt('data_vencimento', hojeIso)
+      .order('data_vencimento', { ascending: true })
+      .limit(2),
+  ]);
+
+  const erros = [
+    tarefasPendentesRes, prazosSemanaRes, prazosVencidosCountRes, alertasRes,
+    proximosRes, tarefasListaRes, agendaRes, prazosVencidosRes, tarefasSemRespRes,
+    cobrancasVencidasRes,
+  ].map(r => r.error).filter(Boolean);
+  if (erros.length) throw erros[0];
+
+  const PRIOR_ORD = { Urgente:0, Alta:1, Normal:2, Baixa:3 };
+  const tarefasLista = (tarefasListaRes.data || [])
+    .map(dbParaTarefa)
+    .sort((a, b) => (PRIOR_ORD[a.prioridade] ?? 2) - (PRIOR_ORD[b.prioridade] ?? 2))
+    .slice(0, 6);
+
+  const eventosSemana = (agendaRes.data || []).map(_dashEventoFromRow);
+  for (const ev of eventosSemana) {
+    const idx = agendaEventos.findIndex(e => e.id === ev.id);
+    if (idx >= 0) agendaEventos[idx] = ev;
+    else agendaEventos.push(ev);
+  }
+  agendaEventos.sort((a, b) => a.data.localeCompare(b.data));
+
+  return {
+    tarefasPendentes: tarefasPendentesRes.count || 0,
+    prazosSemana: prazosSemanaRes.count || 0,
+    prazosVencidosCount: prazosVencidosCountRes.count || 0,
+    alertas: (alertasRes.data || []).map(_dashPrazoFromRow),
+    alertasTotal: alertasRes.count || 0,
+    proximos: (proximosRes.data || []).map(_dashPrazoFromRow),
+    tarefasLista,
+    eventosSemana,
+    riscos: {
+      prazosVencidos: (prazosVencidosRes.data || []).map(_dashPrazoFromRow),
+      prazosVencidosTotal: prazosVencidosCountRes.count || 0,
+      intimacoesPendentes: state.intimacoes
+        .filter(i => (i.status || 'pendente') === 'pendente')
+        .sort((a, b) => (b.dataPublicacao || '').localeCompare(a.dataPublicacao || '')),
+      tarefasSemResp: (tarefasSemRespRes.data || []).map(dbParaTarefa),
+      tarefasSemRespTotal: tarefasSemRespRes.count || 0,
+      cobrancasVencidas: (cobrancasVencidasRes.data || []).map(dbParaCobranca),
+      cobrancasVencidasTotal: cobrancasVencidasRes.count || 0,
+    },
+  };
+}
+
+async function renderDashboard() {
+  const seq = ++_dashboardSeq;
 
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  set('dashTarefasPendentes', tarefasPendentes);
-  set('dashTarefasLabel',     `Tarefa${tarefasPendentes !== 1 ? 's' : ''} a fazer`);
-  set('dashPrazosSemana',     prazosSemana);
-  set('dashPrazosVencidos',   prazosVencidos);
+  let resumo;
+  try {
+    resumo = await carregarDashboardResumo();
+  } catch (err) {
+    console.warn('[dashboard] falha ao carregar resumo:', err);
+    const msg = `<div class="dash-empty">Erro ao carregar dashboard: ${escHtml(err.message || 'falha desconhecida')}</div>`;
+    ['dashProximosPrazos', 'dashTarefasLista', 'dashAgendaSemana', 'dashRiskList'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = msg;
+    });
+    return;
+  }
+  if (seq !== _dashboardSeq) return;
 
-  renderDashboardRiscos();
+  set('dashTarefasPendentes', resumo.tarefasPendentes);
+  set('dashTarefasLabel',     `Tarefa${resumo.tarefasPendentes !== 1 ? 's' : ''} a fazer`);
+  set('dashPrazosSemana',     resumo.prazosSemana);
+  set('dashPrazosVencidos',   resumo.prazosVencidosCount);
+
+  renderDashboardRiscos(resumo.riscos);
 
   // ── Alertas de prazos urgentes ─────────────────────────────────────
-  const alertas = state.prazos.filter(p => {
-    if (p.status === 'Concluído') return false;
-    return daysUntil(p.prazoFatal) <= 3;
-  }).sort((a, b) => a.prazoFatal.localeCompare(b.prazoFatal));
+  const alertas = resumo.alertas;
+  const alertasTotal = resumo.alertasTotal;
 
   const alertaEl = document.getElementById('dashAlertasPrazos');
   if (alertaEl) {
-    if (alertas.length > 0) {
+    if (alertasTotal > 0) {
       alertaEl.innerHTML = `<div class="dash-alerta-strip">
         <span class="dash-alerta-icon">⚠</span>
-        <span class="dash-alerta-msg"><strong>${alertas.length} prazo${alertas.length > 1 ? 's' : ''}</strong> vence${alertas.length > 1 ? 'm' : ''} nos próximos 3 dias:</span>
+        <span class="dash-alerta-msg"><strong>${alertasTotal} prazo${alertasTotal > 1 ? 's' : ''}</strong> vence${alertasTotal > 1 ? 'm' : ''} nos próximos 3 dias:</span>
         <span class="dash-alerta-list">${alertas.slice(0, 4).map(p => {
           const d = daysUntil(p.prazoFatal);
           const label = d < 0 ? 'Vencido' : d === 0 ? 'Hoje' : `${d}d`;
           return `<span class="dash-alerta-item" onclick="document.querySelector('[data-view=atividades]').click();document.querySelector('[data-subtab=prazos]').click()" title="${escAttr(p.tipoPrazo || '')}">${escHtml(p.cliente || p.pastaNr || '—')} (${escHtml(label)})</span>`;
-        }).join('')}${alertas.length > 4 ? `<span class="dash-alerta-item" style="color:var(--mu)">+${alertas.length - 4} mais</span>` : ''}</span>
+        }).join('')}${alertasTotal > 4 ? `<span class="dash-alerta-item" style="color:var(--mu)">+${alertasTotal - 4} mais</span>` : ''}</span>
       </div>`;
       alertaEl.classList.remove('hidden');
     } else {
@@ -161,10 +318,7 @@ function renderDashboard() {
   }
 
   // ── Próximos prazos ────────────────────────────────────────────────
-  const proximos = state.prazos
-    .filter(p => p.status !== 'Concluído' && daysUntil(p.prazoFatal) >= 0)
-    .sort((a, b) => a.prazoFatal.localeCompare(b.prazoFatal))
-    .slice(0, 6);
+  const proximos = resumo.proximos;
 
   const contPrazos = document.getElementById('dashProximosPrazos');
   if (contPrazos) {
@@ -186,12 +340,7 @@ function renderDashboard() {
 
   // ── Tarefas pendentes ──────────────────────────────────────────────
   const PRIOR_COR = { Urgente:'var(--red)', Alta:'#e07a17', Normal:'var(--ac)', Baixa:'var(--mu)' };
-  const PRIOR_ORD = { Urgente:0, Alta:1, Normal:2, Baixa:3 };
-
-  const tarefasLista = state.tarefas
-    .filter(t => t.status === 'Pendente')
-    .sort((a, b) => (PRIOR_ORD[a.prioridade] ?? 2) - (PRIOR_ORD[b.prioridade] ?? 2))
-    .slice(0, 6);
+  const tarefasLista = resumo.tarefasLista;
 
   const contTarefas = document.getElementById('dashTarefasLista');
   if (contTarefas) {
@@ -214,11 +363,6 @@ function renderDashboard() {
   renderDashProdutividade();
 
   // ── Agenda da semana ───────────────────────────────────────────────
-  const hoje  = new Date();
-
-  const base  = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-  const fim   = new Date(base); fim.setDate(fim.getDate() + 7);
-
   const TIPO_COR_AG = {
     'Prazo':      'var(--red)',
     'Audiência':  '#1890d8',
@@ -227,10 +371,7 @@ function renderDashboard() {
     'Lembrete':   'var(--mu)',
   };
 
-  const eventosSemana = agendaEventos
-    .filter(e => { const d = new Date(e.data + 'T00:00:00'); return d >= base && d <= fim; })
-    .sort((a, b) => a.data.localeCompare(b.data))
-    .slice(0, 6);
+  const eventosSemana = resumo.eventosSemana;
 
   const contAgenda = document.getElementById('dashAgendaSemana');
   if (contAgenda) {
@@ -250,25 +391,17 @@ function renderDashboard() {
   }
 }
 
-function renderDashboardRiscos() {
-  const hoje = new Date().toISOString().slice(0, 10);
-  const prazosVencidos = state.prazos
-    .filter(p => p.status !== 'Concluído' && daysUntil(p.prazoFatal) < 0)
-    .sort((a, b) => a.prazoFatal.localeCompare(b.prazoFatal));
-  const intimacoesPendentes = state.intimacoes
-    .filter(i => (i.status || 'pendente') === 'pendente')
-    .sort((a, b) => (b.dataPublicacao || '').localeCompare(a.dataPublicacao || ''));
-  const tarefasSemResp = state.tarefas
-    .filter(t => t.status !== 'Concluída' && !(t.responsavel || '').trim());
-  const cobrancasVencidas = state.cobrancas
-    .filter(c => c.status !== 'pago' && c.vencimento && c.vencimento < hoje)
-    .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+function renderDashboardRiscos(dados) {
+  const prazosVencidos = dados?.prazosVencidos || [];
+  const intimacoesPendentes = dados?.intimacoesPendentes || [];
+  const tarefasSemResp = dados?.tarefasSemResp || [];
+  const cobrancasVencidas = dados?.cobrancasVencidas || [];
 
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  set('riskPrazosVencidos', prazosVencidos.length);
+  set('riskPrazosVencidos', dados?.prazosVencidosTotal ?? prazosVencidos.length);
   set('riskIntimacoesPendentes', intimacoesPendentes.length);
-  set('riskTarefasSemResponsavel', tarefasSemResp.length);
-  set('riskFinanceiroVencido', cobrancasVencidas.length);
+  set('riskTarefasSemResponsavel', dados?.tarefasSemRespTotal ?? tarefasSemResp.length);
+  set('riskFinanceiroVencido', dados?.cobrancasVencidasTotal ?? cobrancasVencidas.length);
 
   const riscos = [
     ...prazosVencidos.slice(0, 3).map(p => ({

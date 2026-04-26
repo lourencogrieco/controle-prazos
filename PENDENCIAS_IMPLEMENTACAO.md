@@ -39,12 +39,14 @@ Este arquivo registra o que ainda falta implementar ou revisar para continuar a 
 - Paginacao server-side no Financeiro: tabelas de Cobranças, Contas a Pagar e Despesas Reembolsáveis ganharam controles de página/linhas e passaram a buscar a página atual com filtros no Supabase.
 - Resumo financeiro separado das listas: cards da visão geral, próximos vencimentos e alertas financeiros agora fazem consultas recortadas no Supabase em vez de depender das listas completas em memória.
 - Dashboard geral separado parcialmente: cards, alertas, próximos prazos, tarefas pendentes, agenda da semana e riscos críticos agora usam consultas leves/limitadas no Supabase em vez de depender das listas completas carregadas no estado global.
+- Produtividade do dashboard separada: tabela gerencial agora busca apenas colunas de responsável/status/prazo no Supabase e calcula os indicadores sem depender dos arrays completos de prazos e tarefas.
+- Badge de prazos urgentes separado: contador do menu agora usa `count: exact` no Supabase em vez de varrer `state.prazos`.
 
 ## Revisao da auditoria de 26/04/2026
 
 O que faz sentido manter como prioridade:
 
-- Performance: Pastas, Prazos, Clientes, Pipeline CRM e tabelas financeiras ja têm carregamento paginado/limitado nas telas principais; a visão geral financeira e o dashboard principal ja usam consultas separadas. `carregarDados()` ainda busca muitas tabelas inteiras para produtividade do dashboard, modais, relatorios e vinculos.
+- Performance: Pastas, Prazos, Clientes, Pipeline CRM e tabelas financeiras ja têm carregamento paginado/limitado nas telas principais; a visão geral financeira, o dashboard principal, a produtividade gerencial e o badge de prazos ja usam consultas separadas. `carregarDados()` ainda busca muitas tabelas inteiras para modais, relatorios e vinculos.
 - Sincronizacao PJe: o cron agora usa a RPC de importacao preservando status, registra log resumido e a UI tem historico visual dos ultimos logs. Falta apenas repetir em rotina real com uma intimação real quando houver caso adequado.
 - Sanitizacao: os principais renders de intimações, documentos, financeiro, configuracoes, dashboard, pastas, tarefas, agenda, prazos, atividades e relatorios ja usam helpers comuns de escape. O risco restante e revisar novas telas/codigo futuro para manter o padrao.
 - Numero de pasta: `gerarNumeroPasta()` continua client-side e pode gerar duplicidade com usuarios simultaneos.
@@ -77,7 +79,9 @@ O que estava desatualizado ou deve sair do foco imediato:
    - Financeiro ja pagina Cobrancas, Contas a Pagar e Despesas Reembolsaveis.
    - Visao geral financeira ja usa consultas separadas para cards/alertas.
    - Dashboard principal ja usa consultas leves para cards, alertas, listas semanais e riscos.
-   - Evitar carregar tudo no `carregarDados()`; separar produtividade, modais e relatorios das listas completas.
+   - Produtividade do dashboard ja busca somente colunas essenciais.
+   - Badge do menu de prazos ja usa contador direto no banco.
+   - Evitar carregar tudo no `carregarDados()`; separar modais, vinculos e relatorios das listas completas.
    - Manter cache apenas para dados pequenos e estaticos, como areas e tipos de pasta.
 
 4. Geracao atomica de numero de pasta
@@ -174,9 +178,9 @@ A correcao de intimações arquivadas, a sanitizacao dos principais renders, a o
 
 Passos sugeridos:
 
-1. Separar produtividade do dashboard das listas completas.
-2. Reduzir gradualmente as tabelas carregadas por `carregarDados()`.
-3. Criar consultas leves para modais, vinculos e relatorios que ainda dependem do estado global completo.
+1. Reduzir gradualmente as tabelas carregadas por `carregarDados()`.
+2. Criar consultas leves para modais, vinculos e relatorios que ainda dependem do estado global completo.
+3. Remover do carregamento inicial as tabelas que ja têm renderer paginado ou resumo separado, validando tela por tela.
 4. Validar cada tela com filtros e navegacao entre paginas.
 
 ## Arquivos mais relevantes

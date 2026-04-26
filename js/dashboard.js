@@ -1,11 +1,29 @@
 // ──────────────────────────────────────────────────────────────────────
 // NAV BADGES
 // ──────────────────────────────────────────────────────────────────────
-function renderNavBadges() {
-  const urgentes = state.prazos.filter(p => {
-    if (p.status === 'Concluído') return false;
-    return daysUntil(p.prazoFatal) <= 3;
-  }).length;
+let _navBadgesSeq = 0;
+
+async function carregarNavBadgesResumo() {
+  if (!state.empresaId) return { urgentes: 0 };
+  const { count, error } = await db.from('prazos_lhub')
+    .select('id', { count: 'exact', head: true })
+    .eq('empresa_id', state.empresaId)
+    .neq('status', 'concluido')
+    .lte('prazo', _dashIsoOffset(3));
+  if (error) throw error;
+  return { urgentes: count || 0 };
+}
+
+async function renderNavBadges() {
+  const seq = ++_navBadgesSeq;
+  let urgentes = 0;
+  try {
+    ({ urgentes } = await carregarNavBadgesResumo());
+  } catch (err) {
+    console.warn('[nav-badges] falha ao carregar resumo:', err);
+    urgentes = 0;
+  }
+  if (seq !== _navBadgesSeq) return;
   const badge = document.getElementById('navBadgePrazos');
   if (!badge) return;
   if (urgentes > 0) {
@@ -446,7 +464,60 @@ function renderDashboardRiscos(dados) {
 // ──────────────────────────────────────────────────────────────────────
 // PRODUTIVIDADE DA EQUIPE — visível apenas para perfis gerenciais
 // ──────────────────────────────────────────────────────────────────────
-function renderDashProdutividade() {
+let _dashProdSeq = 0;
+
+function _dashProdSplitResponsaveis(valor) {
+  return String(valor || '').split(';').map(n => n.trim()).filter(Boolean);
+}
+
+function _dashProdStats() {
+  const stats = new Map();
+  const get = nome => {
+    if (!stats.has(nome)) stats.set(nome, { prazPend:0, prazVenc:0, prazConcl:0, tarPend:0, tarConcl:0 });
+    return stats.get(nome);
+  };
+  return { stats, get };
+}
+
+async function carregarDashProdutividade() {
+  const hojeIso = _dashIsoOffset(0);
+  const [prazosRes, tarefasRes] = await Promise.all([
+    db.from('prazos_lhub')
+      .select('responsavel,status,prazo')
+      .eq('empresa_id', state.empresaId)
+      .not('responsavel', 'is', null),
+    db.from('tarefas_lhub')
+      .select('responsavel,status')
+      .eq('empresa_id', state.empresaId)
+      .not('responsavel', 'is', null),
+  ]);
+  if (prazosRes.error) throw prazosRes.error;
+  if (tarefasRes.error) throw tarefasRes.error;
+
+  const { stats, get } = _dashProdStats();
+
+  for (const p of prazosRes.data || []) {
+    for (const nome of _dashProdSplitResponsaveis(p.responsavel)) {
+      const s = get(nome);
+      if (p.status === 'concluido')       s.prazConcl++;
+      else if (p.prazo && p.prazo < hojeIso) s.prazVenc++;
+      else                                s.prazPend++;
+    }
+  }
+
+  for (const t of tarefasRes.data || []) {
+    for (const nome of _dashProdSplitResponsaveis(t.responsavel)) {
+      const s = get(nome);
+      if (t.status === 'concluida') s.tarConcl++;
+      else                          s.tarPend++;
+    }
+  }
+
+  return stats;
+}
+
+async function renderDashProdutividade() {
+  const seq = ++_dashProdSeq;
   const secEl = document.getElementById('dashProdutividade');
   if (!secEl) return;
 
@@ -463,34 +534,19 @@ function renderDashProdutividade() {
   const periEl = document.getElementById('dashProdPeriodo');
   if (periEl) periEl.textContent = mesStr;
 
-  // ── Acumula métricas por responsável ────────────────────────────────
-  const stats = new Map(); // nome → { prazPend, prazVenc, prazConcl, tarPend, tarConcl }
-  const _s = nome => {
-    if (!stats.has(nome)) stats.set(nome, { prazPend:0, prazVenc:0, prazConcl:0, tarPend:0, tarConcl:0 });
-    return stats.get(nome);
-  };
-
-  for (const p of state.prazos) {
-    const resps = (p.responsavel || '').split(';').map(n => n.trim()).filter(Boolean);
-    for (const nome of resps) {
-      const s = _s(nome);
-      if (p.status === 'Concluído')          s.prazConcl++;
-      else if (daysUntil(p.prazoFatal) < 0)  s.prazVenc++;
-      else                                   s.prazPend++;
-    }
-  }
-
-  for (const t of state.tarefas) {
-    const resps = (t.responsavel || '').split(';').map(n => n.trim()).filter(Boolean);
-    for (const nome of resps) {
-      const s = _s(nome);
-      if (t.status === 'Concluída') s.tarConcl++;
-      else                          s.tarPend++;
-    }
-  }
-
   const tableEl = document.getElementById('dashProdTable');
   if (!tableEl) return;
+  tableEl.innerHTML = '<p class="dash-empty">Carregando produtividade…</p>';
+
+  let stats;
+  try {
+    stats = await carregarDashProdutividade();
+  } catch (err) {
+    if (seq !== _dashProdSeq) return;
+    tableEl.innerHTML = `<p class="dash-empty">Erro ao carregar produtividade: ${escHtml(err.message || 'falha desconhecida')}</p>`;
+    return;
+  }
+  if (seq !== _dashProdSeq) return;
 
   if (!stats.size) {
     tableEl.innerHTML = '<p class="dash-empty">Nenhum responsável cadastrado nos prazos ou tarefas.</p>';

@@ -199,6 +199,8 @@ function abrirModalEvento(id) {
   document.getElementById('evTipo').value = evento?.tipo || 'Reunião';
   document.getElementById('evResponsavel').value = evento?.responsavel || meuNome || '';
   document.getElementById('evLocal').value = evento?.local || '';
+  const btnExcluir = document.getElementById('btnExcluirEvento');
+  if (btnExcluir) btnExcluir.style.display = evento ? '' : 'none';
   document.getElementById('modalEvento').classList.add('open');
 }
 
@@ -225,6 +227,37 @@ document.getElementById('btnNovoEvento').addEventListener('click', abrirModalEve
 document.getElementById('modalEvento').addEventListener('click', e => {
   if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
 });
+
+async function excluirEventoAtual() {
+  const id = document.getElementById('evId')?.value || '';
+  if (!id) return;
+  const evento = agendaEventos.find(e => e.id === id);
+  const titulo = evento?.titulo || 'este compromisso';
+  if (!confirm(`Excluir "${titulo}" da agenda?`)) return;
+
+  const btn = document.getElementById('btnExcluirEvento');
+  if (btn) { btn.disabled = true; btn.textContent = 'Excluindo…'; }
+  try {
+    const { error } = await db.from('agenda_eventos')
+      .delete()
+      .eq('id', id)
+      .eq('empresa_id', state.empresaId);
+    if (error) { toast('Erro ao excluir: ' + error.message, 'error'); return; }
+
+    const idx = agendaEventos.findIndex(e => e.id === id);
+    if (idx >= 0) agendaEventos.splice(idx, 1);
+    document.getElementById('modalEvento').classList.remove('open');
+    renderCalendario();
+    if (calDataSelecionada) selecionarDia(calDataSelecionada);
+    toast('Compromisso excluído.');
+  } catch (err) {
+    toast('Erro inesperado: ' + err.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Excluir'; }
+  }
+}
+
+document.getElementById('btnExcluirEvento')?.addEventListener('click', excluirEventoAtual);
 
 // ── Toggle Todos / Minha agenda ────────────────────────────────────────
 document.getElementById('agendaFiltroToggle').addEventListener('click', e => {

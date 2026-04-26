@@ -66,6 +66,8 @@ serve(async (req) => {
     }
 
     let total_inseridas = 0;
+    let total_atualizadas = 0;
+    let total_ignoradas_arquivadas = 0;
     const resultados: Record<string, unknown>[] = [];
 
     for (const cfg of configs) {
@@ -75,12 +77,17 @@ serve(async (req) => {
         nomes: {},
       };
       let empresaInseridas = 0;
+      let empresaAtualizadas = 0;
+      let empresaIgnoradasArquivadas = 0;
       let empresaComErro = false;
+      const empresaErros: string[] = [];
 
       for (const nome of nomes) {
         let pagina = 1;
         let totalApi = Infinity;
         let nomeInseridas = 0;
+        let nomeAtualizadas = 0;
+        let nomeIgnoradasArquivadas = 0;
         const nomeErros: string[] = [];
 
         while ((pagina - 1) * 50 < totalApi) {
@@ -101,6 +108,7 @@ serve(async (req) => {
               : `network error — ${msg}`;
             console.error(`[sync-intimacoes] ${nome} p${pagina}: ${detail}`);
             nomeErros.push(detail);
+            empresaErros.push(`${nome}: ${detail}`);
             empresaComErro = true;
             break;
           }
@@ -109,6 +117,7 @@ serve(async (req) => {
             const detail = `HTTP ${res.status} — página ${pagina}`;
             console.error(`[sync-intimacoes] ${nome}: ${detail}`);
             nomeErros.push(detail);
+            empresaErros.push(`${nome}: ${detail}`);
             empresaComErro = true;
             // 429 = rate limit — para o loop completamente para este nome
             if (res.status === 429) break;
@@ -125,6 +134,7 @@ serve(async (req) => {
             const detail = `JSON inválido — página ${pagina}`;
             console.error(`[sync-intimacoes] ${nome}: ${detail}`);
             nomeErros.push(detail);
+            empresaErros.push(`${nome}: ${detail}`);
             break;
           }
 
@@ -150,17 +160,22 @@ serve(async (req) => {
               hash:                     i.hash,
             }));
 
-            const { error: upsertErr } = await db
-              .from("intimacoes_pje")
-              .upsert(rows, { onConflict: "id", ignoreDuplicates: true });
+            const { data: importResult, error: importErr } = await db.rpc(
+              "importar_intimacoes_pje",
+              { p_rows: rows },
+            );
 
-            if (upsertErr) {
-              const detail = `upsert falhou: ${upsertErr.message}`;
+            if (importErr) {
+              const detail = `importacao falhou: ${importErr.message}`;
               console.error(`[sync-intimacoes] ${nome} p${pagina}: ${detail}`);
               nomeErros.push(detail);
+              empresaErros.push(`${nome}: ${detail}`);
               empresaComErro = true;
             } else {
-              nomeInseridas += rows.length;
+              const stats = Array.isArray(importResult) ? importResult[0] : importResult;
+              nomeInseridas += Number(stats?.inseridas ?? 0);
+              nomeAtualizadas += Number(stats?.atualizadas ?? 0);
+              nomeIgnoradasArquivadas += Number(stats?.ignoradas_arquivadas ?? 0);
             }
           }
 
@@ -169,9 +184,15 @@ serve(async (req) => {
         }
 
         empresaInseridas += nomeInseridas;
+        empresaAtualizadas += nomeAtualizadas;
+        empresaIgnoradasArquivadas += nomeIgnoradasArquivadas;
         total_inseridas  += nomeInseridas;
+        total_atualizadas += nomeAtualizadas;
+        total_ignoradas_arquivadas += nomeIgnoradasArquivadas;
         empresaResult.nomes[nome] = {
           inseridas: nomeInseridas,
+          atualizadas: nomeAtualizadas,
+          ignoradas_arquivadas: nomeIgnoradasArquivadas,
           ...(nomeErros.length ? { erros: nomeErros } : {}),
         };
       }
@@ -184,12 +205,40 @@ serve(async (req) => {
           .eq("id", cfg.id);
       }
 
-      resultados.push({ ...empresaResult, total_inseridas: empresaInseridas });
+      await db.from("pje_sync_logs").insert({
+        empresa_id: cfg.empresa_id,
+        origem: "cron",
+        data_inicio: dataInicio,
+        data_fim: dataFim,
+        nomes,
+        inseridas: empresaInseridas,
+        atualizadas: empresaAtualizadas,
+        ignoradas_arquivadas: empresaIgnoradasArquivadas,
+        erros: empresaErros,
+        ok: empresaErros.length === 0,
+      }).then(({ error }) => {
+        if (error) console.warn(`[sync-intimacoes] falha ao registrar log ${cfg.empresa_id}: ${error.message}`);
+      });
+
+      resultados.push({
+        ...empresaResult,
+        total_inseridas: empresaInseridas,
+        total_atualizadas: empresaAtualizadas,
+        total_ignoradas_arquivadas: empresaIgnoradasArquivadas,
+      });
     }
 
-    console.log(`[sync-intimacoes] Concluído — total inseridas: ${total_inseridas}`);
+    console.log(
+      `[sync-intimacoes] Concluído — inseridas: ${total_inseridas}, atualizadas: ${total_atualizadas}, ignoradas_arquivadas: ${total_ignoradas_arquivadas}`,
+    );
     return new Response(
-      JSON.stringify({ ok: true, total_inseridas, resultados }),
+      JSON.stringify({
+        ok: true,
+        total_inseridas,
+        total_atualizadas,
+        total_ignoradas_arquivadas,
+        resultados,
+      }),
       { headers: { ...CORS, "Content-Type": "application/json" } },
     );
 

@@ -75,6 +75,62 @@ function mesmoIdIntimacao(a, b) {
   return String(a ?? '') === String(b ?? '');
 }
 
+function escHtml(value) {
+  const span = document.createElement('span');
+  span.textContent = value ?? '';
+  return span.innerHTML;
+}
+
+function escAttr(value) {
+  return escHtml(value).replace(/"/g, '&quot;');
+}
+
+function safeExternalUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  try {
+    const url = new URL(raw, window.location.origin);
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+function intimacaoPorId(id) {
+  return state.intimacoes.find(i => mesmoIdIntimacao(i.id, id)) || null;
+}
+
+function resumoUltimaSyncPJe() {
+  const log = state.pjeSyncLogs?.[0];
+  if (!log) return '';
+  const quando = log.created_at ? new Date(log.created_at).toLocaleString('pt-BR') : '—';
+  const status = log.ok ? 'ok' : 'com erro';
+  const erros = Array.isArray(log.erros) && log.erros.length ? ` · ${log.erros.length} erro(s)` : '';
+  return `Última importação: ${quando} · ${status} · ${log.inseridas || 0} nova(s), ${log.atualizadas || 0} atualizada(s), ${log.ignoradas_arquivadas || 0} preservada(s)${erros}`;
+}
+
+async function registrarLogSyncPJe({ origem, dataInicio, dataFim, nomes, resumo, erros = [] }) {
+  if (!state.empresaId) return;
+  const row = {
+    empresa_id: state.empresaId,
+    origem,
+    data_inicio: dataInicio || null,
+    data_fim: dataFim || dataInicio || null,
+    nomes: nomes || [],
+    inseridas: resumo?.inseridas || 0,
+    atualizadas: resumo?.atualizadas || 0,
+    ignoradas_arquivadas: resumo?.ignoradas_arquivadas || 0,
+    erros,
+    ok: !erros.length,
+  };
+  const { data, error } = await db.from('pje_sync_logs').insert(row).select().single();
+  if (error) {
+    console.warn('[pje_sync_logs] falha ao registrar:', error.message);
+    return;
+  }
+  state.pjeSyncLogs = [data, ...(state.pjeSyncLogs || [])].slice(0, 5);
+}
+
 function textoLegivelIntimacao(texto) {
   const raw = String(texto || '').trim();
   if (!raw) return '';
@@ -141,6 +197,7 @@ function renderIntimacoesAba() {
   const ultimaSync = cfg?.ultima_sync
     ? `Última sync: ${new Date(cfg.ultima_sync).toLocaleString('pt-BR')}`
     : 'Nenhuma sincronização realizada';
+  const ultimaImportacao = resumoUltimaSyncPJe();
   const semVinculo = state.intimacoes.filter(i =>
     (i.status || 'pendente') !== 'arquivada' && !pastaDaIntimacao(i)
   ).length;
@@ -152,47 +209,44 @@ function renderIntimacoesAba() {
   }
 
   document.getElementById('intimacoesInfo').textContent =
-    `${lista.length} registro${lista.length !== 1 ? 's' : ''} · ${semVinculo} sem pasta · ${ultimaSync}`;
+    `${lista.length} registro${lista.length !== 1 ? 's' : ''} · ${semVinculo} sem pasta · ${ultimaSync}${ultimaImportacao ? ' · ' + ultimaImportacao : ''}`;
 
   document.getElementById('tabelaIntimacoes').innerHTML = lista.length
     ? lista.map(i => {
         const st   = i.status || 'pendente';
-        const lbl  = INTIM_STATUS_LABEL[st] || st;
-        const cls  = INTIM_STATUS_CLASS[st] || 'status-pill--warn';
         const opts = Object.entries(INTIM_STATUS_LABEL)
-          .map(([v, t]) => `<option value="${v}"${v === st ? ' selected' : ''}>${t}</option>`)
+          .map(([v, t]) => `<option value="${escAttr(v)}"${v === st ? ' selected' : ''}>${escHtml(t)}</option>`)
           .join('');
-        const iJson = JSON.stringify(i).replace(/'/g, '&#39;');
+        const idAttr = escAttr(i.id);
         const pasta = pastaDaIntimacao(i);
         const pastaCell = pasta
-          ? `<a class="int-link" href="#" onclick="event.preventDefault();navegarPara('pastas');setTimeout(()=>abrirPasta('${pasta.numero}'),100)">${pasta.numero}</a>`
-          : `<button class="btn-link-sm" onclick='abrirModalVincularIntimacao(${iJson})' title="Vincular esta intimação a uma pasta">Vincular</button>`;
-        const linkDireto = linkProcesso(i.processo, i.tribunal);
-        return `<tr data-intimacao-id="${i.id}" style="cursor:default">
+          ? `<button class="btn-link-sm int-link" data-action="abrir-pasta" data-pasta-numero="${escAttr(pasta.numero)}" title="Abrir pasta">${escHtml(pasta.numero)}</button>`
+          : `<button class="btn-link-sm" data-action="vincular" data-id="${idAttr}" title="Vincular esta intimação a uma pasta">Vincular</button>`;
+        const linkDireto = safeExternalUrl(linkProcesso(i.processo, i.tribunal));
+        const linkOriginal = safeExternalUrl(i.link);
+        const linkVer = linkDireto || linkOriginal;
+        return `<tr data-intimacao-id="${idAttr}" style="cursor:default">
           <td style="font-family:'IBM Plex Mono',monospace;font-size:.7rem;white-space:nowrap">
-            <button class="btn-link-sm" onclick='lerIntimacao(${iJson})' title="Ler intimação" style="font-family:inherit;text-align:left">${i.processo}</button>
+            <button class="btn-link-sm" data-action="ler" data-id="${idAttr}" title="Ler intimação" style="font-family:inherit;text-align:left">${escHtml(i.processo || '—')}</button>
           </td>
           <td style="font-size:.75rem">${pastaCell}</td>
-          <td><span class="badge-tribunal">${i.tribunal}</span></td>
-          <td style="font-size:.75rem;max-width:160px">${i.orgao}</td>
+          <td><span class="badge-tribunal">${escHtml(i.tribunal || '—')}</span></td>
+          <td style="font-size:.75rem;max-width:160px">${escHtml(i.orgao || '—')}</td>
           <td style="white-space:nowrap">${formatDate(i.dataPublicacao)}</td>
-          <td style="font-size:.75rem">${i.tipoDocumento || i.nomeClasse || '—'}</td>
-          <td style="font-size:.75rem">${i.nomeClasse || '—'}</td>
+          <td style="font-size:.75rem">${escHtml(i.tipoDocumento || i.nomeClasse || '—')}</td>
+          <td style="font-size:.75rem">${escHtml(i.nomeClasse || '—')}</td>
           <td>
-            <select class="intim-status-sel" data-id="${i.id}" style="font-size:.72rem;padding:3px 6px;background:var(--bg);border:1px solid var(--br);border-radius:2px;color:inherit;cursor:pointer">
+            <select class="intim-status-sel" data-id="${idAttr}" style="font-size:.72rem;padding:3px 6px;background:var(--bg);border:1px solid var(--br);border-radius:2px;color:inherit;cursor:pointer">
               ${opts}
             </select>
           </td>
           <td style="white-space:nowrap">
-            <button class="btn-link-sm" onclick='lerIntimacao(${iJson})' title="Ler texto">Ler</button>
-            <button class="btn-link-sm" onclick='abrirModalVincularIntimacao(${iJson})' title="Vincular pasta" style="margin-left:6px">Vincular</button>
-            <button class="btn-link-sm" onclick='criarPrazoDaIntimacao(${iJson})' title="Criar prazo" style="margin-left:6px">+ Prazo</button>
-            <button class="btn-link-sm" onclick='criarTarefaDaIntimacao(${iJson})' title="Criar tarefa" style="margin-left:4px">+ Tarefa</button>
+            <button class="btn-link-sm" data-action="ler" data-id="${idAttr}" title="Ler texto">Ler</button>
+            <button class="btn-link-sm" data-action="vincular" data-id="${idAttr}" title="Vincular pasta" style="margin-left:6px">Vincular</button>
+            <button class="btn-link-sm" data-action="criar-prazo" data-id="${idAttr}" title="Criar prazo" style="margin-left:6px">+ Prazo</button>
+            <button class="btn-link-sm" data-action="criar-tarefa" data-id="${idAttr}" title="Criar tarefa" style="margin-left:4px">+ Tarefa</button>
           </td>
-          <td>${linkDireto
-            ? `<a href="${linkDireto}" target="_blank" class="int-link">Ver ↗</a>`
-            : (i.link ? `<a href="${i.link}" target="_blank" class="int-link">Ver ↗</a>` : '—')}
-          </td>
+          <td>${linkVer ? `<a href="${escAttr(linkVer)}" target="_blank" rel="noopener noreferrer" class="int-link">Ver ↗</a>` : '—'}</td>
         </tr>`;
       }).join('')
     : `<tr><td colspan="10" class="tbl-empty">Nenhuma intimação encontrada para o período selecionado.</td></tr>`;
@@ -201,6 +255,24 @@ function renderIntimacoesAba() {
   document.querySelectorAll('.intim-status-sel').forEach(sel => {
     sel.addEventListener('change', e => {
       alterarStatusIntimacao(sel.dataset.id, e.target.value, sel);
+    });
+  });
+
+  document.querySelectorAll('#tabelaIntimacoes [data-action]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const action = e.currentTarget.dataset.action;
+      if (action === 'abrir-pasta') {
+        navegarPara('pastas');
+        const numero = e.currentTarget.dataset.pastaNumero || '';
+        setTimeout(() => abrirPasta(numero), 100);
+        return;
+      }
+      const intim = intimacaoPorId(e.currentTarget.dataset.id);
+      if (!intim) { toast('Intimação não encontrada.', 'error'); return; }
+      if (action === 'ler') lerIntimacao(intim);
+      if (action === 'vincular') abrirModalVincularIntimacao(intim);
+      if (action === 'criar-prazo') criarPrazoDaIntimacao(intim);
+      if (action === 'criar-tarefa') criarTarefaDaIntimacao(intim);
     });
   });
 }
@@ -268,11 +340,11 @@ function renderOpcoesVinculoIntimacao(busca = '') {
     .slice(0, 80);
 
   select.innerHTML = '<option value="">— Selecionar pasta —</option>' + pastas
-    .map(p => `<option value="${p.id}"${p.id === atual?.id ? ' selected' : ''}>${p.numero} — ${p.cliente || '—'}${p.processo ? ' · ' + p.processo : ''}</option>`)
+    .map(p => `<option value="${escAttr(p.id)}"${p.id === atual?.id ? ' selected' : ''}>${escHtml(`${p.numero} — ${p.cliente || '—'}${p.processo ? ' · ' + p.processo : ''}`)}</option>`)
     .join('');
 
   if (atual && !pastas.some(p => p.id === atual.id)) {
-    select.insertAdjacentHTML('beforeend', `<option value="${atual.id}" selected>${atual.numero} — ${atual.cliente || '—'}${atual.processo ? ' · ' + atual.processo : ''}</option>`);
+    select.insertAdjacentHTML('beforeend', `<option value="${escAttr(atual.id)}" selected>${escHtml(`${atual.numero} — ${atual.cliente || '—'}${atual.processo ? ' · ' + atual.processo : ''}`)}</option>`);
   }
   if (info) {
     const totalAtivas = state.pastas.filter(p => p.status !== 'arquivado').length;
@@ -428,7 +500,7 @@ function lerIntimacao(intim) {
   document.getElementById('lerIntimMeta').textContent   = meta;
   document.getElementById('lerIntimTexto').textContent  = textoLegivelIntimacao(intim.texto) || 'Texto não disponível.';
 
-  const link = linkProcesso(intim.processo, intim.tribunal) || intim.link || '#';
+  const link = safeExternalUrl(linkProcesso(intim.processo, intim.tribunal)) || safeExternalUrl(intim.link) || '#';
   const linkEl = document.getElementById('lerIntimLink');
   linkEl.href = link;
   linkEl.style.display = link === '#' ? 'none' : '';
@@ -479,6 +551,7 @@ async function sincronizarPJeData() {
     if (!nomes.length) { toast('Nenhum nome configurado para busca de intimações.', 'error'); return; }
 
     const resumo = { inseridas: 0, atualizadas: 0, ignoradas_arquivadas: 0 };
+    const erros = [];
     for (const nome of nomes) {
       let pagina = 1;
       let totalApi = Infinity;
@@ -489,7 +562,10 @@ async function sincronizarPJeData() {
           `&dataInicio=${de}` +
           `&dataFim=${ate || de}`;
         const res = await proxyFetch(url);
-        if (!res.ok) break;
+        if (!res.ok) {
+          erros.push(`${nome}: HTTP ${res.status} na página ${pagina}`);
+          break;
+        }
         const json = await res.json();
         totalApi = json.count ?? 0;
         const items = json.items ?? [];
@@ -504,6 +580,7 @@ async function sincronizarPJeData() {
         if (items.length < 50) break;
       }
     }
+    await registrarLogSyncPJe({ origem: 'manual_data', dataInicio: de, dataFim: ate || de, nomes, resumo, erros });
     toast(`${resumo.inseridas} nova(s), ${resumo.atualizadas} atualizada(s), ${resumo.ignoradas_arquivadas} arquivada(s) preservada(s).`);
     await carregarDados();
     renderIntimacoesAba();
@@ -526,6 +603,7 @@ async function sincronizarPJe() {
     if (!nomes.length) { toast('Nenhum nome configurado para busca de intimações.', 'error'); return; }
 
     const resumo = { inseridas: 0, atualizadas: 0, ignoradas_arquivadas: 0 };
+    const erros = [];
     for (const nome of nomes) {
       let pagina = 1;
       let totalApi = Infinity;
@@ -533,7 +611,10 @@ async function sincronizarPJe() {
         const url = `/api/pje-proxy?pagina=${pagina}&itensPorPagina=50` +
           `&texto=${encodeURIComponent(nome)}&dataInicio=${hoje}&dataFim=${hoje}`;
         const res = await proxyFetch(url);
-        if (!res.ok) break;
+        if (!res.ok) {
+          erros.push(`${nome}: HTTP ${res.status} na página ${pagina}`);
+          break;
+        }
         const json = await res.json();
         totalApi = json.count ?? 0;
         const items = json.items ?? [];
@@ -548,6 +629,7 @@ async function sincronizarPJe() {
         if (items.length < 50) break;
       }
     }
+    await registrarLogSyncPJe({ origem: 'manual_hoje', dataInicio: hoje, dataFim: hoje, nomes, resumo, erros });
     toast(`${resumo.inseridas} nova(s), ${resumo.atualizadas} atualizada(s), ${resumo.ignoradas_arquivadas} arquivada(s) preservada(s).`);
     await carregarDados();
     renderIntimacoesAba();

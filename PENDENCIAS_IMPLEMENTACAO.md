@@ -1,6 +1,6 @@
 # Pendencias de Implementacao - Legal Hub
 
-Atualizado em: 25/04/2026
+Atualizado em: 26/04/2026
 
 Este arquivo registra o que ainda falta implementar ou revisar para continuar a evolucao do sistema sem perder contexto.
 
@@ -22,30 +22,66 @@ Este arquivo registra o que ainda falta implementar ou revisar para continuar a 
 - Modal de leitura da intimacao limpa HTML bruto.
 - Ajustes de CSS nos modais principais.
 - Painel: clique em prazo/tarefa/agenda navega para a aba correta e destaca o item, sem abrir modal automaticamente.
+- Migration `20260425182640_importacao_intimacoes_preserva_status.sql` cria RPC para importacao idempotente de intimacoes preservando arquivadas.
+- Cron `sync-intimacoes` passou a usar `importar_intimacoes_pje` e retornar contadores de inseridas, atualizadas e ignoradas por arquivamento.
+- Migration `20260426103000_importacao_intimacoes_service_role.sql` permite que o cron com service role use a RPC de importacao preservando a validacao para usuarios comuns.
+- Migration aplicada no Supabase remoto e function `sync-intimacoes` publicada em 26/04/2026.
+- Teste tecnico remoto com intimação fake arquivada confirmou `ignoradas_arquivadas = 1`, preservando `status_lhub`, `pasta_id`, `texto` e `hash`.
+- Invocacao remota da function confirmou resposta com `total_inseridas`, `total_atualizadas` e `total_ignoradas_arquivadas`.
+- Validacao pela UI local com usuario temporario confirmou: arquivar remove da lista pendente, reimportacao preserva arquivada, reload nao traz de volta como pendente e a intimação aparece apenas em "Arquivadas". Usuario e intimação fake foram removidos apos o teste.
+- Sanitizacao inicial de `js/intimacoes.js`: tabela deixou de usar handlers inline com JSON, campos externos passam por escape, links externos aceitam apenas http/https e `javascript:` e bloqueado. Teste com payload HTML/script fake confirmou que a UI nao cria `img`, `script`, `svg`, `iframe` nem link `javascript:`.
+- Observabilidade inicial da sincronizacao PJe: criada tabela `pje_sync_logs`, cron e sincronizacao manual registram contadores/erros, UI exibe ultima importacao com status e totais. Validado com login de teste e Edge Function remota.
+
+## Revisao da auditoria de 26/04/2026
+
+O que faz sentido manter como prioridade:
+
+- Performance: `carregarDados()` ainda busca muitas tabelas inteiras no carregamento inicial. Apenas intimacoes tem limite parcial de 200 registros.
+- Sincronizacao PJe: o cron agora usa a RPC de importacao preservando status e registra log resumido; migration/deploy/teste tecnico e validacao pela UI com intimação controlada foram feitos. Falta apenas repetir em rotina real com uma intimação real quando houver caso adequado.
+- Sanitizacao: intimações e andamentos ja escapam os pontos mais expostos; ainda falta repetir o padrao nos demais renders que usam dados de usuario/externos.
+- Numero de pasta: `gerarNumeroPasta()` continua client-side e pode gerar duplicidade com usuarios simultaneos.
+- Produto: area do cliente, onboarding, billing, notificacoes confiaveis e DRE/fluxo de caixa seguem sendo os maiores gaps para SaaS publico.
+- QA/seguranca: RLS esta versionado em migration, mas ainda precisa ser validado no banco remoto/producao com testes reais de isolamento entre empresas.
+
+O que estava desatualizado ou deve sair do foco imediato:
+
+- `script.js` duplicado: nao aparece mais carregado no `index.html`; manter apenas como checagem historica, nao como bug aberto.
+- "Sem sanitizacao em andamentos" esta parcialmente resolvido; o risco principal agora e centralizar escape nos renders que recebem texto externo.
+- Bug de intimacao arquivada: tratar como "correcao integrada e validada com cenário controlado", nao como ausencia total de solucao.
 
 ## Pendencias criticas
 
-1. Validar em ambiente real o bug de status "Arquivada"
-   - Confirmar se, apos arquivar, a intimação nao volta como "Pendente" depois de sincronizar.
-   - Revisar upsert da sincronizacao PJe para garantir que nao sobrescreva `status_lhub`, `pasta_id` e `arquivada_em`.
-   - Ideal: trocar `ignoreDuplicates: true` por merge controlado que preserve campos internos do Legal Hub.
+1. Expandir sanitizacao para os demais renders
+   - Promover helper de escape para uso comum fora de `js/intimacoes.js`.
+   - Revisar tabelas de financeiro, documentos, configuracoes e dashboard que interpolam dados de usuario.
+   - Trocar handlers inline com payload dinamico por `data-*` + event listeners onde houver dados externos.
 
-2. Melhorar sincronizacao PJe
-   - Evitar recriar ou reativar intimação arquivada.
-   - Criar log de importacao/sincronizacao.
-   - Mostrar quantas intimações foram novas, ignoradas, atualizadas e arquivadas preservadas.
+2. Melhorar historico visual da sincronizacao PJe
+   - Criar painel/modal simples com ultimas sincronizacoes.
+   - Mostrar detalhes por nome pesquisado quando houver erro.
+   - Permitir limpar/filtrar logs antigos se o volume crescer.
 
-3. Vinculo de intimacao com pasta
+3. Paginacao server-side nas listas principais
+   - Prioridade: pastas, prazos, clientes, cobrancas/despesas e oportunidades.
+   - Evitar carregar tudo no `carregarDados()`; carregar resumo/dashboard separado da lista paginada.
+   - Manter cache apenas para dados pequenos e estaticos, como areas e tipos de pasta.
+
+4. Geracao atomica de numero de pasta
+   - Substituir `gerarNumeroPasta()` client-side por RPC/transacao no banco.
+   - Manter preview no front apenas como estimativa visual.
+   - Criar constraint unica para impedir duplicidade por empresa/area/tipo/ano/numero.
+
+5. Vinculo de intimacao com pasta
    - Permitir busca mais inteligente por cliente, processo, pasta, parte contraria e numero sem mascara.
    - Sugerir automaticamente pasta provavel quando o numero do processo for parecido.
    - Mostrar alerta quando a intimacao for de 2ª instancia e a pasta for de 1ª instancia.
 
-4. Andamentos da pasta
+6. Andamentos da pasta
    - Persistir opcionalmente a intimacao vinculada como andamento real, se for necessario historico independente da lista de intimacoes.
    - Adicionar acao "Criar prazo" e "Criar tarefa" direto no detalhe do andamento de intimacao.
    - Melhorar layout da tabela de andamentos em telas menores.
 
-5. Agenda e tarefas
+7. Agenda e tarefas
    - Criar filtro automatico quando o painel direcionar para tarefas ou agenda.
    - Adicionar estado visual melhor para item destacado.
    - Permitir abrir modal apenas por botao/acao secundaria, nao pelo clique principal vindo do painel.
@@ -96,6 +132,7 @@ Este arquivo registra o que ainda falta implementar ou revisar para continuar a 
    - Criar indexes para consultas frequentes.
 
 3. Frontend
+   - Centralizar helper de escape/sanitize para HTML.
    - Remover estilos inline gradualmente.
    - Criar classes reutilizaveis para modais, tabelas e botoes.
    - Padronizar modais grandes e pequenos.
@@ -115,11 +152,19 @@ Este arquivo registra o que ainda falta implementar ou revisar para continuar a 
 
 Prioridade 1:
 
-Revisar a sincronizacao PJe para preservar campos internos (`status_lhub`, `pasta_id`, `arquivada_em`) e impedir que uma intimação arquivada volte para pendente apos nova importacao.
+Expandir sanitizacao para os demais renders.
 
 Motivo:
 
-Esse bug afeta confianca operacional. Se o advogado arquiva uma intimacao e ela reaparece, o sistema passa inseguranca e aumenta risco de retrabalho.
+A correcao de intimações arquivadas, a sanitizacao inicial de intimações e a observabilidade basica do PJe ja foram validadas. O proximo risco transversal e repetir o padrao de escape/event listeners nos demais modulos que ainda interpolam dados de usuario em `innerHTML`.
+
+Passos sugeridos:
+
+1. Mover helpers de escape para local comum.
+2. Revisar primeiro `js/financeiro.js`, `js/documentos.js` e `js/configuracoes.js`.
+3. Substituir interpolacao direta de dados por `escHtml`/`escAttr`.
+4. Remover handlers inline com objetos/payloads dinamicos onde houver dados externos.
+5. Validar com payload HTML/script fake em cada tela principal.
 
 ## Arquivos mais relevantes
 
@@ -133,6 +178,7 @@ Esse bug afeta confianca operacional. Se o advogado arquiva uma intimacao e ela 
 - `style.css`
 - `index.html`
 - `supabase/migrations/`
+- `supabase/functions/sync-intimacoes/index.ts`
 
 ## Migracoes recentes importantes
 
@@ -140,4 +186,5 @@ Esse bug afeta confianca operacional. Se o advogado arquiva uma intimacao e ela 
 - `20260425174820_rpc_vincular_intimacao_pasta.sql`
 - `20260425175610_rpc_status_intimacao.sql`
 - `20260425180730_retencao_intimacoes_arquivadas.sql`
-
+- `20260425182640_importacao_intimacoes_preserva_status.sql`
+- `20260426103000_importacao_intimacoes_service_role.sql`

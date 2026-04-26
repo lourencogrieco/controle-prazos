@@ -269,9 +269,10 @@ async function carregarDados() {
     db.from('despesas').select('*').eq('empresa_id', eid).order('data', { ascending: false }),
     db.from('oportunidades_crm').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
     db.from('modelos_documentos').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
+    db.from('pje_sync_logs').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }).limit(5),
   ];
 
-  const [pr, pz, tf, tp, cl, ar, it, cfg, ev, us, hon, cob, ctp, dep, opo, mod] = await Promise.all(queries);
+  const [pr, pz, tf, tp, cl, ar, it, cfg, ev, us, hon, cob, ctp, dep, opo, mod, pjeLogs] = await Promise.all(queries);
 
   state.pastas     = (pr.data || []).map(dbParaPasta);
   _reconstruirIndicePastas();
@@ -304,6 +305,7 @@ async function carregarDados() {
   }
   state.intimacoes = (it.data || []).map(dbParaIntimacao);
   state.pjeConfig  = cfg.data || null;
+  state.pjeSyncLogs = pjeLogs.data || [];
   state.usuarios   = (us.data || []);
   state.honorarios  = (hon.data || []).map(dbParaHonorario);
   state.cobrancas   = (cob.data || []).map(dbParaCobranca);

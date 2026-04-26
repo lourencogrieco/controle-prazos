@@ -22,6 +22,7 @@ const state = {
   areas:            [],
   intimacoes:       [],
   pjeConfig:        null,
+  pjeSyncLogs:      [],
   andamentosCNJ:    [],
   currentPastaId:   null,
   currentAndamento: null,

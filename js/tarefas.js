@@ -58,12 +58,13 @@ document.getElementById('novaTarefaForm').addEventListener('submit', async e => 
       status:      document.getElementById('tStatus').value || 'pendente',
     };
 
-    const saveReq = db.from('tarefas_lhub').upsert(obj).select();
+    const saveReq = tarefaId
+      ? db.from('tarefas_lhub').update(obj).eq('id', tarefaId).eq('empresa_id', state.empresaId)
+      : db.from('tarefas_lhub').insert(obj);
     const tOut    = new Promise((_, r) => setTimeout(() => r(new Error('Sem resposta do banco em 12s. Verifique as políticas RLS.')), 12000));
-    const { data, error } = await Promise.race([saveReq, tOut]);
+    const { error } = await Promise.race([saveReq, tOut]);
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
-    if (!data?.length) { toast('Tarefa não salva: falta política INSERT no Supabase (execute o SQL de RLS).', 'error'); return; }
-    const nova = dbParaTarefa(data[0]);
+    const nova = dbParaTarefa(obj);
     _stateUpsert(state.tarefas, nova);
     logAuditoria(tarefaId ? 'editar' : 'criar', 'tarefas_lhub', obj.id, `Tarefa ${tarefaId ? 'editada' : 'criada'}: ${obj.titulo}`);
     fecharModalNovaTarefa();

@@ -242,10 +242,11 @@ document.getElementById('eventoForm').addEventListener('submit', async e => {
   const btn = e.target.querySelector('button[type="submit"]');
   btn.disabled = true; btn.textContent = 'Salvando…';
   try {
+    if (!state.empresaId) { toast('Sessão não iniciada. Recarregue a página.', 'error'); return; }
     const participantes = getSelectedResps('evParticipantesPicker');
     const eventoId = document.getElementById('evId')?.value || '';
     const novo = {
-      id:           eventoId || undefined,
+      id:           eventoId || uid(),
       empresa_id:   state.empresaId,
       data:         document.getElementById('evData').value,
       titulo:       document.getElementById('evTitulo').value.trim(),
@@ -255,16 +256,18 @@ document.getElementById('eventoForm').addEventListener('submit', async e => {
       local:        document.getElementById('evLocal').value.trim() || null,
       participantes: participantes || null,
     };
-    const payload = eventoId ? novo : Object.fromEntries(Object.entries(novo).filter(([_, v]) => v !== undefined));
-    const saveReq = db.from('agenda_eventos').upsert(payload).select().single();
+    const payload = novo;
+    const saveReq = eventoId
+      ? db.from('agenda_eventos').update(payload).eq('id', eventoId).eq('empresa_id', state.empresaId)
+      : db.from('agenda_eventos').insert(payload);
     const tOut    = new Promise((_, r) => setTimeout(() => r(new Error('Sem resposta do banco em 12s. Verifique as políticas RLS.')), 12000));
-    const { data: salvo, error } = await Promise.race([saveReq, tOut]);
+    const { error } = await Promise.race([saveReq, tOut]);
     if (error) {
       toast('Erro: ' + error.message, 'error');
       return;
     }
-    const atualizado = { ...payload, id: salvo.id, hora: salvo.hora || '', local: salvo.local || '', participantes: salvo.participantes || '' };
-    const idx = agendaEventos.findIndex(e => e.id === salvo.id);
+    const atualizado = { ...payload, hora: payload.hora || '', local: payload.local || '', participantes: payload.participantes || '' };
+    const idx = agendaEventos.findIndex(e => e.id === atualizado.id);
     if (idx >= 0) agendaEventos[idx] = atualizado;
     else agendaEventos.push(atualizado);
     agendaEventos.sort((a, b) => a.data.localeCompare(b.data));

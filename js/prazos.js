@@ -15,9 +15,9 @@ document.getElementById('prazoForm').addEventListener('submit', async e => {
     descricao:   document.getElementById('descricao').value.trim() || null,
     status:      document.getElementById('status').value === 'Concluído' ? 'concluido' : 'pendente',
   };
-  const { data, error } = await db.from('prazos_lhub').insert(obj).select();
+  const { error } = await db.from('prazos_lhub').insert(obj);
   if (error) { toast('Erro: ' + error.message, 'error'); return; }
-  const novo = dbParaPrazo(data[0]); _enrichPrazo(novo);
+  const novo = dbParaPrazo(obj); _enrichPrazo(novo);
   _stateUpsert(state.prazos, novo);
   logAuditoria('criar', 'prazos_lhub', obj.id, `Prazo criado: ${obj.tipo} — ${obj.cliente || '—'}`);
   e.target.reset();
@@ -228,12 +228,13 @@ document.getElementById('novoPrazoForm').addEventListener('submit', async e => {
         : {},
     };
 
-    const saveReq  = db.from('prazos_lhub').upsert(obj).select();
+    const saveReq  = prazoId
+      ? db.from('prazos_lhub').update(obj).eq('id', prazoId).eq('empresa_id', state.empresaId)
+      : db.from('prazos_lhub').insert(obj);
     const tOut     = new Promise((_, r) => setTimeout(() => r(new Error('Sem resposta do banco em 12s. Verifique as políticas RLS.')), 12000));
-    const { data, error } = await Promise.race([saveReq, tOut]);
+    const { error } = await Promise.race([saveReq, tOut]);
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
-    if (!data?.length) { toast('Prazo não salvo: falta política INSERT no Supabase (execute o SQL de RLS).', 'error'); return; }
-    const novo = dbParaPrazo(data[0]); _enrichPrazo(novo);
+    const novo = dbParaPrazo(obj); _enrichPrazo(novo);
     _stateUpsert(state.prazos, novo);
     if (obj.intimacao_id) {
       const { error: intErro } = await db.from('intimacoes_pje')

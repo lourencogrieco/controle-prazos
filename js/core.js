@@ -178,15 +178,15 @@ function avatarGroup(responsavelStr, maxShow = 3) {
   const shown = names.slice(0, maxShow);
   const extra = names.length - maxShow;
   return `<div class="avatar-group">
-    ${shown.map(n => `<span class="avatar" title="${n}" style="width:24px;height:24px;font-size:.55rem">${initials(n)}</span>`).join('')}
+    ${shown.map(n => `<span class="avatar" title="${escAttr(n)}" style="width:24px;height:24px;font-size:.55rem">${escHtml(initials(n))}</span>`).join('')}
     ${extra > 0 ? `<span class="avatar avatar--more" style="width:24px;height:24px;font-size:.6rem">+${extra}</span>` : ''}
   </div>`;
 }
 
 function _respChipHTML(nome) {
-  return `<span class="resp-chip" data-nome="${nome}">
-    <span class="avatar" style="width:18px;height:18px;font-size:.48rem;flex-shrink:0">${initials(nome)}</span>
-    <span class="resp-chip-name">${nome}</span>
+  return `<span class="resp-chip" data-nome="${escAttr(nome)}">
+    <span class="avatar" style="width:18px;height:18px;font-size:.48rem;flex-shrink:0">${escHtml(initials(nome))}</span>
+    <span class="resp-chip-name">${escHtml(nome)}</span>
     <button type="button" class="resp-chip-remove" title="Remover">×</button>
   </span>`;
 }
@@ -200,9 +200,9 @@ function popularRespPicker(pickerId, currentRespStr, usuarios, placeholder) {
 
   chipsEl.innerHTML = selected.map(_respChipHTML).join('');
 
-  addEl.innerHTML = `<option value="">${placeholder || '＋ Adicionar responsável'}</option>` +
+  addEl.innerHTML = `<option value="">${escHtml(placeholder || '＋ Adicionar responsável')}</option>` +
     usuarios.filter(u => !selected.includes(u.nome))
-      .map(u => `<option value="${u.nome}">${u.nome}</option>`).join('');
+      .map(u => `<option value="${escAttr(u.nome)}">${escHtml(u.nome)}</option>`).join('');
 
   addEl.onchange = () => {
     const nome = addEl.value;

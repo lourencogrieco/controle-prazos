@@ -31,6 +31,7 @@ Este arquivo registra o que ainda falta implementar ou revisar para continuar a 
 - Validacao pela UI local com usuario temporario confirmou: arquivar remove da lista pendente, reimportacao preserva arquivada, reload nao traz de volta como pendente e a intimação aparece apenas em "Arquivadas". Usuario e intimação fake foram removidos apos o teste.
 - Sanitizacao inicial de `js/intimacoes.js`: tabela deixou de usar handlers inline com JSON, campos externos passam por escape, links externos aceitam apenas http/https e `javascript:` e bloqueado. Teste com payload HTML/script fake confirmou que a UI nao cria `img`, `script`, `svg`, `iframe` nem link `javascript:`.
 - Sanitizacao expandida para helpers comuns em `js/core.js` e para renders de `js/documentos.js`, `js/financeiro.js` e `js/configuracoes.js`: textos/atributos vindos de usuario passam por escape, recibos nao recebem mais payload JSON no `onclick` e selects/tabelas de clientes, modelos, auditoria, documentos e financeiro foram revisados.
+- Sanitizacao expandida para os renders restantes de `js/dashboard.js`, `js/pastas.js`, `js/tarefas.js`, `js/agenda.js`, `js/prazos.js`, `js/atividades.js` e `js/relatorio.js`: cards, tabelas, selects, tooltips e exports HTML/PDF agora usam escape em textos e atributos dinamicos.
 - Observabilidade inicial da sincronizacao PJe: criada tabela `pje_sync_logs`, cron e sincronizacao manual registram contadores/erros, UI exibe ultima importacao com status e totais. Validado com login de teste e Edge Function remota.
 
 ## Revisao da auditoria de 26/04/2026
@@ -39,7 +40,7 @@ O que faz sentido manter como prioridade:
 
 - Performance: `carregarDados()` ainda busca muitas tabelas inteiras no carregamento inicial. Apenas intimacoes tem limite parcial de 200 registros.
 - Sincronizacao PJe: o cron agora usa a RPC de importacao preservando status e registra log resumido; migration/deploy/teste tecnico e validacao pela UI com intimação controlada foram feitos. Falta apenas repetir em rotina real com uma intimação real quando houver caso adequado.
-- Sanitizacao: intimações, documentos, financeiro e configuracoes ja escapam os pontos mais expostos; ainda falta revisar dashboard, pastas, tarefas, agenda e relatorios para fechar o padrao em todo o frontend.
+- Sanitizacao: os principais renders de intimações, documentos, financeiro, configuracoes, dashboard, pastas, tarefas, agenda, prazos, atividades e relatorios ja usam helpers comuns de escape. O risco restante e revisar novas telas/codigo futuro para manter o padrao.
 - Numero de pasta: `gerarNumeroPasta()` continua client-side e pode gerar duplicidade com usuarios simultaneos.
 - Produto: area do cliente, onboarding, billing, notificacoes confiaveis e DRE/fluxo de caixa seguem sendo os maiores gaps para SaaS publico.
 - QA/seguranca: RLS esta versionado em migration, mas ainda precisa ser validado no banco remoto/producao com testes reais de isolamento entre empresas.
@@ -52,11 +53,11 @@ O que estava desatualizado ou deve sair do foco imediato:
 
 ## Pendencias criticas
 
-1. Expandir sanitizacao para os demais renders restantes
+1. Manter sanitizacao como padrao de desenvolvimento
    - Helpers comuns `escHtml`, `escAttr` e `safeExternalUrl` ja foram promovidos para `js/core.js`.
-   - Financeiro, documentos, configuracoes e intimacoes ja tiveram os principais pontos revisados.
-   - Revisar dashboard, pastas, tarefas, agenda e relatorios que ainda interpolam dados de usuario.
-   - Trocar handlers inline com payload dinamico por `data-*` + event listeners onde ainda houver dados externos.
+   - Intimacoes, documentos, financeiro, configuracoes, dashboard, pastas, tarefas, agenda, prazos, atividades e relatorios ja tiveram os principais pontos revisados.
+   - Em novas telas, evitar interpolacao direta de dados de usuario em `innerHTML`.
+   - Trocar handlers inline com payload dinamico por `data-*` + event listeners quando houver dados externos complexos.
 
 2. Melhorar historico visual da sincronizacao PJe
    - Criar painel/modal simples com ultimas sincronizacoes.
@@ -154,18 +155,18 @@ O que estava desatualizado ou deve sair do foco imediato:
 
 Prioridade 1:
 
-Continuar a sanitizacao nos renders restantes.
+Melhorar historico visual da sincronizacao PJe.
 
 Motivo:
 
-A correcao de intimações arquivadas, a sanitizacao inicial de intimações, a observabilidade basica do PJe e a expansao para documentos/financeiro/configuracoes ja foram encaminhadas. O proximo risco transversal e repetir o padrao de escape/event listeners nos modulos restantes que ainda interpolam dados de usuario em `innerHTML`.
+A correcao de intimações arquivadas, a sanitizacao dos principais renders e a observabilidade basica do PJe ja foram encaminhadas. O proximo ganho pratico e transformar os logs de sincronizacao em um historico visual consultavel, para diagnosticar falhas sem depender do console/Supabase.
 
 Passos sugeridos:
 
-1. Revisar `js/dashboard.js`, `js/pastas.js`, `js/tarefas.js`, `js/agenda.js` e relatorios.
-2. Substituir interpolacao direta de dados por `escHtml`/`escAttr`.
-3. Remover handlers inline com objetos/payloads dinamicos onde houver dados externos.
-4. Validar com payload HTML/script fake em cada tela principal.
+1. Criar painel/modal com ultimas sincronizacoes.
+2. Mostrar status, data, totais e mensagem de erro.
+3. Adicionar filtro por status quando houver volume.
+4. Validar com sincronizacao manual e cron.
 
 ## Arquivos mais relevantes
 

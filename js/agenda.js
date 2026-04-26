@@ -79,7 +79,7 @@ function renderCalendario() {
     const visible = evs.slice(0, maxEv);
     const extra   = evs.length - maxEv;
     const evHtml  = visible.map(e =>
-      `<span class="cal-ev cal-ev--${TIPO_COR[e.tipo] || 'lembrete'}" title="${e.titulo}">${e.titulo}</span>`
+      `<span class="cal-ev cal-ev--${escAttr(TIPO_COR[e.tipo] || 'lembrete')}" title="${escAttr(e.titulo || '')}">${escHtml(e.titulo || '—')}</span>`
     ).join('') + (extra > 0 ? `<span class="cal-ev cal-ev--more">+${extra} mais</span>` : '');
     return `<div class="${classes}" data-date="${iso}" role="button" tabindex="0">
       <span class="cal-day-num">${c.dia}</span>
@@ -109,14 +109,15 @@ function selecionarDia(iso) {
   if (!evs.length) { lista.innerHTML = `<p class="agenda-aside-empty">Nenhum evento neste dia.</p>`; return; }
   lista.innerHTML = evs.map(e => {
     const parts = (e.participantes || '').split(';').map(n => n.trim()).filter(Boolean);
+    const id = escAttr(e.id);
     const partHtml = parts.length
-      ? `<p class="ev-meta ev-participantes">${avatarGroup(e.participantes, 5)} ${parts.join(', ')}</p>`
+      ? `<p class="ev-meta ev-participantes">${avatarGroup(e.participantes, 5)} ${escHtml(parts.join(', '))}</p>`
       : '';
-    return `<div class="ev-item" data-evento-id="${e.id}" role="button" tabindex="0" onclick="abrirModalEvento('${e.id}')" onkeydown="if(event.key==='Enter')abrirModalEvento('${e.id}')">
+    return `<div class="ev-item" data-evento-id="${id}" role="button" tabindex="0" onclick="abrirModalEvento('${id}')" onkeydown="if(event.key==='Enter')abrirModalEvento('${id}')">
       <span class="ev-dot" style="background:${corDot(e.tipo)}"></span>
       <div class="ev-info">
-        <p class="ev-titulo">${e.titulo}</p>
-        <p class="ev-meta">${e.hora ? e.hora + ' · ' : ''}${e.responsavel}${e.local ? ' · ' + e.local : ''}</p>
+        <p class="ev-titulo">${escHtml(e.titulo || '—')}</p>
+        <p class="ev-meta">${escHtml(`${e.hora ? e.hora + ' · ' : ''}${e.responsavel || '—'}${e.local ? ' · ' + e.local : ''}`)}</p>
         ${partHtml}
       </div>
     </div>`;
@@ -140,13 +141,14 @@ function renderProximos() {
     const badgeCls = isHoje ? 'ev-date-badge--today' : (e.tipo === 'Prazo' ? 'ev-date-badge--urgent' : '');
     const parts = (e.participantes || '').split(';').map(n => n.trim()).filter(Boolean);
     const partMeta = parts.length ? ` · ${parts.length} participante${parts.length > 1 ? 's' : ''}` : '';
-    return `<div class="ev-item" data-evento-id="${e.id}" role="button" tabindex="0" onclick="abrirModalEvento('${e.id}')" onkeydown="if(event.key==='Enter')abrirModalEvento('${e.id}')">
+    const id = escAttr(e.id);
+    return `<div class="ev-item" data-evento-id="${id}" role="button" tabindex="0" onclick="abrirModalEvento('${id}')" onkeydown="if(event.key==='Enter')abrirModalEvento('${id}')">
       <span class="ev-dot" style="background:${corDot(e.tipo)}"></span>
       <div class="ev-info">
-        <p class="ev-titulo">${e.titulo}</p>
-        <p class="ev-meta">${e.responsavel}${partMeta}</p>
+        <p class="ev-titulo">${escHtml(e.titulo || '—')}</p>
+        <p class="ev-meta">${escHtml(`${e.responsavel || '—'}${partMeta}`)}</p>
       </div>
-      <span class="ev-date-badge ${badgeCls}">${label}</span>
+      <span class="ev-date-badge ${escAttr(badgeCls)}">${escHtml(label)}</span>
     </div>`;
   }).join('');
 }
@@ -185,7 +187,7 @@ function abrirModalEvento(id) {
   const sel = document.getElementById('evResponsavel');
   const meuNome = state.meuPerfil?.nome || '';
   sel.innerHTML = state.usuarios.map(u =>
-    `<option value="${u.nome}"${u.nome === meuNome ? ' selected' : ''}>${u.nome}</option>`
+    `<option value="${escAttr(u.nome)}"${u.nome === meuNome ? ' selected' : ''}>${escHtml(u.nome)}</option>`
   ).join('');
 
   // Popula participantes picker

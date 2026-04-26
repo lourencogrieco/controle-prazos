@@ -17,18 +17,18 @@ function atividadeCard(item) {
   const classes = ['req-card', urgent ? 'req-card--urgent' : '', done ? 'req-card--done' : ''].filter(Boolean).join(' ');
   const daysCls = diff < 0 ? 'req-days--vencido' : diff <= 3 ? 'req-days--urgente' : diff <= 10 ? 'req-days--aviso' : 'req-days--ok';
 
-  return `<article class="${classes}" draggable="true" data-id="${item.id}">
+  return `<article class="${classes}" draggable="true" data-id="${escAttr(item.id)}">
     <div class="req-row-top">
       <div class="req-tags-inline">
-        <span class="tag tag--area">${item.area || 'Prazo'}</span>
-        <span class="tag tag--type">${item.tipo}</span>
+        <span class="tag tag--area">${escHtml(item.area || 'Prazo')}</span>
+        <span class="tag tag--type">${escHtml(item.tipo)}</span>
         ${urgent ? '<span class="tag tag--urgent">Urgente</span>' : ''}
       </div>
       <span class="req-drag-handle" title="Arraste para mover">⠿</span>
     </div>
     <div class="req-row-main">
-      <span class="req-client">${item.cliente}</span>
-      ${item.processo ? `<span class="req-tipo">${item.processo}</span>` : ''}
+      <span class="req-client">${escHtml(item.cliente)}</span>
+      ${item.processo ? `<span class="req-tipo">${escHtml(item.processo)}</span>` : ''}
     </div>
     <div class="req-row-foot">
       <span class="req-days ${daysCls}">${item.dataFatal ? formatDate(item.dataFatal) : '—'}</span>
@@ -47,23 +47,23 @@ function oportunidadeCard(item) {
     <article class="${classes}">
       <div class="req-body">
         <div class="req-tags">
-          <span class="tag ${tagClass}">${item.area}</span>
+          <span class="tag ${escAttr(tagClass)}">${escHtml(item.area)}</span>
           ${recusado ? '<span class="tag tag--refused">Recusado</span>' : ''}
         </div>
-        <p class="req-number">${item.numero}</p>
-        <p class="req-meta"><strong>Lead:</strong> ${item.lead}</p>
-        <p class="req-meta"><strong>Tipo:</strong> ${item.tipo}</p>
-        <p class="req-meta"><strong>Tese:</strong> ${item.tese}</p>
-        ${item.motivoRecusa ? `<p class="req-refusal">Motivo da recusa: ${item.motivoRecusa}</p>` : ''}
+        <p class="req-number">${escHtml(item.numero)}</p>
+        <p class="req-meta"><strong>Lead:</strong> ${escHtml(item.lead)}</p>
+        <p class="req-meta"><strong>Tipo:</strong> ${escHtml(item.tipo)}</p>
+        <p class="req-meta"><strong>Tese:</strong> ${escHtml(item.tese)}</p>
+        ${item.motivoRecusa ? `<p class="req-refusal">Motivo da recusa: ${escHtml(item.motivoRecusa)}</p>` : ''}
         ${!recusado && item.envio ? `<p class="req-date">Enviado ${item.envio}mente em ${formatDate(item.data)}</p>` : ''}
       </div>
       <div class="req-foot">
         <div class="req-avatars">
-          ${item.responsavel.split(' ').map(r => `<span class="avatar">${r}</span>`).join('')}
+          ${item.responsavel.split(' ').map(r => `<span class="avatar">${escHtml(r)}</span>`).join('')}
         </div>
         <div class="req-owner">${recusado
-          ? `Recusado em ${formatDate(item.data)}<br>por ${item.responsavelNome}`
-          : `Enviado em ${formatDate(item.data)}<br>por ${item.responsavelNome}`}</div>
+          ? `Recusado em ${formatDate(item.data)}<br>por ${escHtml(item.responsavelNome)}`
+          : `Enviado em ${formatDate(item.data)}<br>por ${escHtml(item.responsavelNome)}`}</div>
       </div>
     </article>`;
 }
@@ -151,12 +151,12 @@ function renderAtividades() {
 function renderTabela(lista) {
   document.getElementById('tabelaPrazos').innerHTML = lista.map(item => `
     <tr>
-      <td><a href="#" class="table-link">${item.processo || '—'}</a></td>
-      <td>${item.cliente}</td>
-      <td>${item.tipo}</td>
+      <td><a href="#" class="table-link">${escHtml(item.processo || '—')}</a></td>
+      <td>${escHtml(item.cliente)}</td>
+      <td>${escHtml(item.tipo)}</td>
       <td>${item.dataFatal ? formatDate(item.dataFatal) : '—'}</td>
-      <td>${item.responsavel}</td>
-      <td><span class="status-pill ${statusClass(item.status)}">${item.status}</span></td>
+      <td>${escHtml(item.responsavel)}</td>
+      <td><span class="status-pill ${statusClass(item.status)}">${escHtml(item.status)}</span></td>
     </tr>`).join('');
 }
 

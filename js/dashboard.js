@@ -150,7 +150,7 @@ function renderDashboard() {
         <span class="dash-alerta-list">${alertas.slice(0, 4).map(p => {
           const d = daysUntil(p.prazoFatal);
           const label = d < 0 ? 'Vencido' : d === 0 ? 'Hoje' : `${d}d`;
-          return `<span class="dash-alerta-item" onclick="document.querySelector('[data-view=atividades]').click();document.querySelector('[data-subtab=prazos]').click()" title="${p.tipoPrazo}">${p.cliente || p.pastaNr || '—'} (${label})</span>`;
+          return `<span class="dash-alerta-item" onclick="document.querySelector('[data-view=atividades]').click();document.querySelector('[data-subtab=prazos]').click()" title="${escAttr(p.tipoPrazo || '')}">${escHtml(p.cliente || p.pastaNr || '—')} (${escHtml(label)})</span>`;
         }).join('')}${alertas.length > 4 ? `<span class="dash-alerta-item" style="color:var(--mu)">+${alertas.length - 4} mais</span>` : ''}</span>
       </div>`;
       alertaEl.classList.remove('hidden');
@@ -173,11 +173,12 @@ function renderDashboard() {
           const diff  = daysUntil(p.prazoFatal);
           const cor   = diff <= 3 ? 'var(--red)' : diff <= 7 ? '#e07a17' : 'var(--mu)';
           const label = diff === 0 ? 'Hoje' : diff + 'd';
-          return `<div class="dash-list-item" style="cursor:pointer" onclick="navegarParaPrazo('${p.id}')" title="Abrir prazo">
+          const id = escAttr(p.id);
+          return `<div class="dash-list-item" style="cursor:pointer" onclick="navegarParaPrazo('${id}')" title="Abrir prazo">
             <span class="dash-item-dot" style="background:${cor}"></span>
-            <span class="dash-item-title">${p.cliente || p.pastaNr || '—'}</span>
-            <span class="dash-item-meta">${p.tipoPrazo}</span>
-            <span class="dash-item-days" style="color:${cor}">${label}</span>
+            <span class="dash-item-title">${escHtml(p.cliente || p.pastaNr || '—')}</span>
+            <span class="dash-item-meta">${escHtml(p.tipoPrazo || '—')}</span>
+            <span class="dash-item-days" style="color:${cor}">${escHtml(label)}</span>
           </div>`;
         }).join('')
       : '<div class="dash-empty">Nenhum prazo próximo.</div>';
@@ -200,10 +201,11 @@ function renderDashboard() {
           const dias = t.dataLimite
             ? (() => { const d = daysUntil(t.dataLimite); return d < 0 ? ' · vencida' : d === 0 ? ' · hoje' : ` · ${d}d`; })()
             : '';
-          return `<div class="dash-list-item" style="cursor:pointer" onclick="navegarParaTarefa('${t.id}')" title="Ver tarefa na aba de atividades">
+          const id = escAttr(t.id);
+          return `<div class="dash-list-item" style="cursor:pointer" onclick="navegarParaTarefa('${id}')" title="Ver tarefa na aba de atividades">
             <span class="dash-item-dot" style="background:${cor}"></span>
-            <span class="dash-item-title">${t.titulo}</span>
-            <span class="dash-item-meta">${t.tipo || '—'}${dias}</span>
+            <span class="dash-item-title">${escHtml(t.titulo || '—')}</span>
+            <span class="dash-item-meta">${escHtml(`${t.tipo || '—'}${dias}`)}</span>
           </div>`;
         }).join('')
       : '<div class="dash-empty">Nenhuma tarefa pendente.</div>';
@@ -237,10 +239,11 @@ function renderDashboard() {
           const [, mm, dd] = e.data.split('-');
           const cor  = TIPO_COR_AG[e.tipo] || 'var(--mu)';
           const hora = e.hora ? ` · ${e.hora}` : '';
-          return `<div class="dash-list-item" style="cursor:pointer" onclick="navegarParaEvento('${e.id}')" title="Ver compromisso na agenda">
+          const id = escAttr(e.id);
+          return `<div class="dash-list-item" style="cursor:pointer" onclick="navegarParaEvento('${id}')" title="Ver compromisso na agenda">
             <span class="dash-date-chip">${dd}/${mm}</span>
-            <span class="dash-item-title">${e.titulo}</span>
-            <span class="dash-item-meta" style="color:${cor}">${e.tipo}${hora}</span>
+            <span class="dash-item-title">${escHtml(e.titulo || '—')}</span>
+            <span class="dash-item-meta" style="color:${cor}">${escHtml(`${e.tipo || '—'}${hora}`)}</span>
           </div>`;
         }).join('')
       : '<div class="dash-empty">Nenhum evento esta semana.</div>';
@@ -272,7 +275,7 @@ function renderDashboardRiscos() {
       nivel: 'danger',
       titulo: p.cliente || p.pastaNr || 'Prazo sem cliente',
       meta: `${p.tipoPrazo || 'Prazo'} · venceu em ${formatDate(p.prazoFatal)}`,
-      acao: `navegarParaPrazo('${p.id}')`,
+      acao: `navegarParaPrazo('${escAttr(p.id)}')`,
     })),
     ...intimacoesPendentes.slice(0, 2).map(i => ({
       nivel: 'warn',
@@ -290,18 +293,18 @@ function renderDashboardRiscos() {
       nivel: 'warn',
       titulo: t.titulo || 'Tarefa sem título',
       meta: `${t.tipo || 'Tarefa'} · sem responsável definido`,
-      acao: `navegarParaTarefa('${t.id}')`,
+      acao: `navegarParaTarefa('${escAttr(t.id)}')`,
     })),
   ].slice(0, 6);
 
   const listEl = document.getElementById('dashRiskList');
   if (!listEl) return;
   listEl.innerHTML = riscos.length
-    ? riscos.map(r => `<button type="button" class="risk-item risk-item--${r.nivel}" onclick="${r.acao}">
+    ? riscos.map(r => `<button type="button" class="risk-item risk-item--${escAttr(r.nivel)}" onclick="${escAttr(r.acao)}">
         <span class="risk-dot"></span>
         <span class="risk-copy">
-          <strong>${r.titulo}</strong>
-          <small>${r.meta}</small>
+          <strong>${escHtml(r.titulo)}</strong>
+          <small>${escHtml(r.meta)}</small>
         </span>
       </button>`).join('')
     : '<div class="dash-empty">Nenhum risco crítico encontrado agora.</div>';
@@ -372,8 +375,8 @@ function renderDashProdutividade() {
     return `<tr>
       <td>
         <div class="prod-user">
-          <span class="avatar" style="width:26px;height:26px;font-size:.54rem;flex-shrink:0">${initials(nome)}</span>
-          <span class="prod-user-nome">${nome}</span>
+          <span class="avatar" style="width:26px;height:26px;font-size:.54rem;flex-shrink:0">${escHtml(initials(nome))}</span>
+          <span class="prod-user-nome">${escHtml(nome)}</span>
         </div>
       </td>
       <td><span class="prod-num ${s.prazVenc > 0 ? 'prod-num--danger' : ''}">${s.prazVenc}</span></td>

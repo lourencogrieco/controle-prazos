@@ -103,14 +103,14 @@ async function gerarRelatorio() {
     document.getElementById('relTabelaBody').innerHTML = resultado.length
       ? resultado.map(a => `
           <tr>
-            <td><span class="table-link">${a.pastaNr}</span></td>
-            <td>${a.codigoSIA}</td>
-            <td>${a.cliente}</td>
-            <td>${a.area}</td>
+            <td><span class="table-link">${escHtml(a.pastaNr)}</span></td>
+            <td>${escHtml(a.codigoSIA)}</td>
+            <td>${escHtml(a.cliente)}</td>
+            <td>${escHtml(a.area)}</td>
             <td>${formatDate(a.data)}</td>
-            <td title="${a.complemento}">${a.andamento}</td>
-            <td>${a.advogado}</td>
-            <td><span class="tag ${a.manual ? 'tag--manual' : 'tag--area'}">${a.tipo}</span></td>
+            <td title="${escAttr(a.complemento)}">${escHtml(a.andamento)}</td>
+            <td>${escHtml(a.advogado)}</td>
+            <td><span class="tag ${a.manual ? 'tag--manual' : 'tag--area'}">${escHtml(a.tipo)}</span></td>
           </tr>`).join('')
       : `<tr><td colspan="8" class="tbl-empty">Nenhum andamento encontrado com os filtros aplicados.</td></tr>`;
 
@@ -182,21 +182,21 @@ document.getElementById('btnExportarExcel').addEventListener('click', () => {
 });
 
 document.getElementById('btnExportarPdf').addEventListener('click', () => {
-  const empresa = state.meuPerfil?.empresa_nome || 'Escritório';
+  const empresa = escHtml(state.meuPerfil?.empresa_nome || 'Escritório');
   const thead   = document.getElementById('relTabela')?.querySelector('thead');
   const tbody   = document.getElementById('relTabelaBody');
   if (!thead || !tbody) return;
   const rows = tbody.querySelectorAll('tr:not(.tbl-empty)');
   if (!rows.length) { toast('Nenhum dado para exportar.', 'error'); return; }
 
-  const headers = [...thead.querySelectorAll('th')].map(th => `<th>${th.textContent.trim()}</th>`).join('');
+  const headers = [...thead.querySelectorAll('th')].map(th => `<th>${escHtml(th.textContent.trim())}</th>`).join('');
   const bodyRows = [...rows].map(tr =>
     `<tr>${[...tr.querySelectorAll('td')].map(td =>
-      `<td>${td.textContent.trim().replace(/\s+/g, ' ')}</td>`
+      `<td>${escHtml(td.textContent.trim().replace(/\s+/g, ' '))}</td>`
     ).join('')}</tr>`
   ).join('');
 
-  const count = document.getElementById('relCount')?.textContent || '';
+  const count = escHtml(document.getElementById('relCount')?.textContent || '');
   const html = `<!DOCTYPE html><html lang="pt-BR">
 <head><meta charset="UTF-8"><title>Relatório de Andamentos</title>
 <style>

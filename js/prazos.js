@@ -32,7 +32,7 @@ function popularResponsaveisDatalist(areaId) {
   const lista = areaId
     ? state.usuarios.filter(u => u.area_id === areaId || !u.area_id)
     : state.usuarios;
-  dl.innerHTML = lista.map(u => `<option value="${u.nome}"></option>`).join('');
+  dl.innerHTML = lista.map(u => `<option value="${escAttr(u.nome)}"></option>`).join('');
 }
 
 // Modal completo de prazo
@@ -116,7 +116,7 @@ function renderPrazoCalculoInfo(prazoOuSugestao) {
   el.classList.remove('hidden');
   el.innerHTML = `
     <strong>Prazo calculado automaticamente</strong>
-    <span>${regra || 'Regra não informada'}${dataBase ? ` · data-base ${formatDate(dataBase)}` : ''}</span>
+    <span>${escHtml(`${regra || 'Regra não informada'}${dataBase ? ` · data-base ${formatDate(dataBase)}` : ''}`)}</span>
   `;
 }
 
@@ -126,7 +126,7 @@ function prazoCalculoBadge(p) {
     p.prazoRegra || 'Prazo calculado',
     p.prazoDataBase ? `Data-base: ${formatDate(p.prazoDataBase)}` : '',
   ].filter(Boolean).join(' · ');
-  return `<span class="calc-badge" title="${title}">Auto</span>`;
+  return `<span class="calc-badge" title="${escAttr(title)}">Auto</span>`;
 }
 
 async function calcularPrazoAuditavel(tipo, dataBase) {
@@ -350,35 +350,37 @@ function renderPrazosAba() {
           intimData = yyyy + '-' + mm + '-' + dd;
         }
       }
+        const id = escAttr(p.id);
+        const pastaNr = escAttr(p.pastaNr || '');
         const pastaLink = p.pastaNr
-          ? `<a href="#" class="table-link" onclick="event.preventDefault();navegarPara('pastas');setTimeout(()=>abrirPasta('${p.pastaNr}'),100)">${p.pastaNr}</a>`
+          ? `<a href="#" class="table-link" onclick="event.preventDefault();navegarPara('pastas');setTimeout(()=>abrirPasta('${pastaNr}'),100)">${escHtml(p.pastaNr)}</a>`
           : '—';
         const acoes = podeEditarRegistro() ? `
           <div class="row-actions">
-            ${podeEditarRegistro() ? `<button class="btn-icon" title="Editar" onclick="event.stopPropagation();abrirModalNovoPrazo('${p.id}')">
+            ${podeEditarRegistro() ? `<button class="btn-icon" title="Editar" onclick="event.stopPropagation();abrirModalNovoPrazo('${id}')">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                 <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
               </svg></button>` : ''}
-            ${podeExcluirRegistro() ? `<button class="btn-icon btn-icon--danger" title="Excluir" onclick="event.stopPropagation();excluirPrazo('${p.id}')">
+            ${podeExcluirRegistro() ? `<button class="btn-icon btn-icon--danger" title="Excluir" onclick="event.stopPropagation();excluirPrazo('${id}')">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
                 <path d="M10 11v6M14 11v6M9 6V4h6v2"/>
               </svg></button>` : ''}
           </div>` : '';
-        return `<tr class="${rowClassPrazo(p.prazoFatal)}" data-prazo-id="${p.id}">
+        return `<tr class="${rowClassPrazo(p.prazoFatal)}" data-prazo-id="${id}">
           <td>${pastaLink}</td>
-          <td>${p.cliente}</td>
-          <td style="font-family:'IBM Plex Mono',monospace;font-size:.72rem">${p.processo || '—'}</td>
-          <td>${p.comarca || '—'}</td>
-          <td>${p.tipoPrazo}</td>
+          <td>${escHtml(p.cliente || '—')}</td>
+          <td style="font-family:'IBM Plex Mono',monospace;font-size:.72rem">${escHtml(p.processo || '—')}</td>
+          <td>${escHtml(p.comarca || '—')}</td>
+          <td>${escHtml(p.tipoPrazo || '—')}</td>
           <td>${formatDate(p.prazoFatal)}</td>
           <td>${prazoCalculoBadge(p)}</td>
           <td>${diasRestantesHtml(p.prazoFatal)}</td>
-          <td style="max-width:200px;font-size:.76rem">${p.descricao}</td>
+          <td style="max-width:200px;font-size:.76rem">${escHtml(p.descricao || '—')}</td>
           <td>${intimData ? formatDate(intimData) : '—'}</td>
           <td>${avatarGroup(p.responsavel)}</td>
-          <td><span class="status-pill ${statusClass(p.status)}">${p.status}</span></td>
+          <td><span class="status-pill ${statusClass(p.status)}">${escHtml(p.status)}</span></td>
           <td>${acoes}</td>
         </tr>`;
       }).join('')

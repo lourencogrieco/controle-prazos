@@ -36,14 +36,18 @@ Este arquivo registra o que ainda falta implementar ou revisar para continuar a 
 - Historico visual da sincronizacao PJe: aba de intimacoes ganhou modal "Histórico PJe" com ultimos 20 logs, filtro por status, origem, periodo, totais, nomes pesquisados e detalhes de erro.
 - Paginacao server-side inicial: tabelas de Pastas e Prazos passaram a buscar a pagina atual no Supabase com `range()` e `count: exact`, mantendo o estado global para nao quebrar dashboard, modais e vinculos existentes.
 - Paginacao server-side expandida: modal de Clientes ganhou busca/paginacao server-side e Pipeline CRM passou a carregar ate 30 oportunidades por coluna com contador real por status.
+- Estabilizacao de criacao de conta/onboarding, logout, criacao de prazos/tarefas/agenda e exclusao de compromisso.
+- Correcoes conservadoras para o MVP: tema/logo voltou a ter fallback padrao `logo.svg`, e a configuracao visual passou a ser isolada por empresa no navegador para evitar que contas de teste alterem a conta principal.
 
 ## Revisao da auditoria de 26/04/2026
 
 O que faz sentido manter como prioridade:
 
-- Performance: Pastas, Prazos, Clientes e Pipeline CRM ja têm carregamento paginado/limitado nas telas principais, mas `carregarDados()` ainda busca muitas tabelas inteiras para dashboards, modais e vinculos. O proximo passo e separar resumos/listas para reduzir o carregamento inicial real.
+- Estabilidade para testes com colegas: antes de novas funcionalidades grandes, executar roteiro manual com 2 ou 3 empresas/usuarios de teste validando login, logout, criacao de conta, agenda, tarefas, prazos, pastas, clientes, financeiro basico e intimações.
+- Performance: Pastas, Prazos, Clientes e Pipeline CRM ja tiveram carregamento paginado/limitado em tentativas recentes, mas mexidas amplas nesse ponto aumentaram risco de regressao. Para o MVP, manter apenas ajustes pontuais e deixar a reducao do `carregarDados()` para uma rodada propria.
 - Sincronizacao PJe: o cron agora usa a RPC de importacao preservando status, registra log resumido e a UI tem historico visual dos ultimos logs. Falta apenas repetir em rotina real com uma intimação real quando houver caso adequado.
 - Sanitizacao: os principais renders de intimações, documentos, financeiro, configuracoes, dashboard, pastas, tarefas, agenda, prazos, atividades e relatorios ja usam helpers comuns de escape. O risco restante e revisar novas telas/codigo futuro para manter o padrao.
+- Configuracoes visuais: tema e logo agora ficam isolados por empresa no `localStorage`. Ainda falta, numa etapa posterior, salvar essas preferencias no banco se for desejado que todos os usuarios da mesma empresa vejam a mesma marca.
 - Numero de pasta: `gerarNumeroPasta()` continua client-side e pode gerar duplicidade com usuarios simultaneos.
 - Produto: area do cliente, onboarding, billing, notificacoes confiaveis e DRE/fluxo de caixa seguem sendo os maiores gaps para SaaS publico.
 - QA/seguranca: RLS esta versionado em migration, mas ainda precisa ser validado no banco remoto/producao com testes reais de isolamento entre empresas.
@@ -68,10 +72,8 @@ O que estava desatualizado ou deve sair do foco imediato:
    - Considerar detalhes por nome pesquisado em tabela separada se a busca por muitos nomes ficar dificil de ler.
 
 3. Paginacao server-side nas listas principais
-   - Pastas e Prazos ja buscam a pagina atual com `range()` e `count: exact`.
-   - Clientes ja buscam a pagina atual com `range()` e `count: exact`.
-   - Pipeline CRM ja carrega limite por coluna com contador real por status.
-   - Proxima prioridade: cobrancas, contas a pagar e despesas.
+   - Tratar como pos-MVP ou como tarefa isolada, porque alteracoes amplas nesse ponto ja causaram regressao perceptivel.
+   - Se retomar, fazer uma tela por vez e validar antes de seguir.
    - Evitar carregar tudo no `carregarDados()`; carregar resumo/dashboard separado da lista paginada.
    - Manter cache apenas para dados pequenos e estaticos, como areas e tipos de pasta.
 
@@ -149,6 +151,13 @@ O que estava desatualizado ou deve sair do foco imediato:
 
 4. QA
    - Criar roteiro manual de teste:
+     - criar conta nova com empresa nova;
+     - sair e entrar novamente;
+     - confirmar que logo/tema de uma empresa nao vazam para outra;
+     - criar, editar e excluir compromisso de agenda;
+     - criar tarefa e prazo;
+     - criar cliente e pasta;
+     - validar que filtros principais nao quebram a lista;
      - sincronizar intimacoes;
      - vincular a pasta;
      - arquivar;
@@ -161,18 +170,19 @@ O que estava desatualizado ou deve sair do foco imediato:
 
 Prioridade 1:
 
-Paginacao server-side nas listas principais.
+Roteiro de QA e estabilizacao do MVP.
 
 Motivo:
 
-A correcao de intimações arquivadas, a sanitizacao dos principais renders, a observabilidade basica do PJe e o historico visual de sincronizacao ja foram encaminhados. O proximo ganho pratico e reduzir carga inicial e melhorar escalabilidade das listas grandes.
+A meta imediata e deixar colegas testarem sem quebrar fluxos basicos. Depois das regressões recentes, o maior ganho pratico vem de validar e corrigir bugs pequenos, nao de expandir arquitetura ou performance.
 
 Passos sugeridos:
 
-1. Repetir o padrao de `range()` e `count: exact` para cobrancas, contas a pagar e despesas.
-2. Separar consultas de resumo/dashboard das listas completas.
-3. Reduzir gradualmente as tabelas carregadas por `carregarDados()`.
-4. Validar cada tela com filtros e navegacao entre paginas.
+1. Criar duas contas de teste em empresas diferentes e validar isolamento de dados, logo e tema.
+2. Rodar o fluxo basico completo: login/logout, agenda, tarefas, prazos, clientes, pastas, financeiro e intimações.
+3. Registrar bugs encontrados com tela, usuario, horario e acao executada.
+4. Corrigir apenas problemas reproduziveis e pequenos ate o MVP ficar confiavel para teste externo.
+5. Deixar performance/paginacao profunda, billing, portal do cliente e automacoes avancadas para depois dessa rodada.
 
 ## Arquivos mais relevantes
 

@@ -102,6 +102,7 @@ async function onLogin(user) {
   }
   state.empresaId = data.empresa_id;
   state.meuPerfil = data;
+  if (typeof aplicarTemaSalvo === 'function') aplicarTemaSalvo();
 
   const nome = (data.nome || user.email || 'Usuário').toUpperCase();
   const perfilLabel = (PERFIS_LABEL[data.perfil] || data.perfil || '').toUpperCase();

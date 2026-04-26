@@ -411,7 +411,36 @@ document.getElementById('clientesPgProxima')?.addEventListener('click', () => {
 // ──────────────────────────────────────────────────────────────────────
 // PERSONALIZAÇÃO / TEMA
 // ──────────────────────────────────────────────────────────────────────
-const TEMA_KEY = 'lhub_tema';
+const TEMA_KEY_LEGADO = 'lhub_tema';
+const TEMA_PADRAO = {
+  primary: '#08505D',
+  accent: '#BCC2C5',
+  logoUrl: 'logo.svg',
+};
+
+function temaStorageKey() {
+  return state.empresaId ? `lhub_tema_${state.empresaId}` : TEMA_KEY_LEGADO;
+}
+
+function normalizarHex(hex, fallback) {
+  return /^#[0-9a-f]{6}$/i.test(hex || '') ? hex : fallback;
+}
+
+function lerTemaSalvo() {
+  try {
+    const chave = temaStorageKey();
+    const raw = localStorage.getItem(chave)
+      || (state.empresaId ? localStorage.getItem(TEMA_KEY_LEGADO) : null);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function salvarTemaSalvo(tema) {
+  localStorage.setItem(temaStorageKey(), JSON.stringify(tema));
+  if (state.empresaId) localStorage.removeItem(TEMA_KEY_LEGADO);
+}
 
 function hexToRgb(hex) {
   const r = parseInt(hex.slice(1,3),16);
@@ -426,38 +455,43 @@ function lighten(hex, pct) {
   return `rgb(${Math.round(r+(255-r)*f)},${Math.round(g+(255-g)*f)},${Math.round(b+(255-b)*f)})`;
 }
 
-function aplicarTema(tema) {
+function aplicarTema(tema = {}) {
   const root = document.documentElement;
-  if (tema.primary) {
-    root.style.setProperty('--navy',     tema.primary);
-    root.style.setProperty('--navy-mid', tema.primary);
-    root.style.setProperty('--ac',       tema.primary);
-    root.style.setProperty('--ac-soft',  lighten(tema.primary, 88));
-  }
-  if (tema.accent) {
-    root.style.setProperty('--gold',      tema.accent);
-    root.style.setProperty('--gold-soft', lighten(tema.accent, 82));
-  }
-  const logoUrl = tema.logoUrl && tema.logoUrl !== 'logo.png' ? tema.logoUrl : 'logo.svg';
+  const primary = normalizarHex(tema.primary, TEMA_PADRAO.primary);
+  const accent = normalizarHex(tema.accent, TEMA_PADRAO.accent);
+
+  root.style.setProperty('--navy',     primary);
+  root.style.setProperty('--navy-mid', primary);
+  root.style.setProperty('--ac',       primary);
+  root.style.setProperty('--ac-soft',  lighten(primary, 88));
+  root.style.setProperty('--gold',      accent);
+  root.style.setProperty('--gold-soft', lighten(accent, 82));
+
+  const logoUrl = tema.logoUrl && tema.logoUrl !== 'logo.png' ? tema.logoUrl : TEMA_PADRAO.logoUrl;
   const img = document.getElementById('brandLogo');
   const fallback = document.getElementById('brandLogoFallback');
   if (img) { img.src = logoUrl; img.style.display = ''; }
   if (fallback) fallback.style.display = 'none';
 }
 
-const _temaSalvo = JSON.parse(localStorage.getItem(TEMA_KEY) || 'null');
-if (_temaSalvo) aplicarTema(_temaSalvo);
+function aplicarTemaSalvo() {
+  aplicarTema(lerTemaSalvo());
+}
+
+aplicarTemaSalvo();
 
 function abrirModalConfig() {
-  const t = JSON.parse(localStorage.getItem(TEMA_KEY) || '{}');
-  const primary = t.primary || '#08505D';
-  const accent  = t.accent  || '#BCC2C5';
+  const t = lerTemaSalvo();
+  const primary = normalizarHex(t.primary, TEMA_PADRAO.primary);
+  const accent  = normalizarHex(t.accent,  TEMA_PADRAO.accent);
+  const logoUrl = t.logoUrl && t.logoUrl !== 'logo.png' ? t.logoUrl : '';
   document.getElementById('cfgColorPrimary').value              = primary;
   document.getElementById('cfgColorAccent').value               = accent;
-  document.getElementById('cfgLogoUrl').value                   = t.logoUrl || '';
+  document.getElementById('cfgLogoUrl').value                   = logoUrl;
   document.getElementById('prevPrimary').style.background       = primary;
   document.getElementById('prevAccent').style.background        = accent;
-  if (t.logoUrl) document.getElementById('cfgLogoPreview').src  = t.logoUrl;
+  document.getElementById('cfgLogoPreviewWrap').style.background = primary;
+  document.getElementById('cfgLogoPreview').src                 = logoUrl || TEMA_PADRAO.logoUrl;
   document.getElementById('modalConfig').classList.add('open');
 }
 
@@ -473,7 +507,7 @@ document.getElementById('cfgColorAccent').addEventListener('input', e => {
 });
 document.getElementById('cfgLogoUrl').addEventListener('input', e => {
   const img = document.getElementById('cfgLogoPreview');
-  img.src = e.target.value || 'logo.svg';
+  img.src = e.target.value || TEMA_PADRAO.logoUrl;
   img.style.display = '';
 });
 document.getElementById('cfgSalvar').addEventListener('click', () => {
@@ -482,24 +516,22 @@ document.getElementById('cfgSalvar').addEventListener('click', () => {
     accent:  document.getElementById('cfgColorAccent').value,
     logoUrl: document.getElementById('cfgLogoUrl').value.trim() || null,
   };
-  localStorage.setItem(TEMA_KEY, JSON.stringify(tema));
+  salvarTemaSalvo(tema);
   aplicarTema(tema);
   document.getElementById('modalConfig').classList.remove('open');
   toast('Configurações salvas');
 });
 document.getElementById('cfgReset').addEventListener('click', () => {
-  localStorage.removeItem(TEMA_KEY);
-  const root = document.documentElement;
-  ['--navy','--navy-mid','--ac','--ac-soft','--gold','--gold-soft'].forEach(v => root.style.removeProperty(v));
-  document.getElementById('cfgColorPrimary').value              = '#08505D';
-  document.getElementById('cfgColorAccent').value               = '#BCC2C5';
+  localStorage.removeItem(temaStorageKey());
+  if (state.empresaId) localStorage.removeItem(TEMA_KEY_LEGADO);
+  aplicarTema({});
+  document.getElementById('cfgColorPrimary').value              = TEMA_PADRAO.primary;
+  document.getElementById('cfgColorAccent').value               = TEMA_PADRAO.accent;
   document.getElementById('cfgLogoUrl').value                   = '';
-  document.getElementById('prevPrimary').style.background       = '#08505D';
-  document.getElementById('prevAccent').style.background        = '#BCC2C5';
-  const img = document.getElementById('brandLogo');
-  if (img) { img.src = 'logo.svg'; img.style.display = ''; }
-  document.getElementById('cfgLogoPreviewWrap').style.background = '#08505D';
-  document.getElementById('cfgLogoPreview').src = 'logo.svg';
+  document.getElementById('prevPrimary').style.background       = TEMA_PADRAO.primary;
+  document.getElementById('prevAccent').style.background        = TEMA_PADRAO.accent;
+  document.getElementById('cfgLogoPreviewWrap').style.background = TEMA_PADRAO.primary;
+  document.getElementById('cfgLogoPreview').src = TEMA_PADRAO.logoUrl;
   document.getElementById('modalConfig').classList.remove('open');
   toast('Tema restaurado para o padrão');
 });

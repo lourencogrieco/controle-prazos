@@ -1,6 +1,8 @@
 // ──────────────────────────────────────────────────────────────────────
 // AUTH
 // ──────────────────────────────────────────────────────────────────────
+let _criandoConta = false;
+
 async function inicializar() {
   const { data: { session } } = await db.auth.getSession();
   if (session?.user) {
@@ -9,7 +11,7 @@ async function inicializar() {
     mostrarLogin();
   }
   db.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN'  && session) await onLogin(session.user);
+    if (event === 'SIGNED_IN'  && session && !_criandoConta) await onLogin(session.user);
     if (event === 'SIGNED_OUT') mostrarLogin();
   });
 }
@@ -80,11 +82,18 @@ function aplicarPermissoes() {
 
 async function onLogin(user) {
   state.user = user;
-  const { data } = await db
+  const { data, error } = await db
     .from('usuarios_empresa')
     .select('empresa_id, nome, perfil, area_id')
     .eq('user_id', user.id)
     .maybeSingle(); // .single() retornava 406 quando 0 linhas (PGRST116)
+
+  if (error) {
+    toast('Erro ao carregar perfil: ' + error.message, 'error');
+    await db.auth.signOut({ scope: 'local' });
+    mostrarLogin();
+    return;
+  }
 
   if (!data) {
     toast('Usuário sem empresa vinculada. Contate o administrador.', 'error');
@@ -116,16 +125,36 @@ async function onLogin(user) {
 
 function mostrarLogin() {
   document.getElementById('loginOverlay').classList.remove('hidden');
+  document.getElementById('btnEntrar').disabled = false;
+  document.getElementById('btnEntrar').textContent = 'Entrar';
+  if (typeof setAuthMode === 'function') setAuthMode('login');
 }
 
 async function fazerLogout() {
   _pararRealtime();
   _pararIdleTimer();
-  await db.auth.signOut();
+  _pararAuthActivityListeners();
+  try {
+    await db.auth.signOut({ scope: 'local' });
+  } catch (err) {
+    console.warn('[auth] falha ao encerrar sessão remota:', err.message);
+  }
+  try {
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('sb-') || k.includes('supabase.auth'))
+      .forEach(k => localStorage.removeItem(k));
+  } catch { /* ignora limpeza local indisponível */ }
   state.user = null;
   state.meuPerfil = null;
   state.empresaId = null;
+  state.pastas = [];
+  state.prazos = [];
+  state.tarefas = [];
+  state.clientes = [];
+  state.intimacoes = [];
+  agendaEventos.length = 0;
   mostrarLogin();
+  toast('Sessão encerrada.');
 }
 
 // ── IDLE TIMEOUT ────────────────────────────────────────────────────────
@@ -136,6 +165,8 @@ const IDLE_WARN_MS     = IDLE_TIMEOUT_MS - 5 * 60 * 1000; // aviso 5min antes
 let _idleTimer      = null;
 let _idleWarnTimer  = null;
 let _idleWarnShown  = false;
+let _authActivityBound = false;
+const _authActivityEvents = ['mousemove', 'keydown', 'touchstart', 'click'];
 
 function _resetIdleTimer() {
   clearTimeout(_idleTimer);
@@ -160,11 +191,21 @@ function _pararIdleTimer() {
   clearTimeout(_idleWarnTimer);
 }
 
+function _pararAuthActivityListeners() {
+  if (!_authActivityBound) return;
+  _authActivityEvents.forEach(ev => {
+    document.removeEventListener(ev, _resetIdleTimer);
+  });
+  _authActivityBound = false;
+}
+
 function _iniciarIdleTimer() {
   _resetIdleTimer();
-  ['mousemove', 'keydown', 'touchstart', 'click'].forEach(ev => {
+  if (_authActivityBound) return;
+  _authActivityEvents.forEach(ev => {
     document.addEventListener(ev, _resetIdleTimer, { passive: true });
   });
+  _authActivityBound = true;
 }
 
 function esconderLogin() {
@@ -191,3 +232,68 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
     btn.textContent = 'Entrar';
   }
 });
+
+function setAuthMode(modo) {
+  const isSignup = modo === 'signup';
+  document.getElementById('loginForm')?.classList.toggle('hidden', isSignup);
+  document.getElementById('signupForm')?.classList.toggle('hidden', !isSignup);
+  const btn = document.getElementById('btnAuthToggle');
+  if (btn) btn.textContent = isSignup ? 'Já tenho conta' : 'Criar nova conta';
+  const err = document.getElementById('loginError');
+  if (err) err.classList.add('hidden');
+}
+
+document.getElementById('btnAuthToggle')?.addEventListener('click', () => {
+  const signupAberto = !document.getElementById('signupForm')?.classList.contains('hidden');
+  setAuthMode(signupAberto ? 'login' : 'signup');
+});
+
+document.getElementById('signupForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('btnCriarConta');
+  const err = document.getElementById('loginError');
+  btn.disabled = true;
+  btn.textContent = 'Criando…';
+  err.classList.add('hidden');
+  try {
+    const nome = document.getElementById('signupNome').value.trim();
+    const empresa = document.getElementById('signupEmpresa').value.trim();
+    const email = document.getElementById('signupEmail').value.trim();
+    const senha = document.getElementById('signupSenha').value;
+    if (!nome || !empresa || !email || !senha) throw new Error('Preencha todos os campos.');
+
+    _criandoConta = true;
+    const { data: signUpData, error: signUpError } = await db.auth.signUp({
+      email,
+      password: senha,
+      options: { data: { nome, empresa } },
+    });
+    if (signUpError) throw signUpError;
+
+    const userId = signUpData?.user?.id;
+    if (!userId) throw new Error('Conta criada. Confirme o e-mail e faça login.');
+
+    const { error: rpcError } = await db.rpc('criar_empresa_e_usuario', {
+      p_nome_usuario: nome,
+      p_nome_empresa: empresa,
+    });
+    if (rpcError) {
+      throw new Error('Conta criada, mas o cadastro da empresa ainda não está habilitado no banco. Aplique a migration de onboarding e tente entrar novamente.');
+    }
+
+    toast('Conta criada. Você já pode usar o sistema.');
+    if (signUpData.session?.user) await onLogin(signUpData.session.user);
+    else await db.auth.signOut({ scope: 'local' });
+    setAuthMode('login');
+    document.getElementById('loginEmail').value = email;
+  } catch (er) {
+    err.textContent = er.message;
+    err.classList.remove('hidden');
+  } finally {
+    _criandoConta = false;
+    btn.disabled = false;
+    btn.textContent = 'Criar conta';
+  }
+});
+
+document.getElementById('btnLogout')?.addEventListener('click', fazerLogout);

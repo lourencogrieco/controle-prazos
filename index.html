@@ -66,7 +66,7 @@
             <path d="M5 5V3h6v2M5 10h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
         </button>
-        <button class="hdr-btn hdr-btn--logout" title="Sair" onclick="fazerLogout()">
+        <button class="hdr-btn hdr-btn--logout" id="btnLogout" title="Sair" type="button">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             <path d="M10.5 11L14 8l-3.5-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -2467,6 +2467,26 @@
       </div>
       <button type="submit" class="btn-primary" id="btnEntrar" style="width:100%;margin-top:8px">Entrar</button>
     </form>
+    <form id="signupForm" class="hidden">
+      <div class="field">
+        <span class="field-label">Nome</span>
+        <input type="text" id="signupNome" placeholder="Seu nome" autocomplete="name" required>
+      </div>
+      <div class="field">
+        <span class="field-label">Empresa / escritório</span>
+        <input type="text" id="signupEmpresa" placeholder="Nome da empresa" autocomplete="organization" required>
+      </div>
+      <div class="field">
+        <span class="field-label">E-mail</span>
+        <input type="email" id="signupEmail" placeholder="seu@email.com" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <span class="field-label">Senha</span>
+        <input type="password" id="signupSenha" placeholder="mínimo 6 caracteres" autocomplete="new-password" minlength="6" required>
+      </div>
+      <button type="submit" class="btn-primary" id="btnCriarConta" style="width:100%;margin-top:8px">Criar conta</button>
+    </form>
+    <button type="button" class="btn-outline" id="btnAuthToggle" style="width:100%;margin-top:12px">Criar nova conta</button>
   </div>
 </div>
 
@@ -3190,7 +3210,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/core.js?v=64"></script>
-<script src="js/auth.js?v=57"></script>
+<script src="js/auth.js?v=58"></script>
 <script src="js/mappers.js?v=56"></script>
 <script src="js/dashboard.js?v=60"></script>
 <script src="js/nav.js?v=59"></script>

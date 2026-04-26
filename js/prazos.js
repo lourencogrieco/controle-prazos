@@ -293,6 +293,17 @@ function rowClassPrazo(iso) {
 // ── Estado de paginação ───────────────────────────────────────────────
 let prazoPagAtual = 1;
 let prazoLinhas   = 10;
+let _prazoListSeq = 0;
+
+function prazoStatusParaDb(status) {
+  return {
+    'Pendente': 'pendente',
+    'Em andamento': 'em_andamento',
+    'Concluído': 'concluido',
+    'Cancelado': 'cancelado',
+    'Atrasado': 'atrasado',
+  }[status] || status;
+}
 
 function _prazosPaginacaoAtualizar(total) {
   const pages  = Math.max(1, Math.ceil(total / prazoLinhas));
@@ -318,26 +329,73 @@ function _prazosPaginacaoAtualizar(total) {
   if (btnPrx) btnPrx.disabled = prazoPagAtual >= pages;
 }
 
-function renderPrazosAba() {
-  const busca = (document.getElementById('buscaPrazosAba')?.value ?? '').toLowerCase();
+async function carregarPrazosPagina() {
+  const busca = postgrestIlikeTerm(document.getElementById('buscaPrazosAba')?.value ?? '');
   const st    = document.getElementById('filtroPrazosStatus')?.value ?? '';
   const resp  = document.getElementById('filtroPrazosResponsavel')?.value ?? '';
-
-  const lista = state.prazos.filter(p => {
-    const m = !busca ||
-      (p.pastaNr || '').toLowerCase().includes(busca) ||
-      (p.processo || '').toLowerCase().includes(busca) ||
-      (p.cliente || '').toLowerCase().includes(busca);
-    const respMatch = !resp || (p.responsavel || '').split(';').map(n => n.trim()).includes(resp);
-    return m && (!st || p.status === st) && respMatch;
-  });
-
-  _prazosPaginacaoAtualizar(lista.length);
   const inicio = (prazoPagAtual - 1) * prazoLinhas;
-  const slice  = lista.slice(inicio, inicio + prazoLinhas);
 
-  document.getElementById('tabelaPrazosAba').innerHTML = slice.length
-    ? slice.map(p => {
+  let query = db.from('prazos_lhub')
+    .select('*, pastas(numero, numero_processo, comarca)', { count: 'exact' })
+    .eq('empresa_id', state.empresaId)
+    .order('prazo', { ascending: true });
+
+  if (st) query = query.eq('status', prazoStatusParaDb(st));
+  if (resp) query = query.ilike('responsavel', `%${postgrestIlikeTerm(resp)}%`);
+  if (busca) {
+    const like = `%${busca}%`;
+    query = query.or([
+      `cliente.ilike.${like}`,
+      `tipo.ilike.${like}`,
+      `descricao.ilike.${like}`,
+      `responsavel.ilike.${like}`,
+    ].join(','));
+  }
+
+  const { data, count, error } = await query.range(inicio, inicio + prazoLinhas - 1);
+  if (error) throw error;
+  const lista = (data || []).map(row => {
+    const p = dbParaPrazo(row);
+    if (row.pastas) {
+      p.pastaNr = row.pastas.numero || '';
+      p.processo = row.pastas.numero_processo || '';
+      p.comarca = row.pastas.comarca || '';
+    } else {
+      _enrichPrazo(p);
+    }
+    _stateUpsert(state.prazos, p);
+    return p;
+  });
+  return { lista, total: count ?? lista.length };
+}
+
+async function renderPrazosAba() {
+  const seq = ++_prazoListSeq;
+  const tbody = document.getElementById('tabelaPrazosAba');
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="13" class="tbl-empty">Carregando prazos…</td></tr>`;
+
+  let lista = [];
+  let total = 0;
+  try {
+    ({ lista, total } = await carregarPrazosPagina());
+  } catch (err) {
+    if (seq !== _prazoListSeq) return;
+    tbody.innerHTML = `<tr><td colspan="13" class="tbl-empty">Erro ao carregar prazos: ${escHtml(err.message)}</td></tr>`;
+    return;
+  }
+  if (seq !== _prazoListSeq) return;
+
+  const pages = Math.max(1, Math.ceil(total / prazoLinhas));
+  if (prazoPagAtual > pages) {
+    prazoPagAtual = pages;
+    renderPrazosAba();
+    return;
+  }
+  _prazosPaginacaoAtualizar(total);
+
+  tbody.innerHTML = lista.length
+    ? lista.map(p => {
         // 1. link direto por ID
       let intimData = p.intimacaoId
         ? (state.intimacoes.find(i => i.id === p.intimacaoId)?.dataPublicacao || null)

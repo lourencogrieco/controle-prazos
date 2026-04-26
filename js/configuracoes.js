@@ -261,10 +261,78 @@ document.getElementById('novoClienteForm').addEventListener('submit', async e =>
 // ──────────────────────────────────────────────────────────────────────
 // GERENCIAR CLIENTES
 // ──────────────────────────────────────────────────────────────────────
-function renderListaClientes() {
+let clientesPagAtual = 1;
+let clientesLinhas = 10;
+let _clientesListSeq = 0;
+
+async function carregarClientesPagina() {
+  const busca = postgrestIlikeTerm(document.getElementById('buscaClientesGerenciar')?.value || '');
+  const inicio = (clientesPagAtual - 1) * clientesLinhas;
+  let query = db.from('clientes_lhub')
+    .select('*', { count: 'exact' })
+    .eq('empresa_id', state.empresaId)
+    .order('nome');
+
+  if (busca) {
+    const like = `%${busca}%`;
+    query = query.or([
+      `nome.ilike.${like}`,
+      `cpf_cnpj.ilike.${like}`,
+      `telefone.ilike.${like}`,
+      `cidade.ilike.${like}`,
+      `email.ilike.${like}`,
+    ].join(','));
+  }
+
+  const { data, count, error } = await query.range(inicio, inicio + clientesLinhas - 1);
+  if (error) throw error;
+  const lista = (data || []).map(dbParaCliente);
+  lista.forEach(c => _stateUpsert(state.clientes, c));
+  state.clientes.sort((a, b) => a.nome.localeCompare(b.nome));
+  return { lista, total: count ?? lista.length };
+}
+
+async function renderListaClientes() {
+  const seq = ++_clientesListSeq;
   const el = document.getElementById('listaClientes');
   if (!el) return;
-  if (!state.clientes.length) {
+  el.innerHTML = '<p style="color:var(--mu);font-size:var(--text-sm);padding:8px 0">Carregando clientes…</p>';
+
+  let clientes = [];
+  let total = 0;
+  try {
+    ({ lista: clientes, total } = await carregarClientesPagina());
+  } catch (err) {
+    if (seq !== _clientesListSeq) return;
+    el.innerHTML = `<p style="color:var(--danger);font-size:var(--text-sm);padding:8px 0">Erro ao carregar clientes: ${escHtml(err.message)}</p>`;
+    return;
+  }
+  if (seq !== _clientesListSeq) return;
+
+  const pages = Math.max(1, Math.ceil(total / clientesLinhas));
+  if (clientesPagAtual > pages) {
+    clientesPagAtual = pages;
+    renderListaClientes();
+    return;
+  }
+  const inicio = (clientesPagAtual - 1) * clientesLinhas;
+  const fim = Math.min(inicio + clientesLinhas, total);
+  const info = document.getElementById('clientesPaginacaoInfo');
+  if (info) info.textContent = total ? `Exibindo ${inicio + 1} - ${fim} de ${total}` : '0 registros';
+  const pgSel = document.getElementById('clientesPagina');
+  if (pgSel) {
+    pgSel.innerHTML = Array.from({ length: pages }, (_, i) =>
+      `<option value="${i + 1}" ${i + 1 === clientesPagAtual ? 'selected' : ''}>${i + 1}</option>`
+    ).join('');
+  }
+  const totalPg = document.getElementById('clientesTotalPaginas');
+  if (totalPg) totalPg.textContent = `de ${pages}`;
+  const btnAnt = document.getElementById('clientesPgAnterior');
+  const btnProx = document.getElementById('clientesPgProxima');
+  if (btnAnt) btnAnt.disabled = clientesPagAtual <= 1;
+  if (btnProx) btnProx.disabled = clientesPagAtual >= pages;
+
+  if (!clientes.length) {
     el.innerHTML = '<p style="color:var(--mu);font-size:var(--text-sm);padding:8px 0">Nenhum cliente cadastrado.</p>';
     return;
   }
@@ -276,7 +344,7 @@ function renderListaClientes() {
       <th style="text-align:left;padding:5px 8px;font-size:.68rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Cidade</th>
       <th style="width:72px;border-bottom:1px solid var(--br)"></th>
     </tr></thead>
-    <tbody>${state.clientes.map(c => `
+    <tbody>${clientes.map(c => `
       <tr>
         <td style="padding:6px 8px;font-size:.82rem;font-weight:600">${escHtml(c.nome)}</td>
         <td style="padding:6px 8px;font-size:.78rem;color:var(--mu)">${escHtml(c.tipo)}</td>
@@ -318,6 +386,29 @@ function fecharModalGerenciarClientes() {
 }
 document.getElementById('modalGerenciarClientes').addEventListener('click', e => {
   if (e.target === e.currentTarget) fecharModalGerenciarClientes();
+});
+document.getElementById('buscaClientesGerenciar')?.addEventListener('input', () => {
+  clientesPagAtual = 1;
+  renderListaClientes();
+});
+document.getElementById('clientesLinhasPorPagina')?.addEventListener('change', e => {
+  clientesLinhas = Number(e.target.value) || 10;
+  clientesPagAtual = 1;
+  renderListaClientes();
+});
+document.getElementById('clientesPagina')?.addEventListener('change', e => {
+  clientesPagAtual = Number(e.target.value) || 1;
+  renderListaClientes();
+});
+document.getElementById('clientesPgAnterior')?.addEventListener('click', () => {
+  if (clientesPagAtual > 1) {
+    clientesPagAtual--;
+    renderListaClientes();
+  }
+});
+document.getElementById('clientesPgProxima')?.addEventListener('click', () => {
+  clientesPagAtual++;
+  renderListaClientes();
 });
 
 // ──────────────────────────────────────────────────────────────────────

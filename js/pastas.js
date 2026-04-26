@@ -240,6 +240,7 @@ async function excluirPasta(id) {
 // ──────────────────────────────────────────────────────────────────────
 let pastaPagAtual = 1;
 let pastaLinhas   = 10;
+let _pastaListSeq = 0;
 
 function pastasVisiveis() {
   const busca = (document.getElementById('buscaPasta')?.value ?? '').trim().toLowerCase();
@@ -252,15 +253,59 @@ function pastasVisiveis() {
   );
 }
 
-function renderPastaList() {
-  const lista   = pastasVisiveis();
-  const total   = lista.length;
-  const pages   = Math.max(1, Math.ceil(total / pastaLinhas));
-  pastaPagAtual = Math.min(pastaPagAtual, pages);
-  const inicio  = (pastaPagAtual - 1) * pastaLinhas;
-  const slice   = lista.slice(inicio, inicio + pastaLinhas);
+async function carregarPastasPagina() {
+  const busca = postgrestIlikeTerm(document.getElementById('buscaPasta')?.value ?? '');
+  const inicio = (pastaPagAtual - 1) * pastaLinhas;
+  let query = db.from('pastas')
+    .select('*', { count: 'exact' })
+    .eq('empresa_id', state.empresaId)
+    .order('created_at', { ascending: false });
 
-  document.getElementById('tabelaPastasBody').innerHTML = slice.map(p => `
+  if (busca) {
+    const like = `%${busca}%`;
+    query = query.or([
+      `numero.ilike.${like}`,
+      `cliente.ilike.${like}`,
+      `tipo_acao.ilike.${like}`,
+      `parte_contraria.ilike.${like}`,
+      `numero_processo.ilike.${like}`,
+    ].join(','));
+  }
+
+  const { data, count, error } = await query.range(inicio, inicio + pastaLinhas - 1);
+  if (error) throw error;
+  const lista = (data || []).map(dbParaPasta);
+  lista.forEach(p => _stateUpsert(state.pastas, p));
+  _reconstruirIndicePastas();
+  return { lista, total: count ?? lista.length };
+}
+
+async function renderPastaList() {
+  const seq = ++_pastaListSeq;
+  const body = document.getElementById('tabelaPastasBody');
+  if (!body) return;
+  body.innerHTML = `<tr><td colspan="7" class="tbl-empty">Carregando pastas…</td></tr>`;
+
+  let lista = [];
+  let total = 0;
+  try {
+    ({ lista, total } = await carregarPastasPagina());
+  } catch (err) {
+    if (seq !== _pastaListSeq) return;
+    body.innerHTML = `<tr><td colspan="7" class="tbl-empty">Erro ao carregar pastas: ${escHtml(err.message)}</td></tr>`;
+    return;
+  }
+  if (seq !== _pastaListSeq) return;
+
+  const pages   = Math.max(1, Math.ceil(total / pastaLinhas));
+  if (pastaPagAtual > pages) {
+    pastaPagAtual = pages;
+    renderPastaList();
+    return;
+  }
+  const inicio  = (pastaPagAtual - 1) * pastaLinhas;
+
+  body.innerHTML = lista.map(p => `
     <tr data-pasta="${escAttr(p.numero)}">
       <td><input type="checkbox" onclick="event.stopPropagation()"></td>
       <td><span class="pasta-link">${escHtml(p.numero)}</span></td>

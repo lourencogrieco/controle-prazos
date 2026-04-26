@@ -166,6 +166,10 @@ function safeExternalUrl(value) {
   }
 }
 
+function postgrestIlikeTerm(value) {
+  return String(value || '').trim().replace(/[,%]/g, ' ');
+}
+
 function statusClass(s) {
   if (s === 'Concluído' || s === 'Concluída') return 'concluido';
   if (s === 'Em andamento') return 'andamento';

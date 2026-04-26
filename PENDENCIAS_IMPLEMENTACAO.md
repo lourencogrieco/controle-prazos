@@ -34,12 +34,14 @@ Este arquivo registra o que ainda falta implementar ou revisar para continuar a 
 - Sanitizacao expandida para os renders restantes de `js/dashboard.js`, `js/pastas.js`, `js/tarefas.js`, `js/agenda.js`, `js/prazos.js`, `js/atividades.js` e `js/relatorio.js`: cards, tabelas, selects, tooltips e exports HTML/PDF agora usam escape em textos e atributos dinamicos.
 - Observabilidade inicial da sincronizacao PJe: criada tabela `pje_sync_logs`, cron e sincronizacao manual registram contadores/erros, UI exibe ultima importacao com status e totais. Validado com login de teste e Edge Function remota.
 - Historico visual da sincronizacao PJe: aba de intimacoes ganhou modal "Histórico PJe" com ultimos 20 logs, filtro por status, origem, periodo, totais, nomes pesquisados e detalhes de erro.
+- Paginacao server-side inicial: tabelas de Pastas e Prazos passaram a buscar a pagina atual no Supabase com `range()` e `count: exact`, mantendo o estado global para nao quebrar dashboard, modais e vinculos existentes.
+- Paginacao server-side expandida: modal de Clientes ganhou busca/paginacao server-side e Pipeline CRM passou a carregar ate 30 oportunidades por coluna com contador real por status.
 
 ## Revisao da auditoria de 26/04/2026
 
 O que faz sentido manter como prioridade:
 
-- Performance: `carregarDados()` ainda busca muitas tabelas inteiras no carregamento inicial. Apenas intimacoes tem limite parcial de 200 registros.
+- Performance: Pastas, Prazos, Clientes e Pipeline CRM ja têm carregamento paginado/limitado nas telas principais, mas `carregarDados()` ainda busca muitas tabelas inteiras para dashboards, modais e vinculos. O proximo passo e separar resumos/listas para reduzir o carregamento inicial real.
 - Sincronizacao PJe: o cron agora usa a RPC de importacao preservando status, registra log resumido e a UI tem historico visual dos ultimos logs. Falta apenas repetir em rotina real com uma intimação real quando houver caso adequado.
 - Sanitizacao: os principais renders de intimações, documentos, financeiro, configuracoes, dashboard, pastas, tarefas, agenda, prazos, atividades e relatorios ja usam helpers comuns de escape. O risco restante e revisar novas telas/codigo futuro para manter o padrao.
 - Numero de pasta: `gerarNumeroPasta()` continua client-side e pode gerar duplicidade com usuarios simultaneos.
@@ -66,7 +68,10 @@ O que estava desatualizado ou deve sair do foco imediato:
    - Considerar detalhes por nome pesquisado em tabela separada se a busca por muitos nomes ficar dificil de ler.
 
 3. Paginacao server-side nas listas principais
-   - Prioridade: pastas, prazos, clientes, cobrancas/despesas e oportunidades.
+   - Pastas e Prazos ja buscam a pagina atual com `range()` e `count: exact`.
+   - Clientes ja buscam a pagina atual com `range()` e `count: exact`.
+   - Pipeline CRM ja carrega limite por coluna com contador real por status.
+   - Proxima prioridade: cobrancas, contas a pagar e despesas.
    - Evitar carregar tudo no `carregarDados()`; carregar resumo/dashboard separado da lista paginada.
    - Manter cache apenas para dados pequenos e estaticos, como areas e tipos de pasta.
 
@@ -164,10 +169,10 @@ A correcao de intimações arquivadas, a sanitizacao dos principais renders, a o
 
 Passos sugeridos:
 
-1. Comecar por pastas e prazos, que impactam o carregamento geral.
-2. Buscar pagina atual no Supabase com `range()` e filtros server-side.
-3. Separar consultas de resumo/dashboard das listas completas.
-4. Repetir o padrao para clientes, cobrancas/despesas e oportunidades.
+1. Repetir o padrao de `range()` e `count: exact` para cobrancas, contas a pagar e despesas.
+2. Separar consultas de resumo/dashboard das listas completas.
+3. Reduzir gradualmente as tabelas carregadas por `carregarDados()`.
+4. Validar cada tela com filtros e navegacao entre paginas.
 
 ## Arquivos mais relevantes
 

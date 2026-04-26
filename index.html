@@ -2664,10 +2664,33 @@
       <button class="modal-close" onclick="fecharModalGerenciarClientes()">✕</button>
     </div>
     <div class="modal-body">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:12px;align-items:center">
+        <label class="search-field" style="flex:1;max-width:320px">
+          <svg class="search-ico" width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M9.5 9.5l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <input type="text" id="buscaClientesGerenciar" placeholder="Pesquisar cliente">
+        </label>
         <button class="btn-primary btn-sm" onclick="fecharModalGerenciarClientes();abrirModalNovoCliente('gerenciar')">+ Novo Cliente</button>
       </div>
       <div id="listaClientes"></div>
+      <div class="tbl-pagination" style="margin-top:12px">
+        <div class="tbl-pg-left">
+          <select id="clientesLinhasPorPagina">
+            <option value="10">10 linhas</option>
+            <option value="20">20 linhas</option>
+            <option value="50">50 linhas</option>
+          </select>
+        </div>
+        <div class="tbl-pg-right">
+          <span id="clientesPaginacaoInfo">Exibindo 0 registros</span>
+          <button class="pg-btn" id="clientesPgAnterior">‹</button>
+          <select id="clientesPagina"><option value="1">1</option></select>
+          <span id="clientesTotalPaginas">de 1</span>
+          <button class="pg-btn" id="clientesPgProxima">›</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -3165,20 +3188,20 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/core.js?v=63"></script>
+<script src="js/core.js?v=64"></script>
 <script src="js/auth.js?v=57"></script>
 <script src="js/mappers.js?v=56"></script>
 <script src="js/dashboard.js?v=60"></script>
 <script src="js/nav.js?v=59"></script>
 <script src="js/atividades.js?v=51"></script>
-<script src="js/prospeccao.js?v=54"></script>
-<script src="js/configuracoes.js?v=58"></script>
+<script src="js/prospeccao.js?v=55"></script>
+<script src="js/configuracoes.js?v=59"></script>
 <script src="js/agenda.js?v=53"></script>
 <script src="js/prazo-calculo.js?v=1"></script>
 <script src="js/intimacoes.js?v=69"></script>
-<script src="js/prazos.js?v=58"></script>
+<script src="js/prazos.js?v=59"></script>
 <script src="js/tarefas.js?v=63"></script>
-<script src="js/pastas.js?v=61"></script>
+<script src="js/pastas.js?v=62"></script>
 <script src="js/relatorio.js?v=51"></script>
 <script src="js/andamentos.js?v=61"></script>
 <script src="js/documentos.js?v=58"></script>

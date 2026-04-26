@@ -14,28 +14,29 @@ const PIPELINE_COLUNAS = [
 
 function _oportCard(o) {
   const recusado = o.status === 'recusado';
-  return `<article class="req-card${recusado ? ' req-card--refused' : ''}" data-opo-id="${o.id}" draggable="true">
+  const id = escAttr(o.id);
+  return `<article class="req-card${recusado ? ' req-card--refused' : ''}" data-opo-id="${id}" draggable="true">
     <div class="req-body">
       <div class="req-tags">
-        ${o.area ? `<span class="tag tag--area">${o.area}</span>` : ''}
-        ${o.tipo ? `<span class="tag tag--type">${o.tipo}</span>` : ''}
+        ${o.area ? `<span class="tag tag--area">${escHtml(o.area)}</span>` : ''}
+        ${o.tipo ? `<span class="tag tag--type">${escHtml(o.tipo)}</span>` : ''}
         ${recusado ? '<span class="tag tag--refused">Recusado</span>' : ''}
       </div>
-      <p class="req-number" style="font-weight:600;margin:6px 0 4px">${o.titulo}</p>
-      ${o.tese ? `<p class="req-meta" style="font-size:.74rem;color:var(--mu)">${o.tese}</p>` : ''}
+      <p class="req-number" style="font-weight:600;margin:6px 0 4px">${escHtml(o.titulo)}</p>
+      ${o.tese ? `<p class="req-meta" style="font-size:.74rem;color:var(--mu)">${escHtml(o.tese)}</p>` : ''}
       ${o.valor ? `<p class="req-meta"><strong>Valor est.:</strong> ${formatCurrency(o.valor)}</p>` : ''}
-      ${o.motivoRecusa ? `<p class="req-refusal" style="color:var(--red);font-size:.74rem;margin-top:4px">Recusa: ${o.motivoRecusa}</p>` : ''}
+      ${o.motivoRecusa ? `<p class="req-refusal" style="color:var(--red);font-size:.74rem;margin-top:4px">Recusa: ${escHtml(o.motivoRecusa)}</p>` : ''}
     </div>
     <div class="req-foot">
       <span style="font-size:.72rem;color:var(--mu)">${o.data ? formatDate(o.data) : '—'}</span>
       <div style="display:flex;gap:4px">
-        <button class="btn-icon" title="Editar" onclick="event.stopPropagation();abrirModalOportunidade('${o.id}')">
+        <button class="btn-icon" title="Editar" onclick="event.stopPropagation();abrirModalOportunidade('${id}')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
             <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
           </svg>
         </button>
-        <button class="btn-icon btn-icon--danger" title="Excluir" onclick="event.stopPropagation();excluirOportunidade('${o.id}')">
+        <button class="btn-icon btn-icon--danger" title="Excluir" onclick="event.stopPropagation();excluirOportunidade('${id}')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
             <path d="M10 11v6M14 11v6M9 6V4h6v2"/>
@@ -48,23 +49,65 @@ function _oportCard(o) {
 
 // ── Render pipeline ───────────────────────────────────────────────────
 
-function renderPipeline() {
-  const busca = (document.getElementById('buscaPipeline')?.value || '').toLowerCase();
+let _pipelineSeq = 0;
+const PIPELINE_LIMITE_COLUNA = 30;
 
-  const lista = (state.oportunidades || []).filter(o => {
-    if (!busca) return true;
-    return (o.titulo + o.lead + o.area + o.tese).toLowerCase().includes(busca);
+async function carregarPipelineColuna(col) {
+  const busca = postgrestIlikeTerm(document.getElementById('buscaPipeline')?.value || '');
+  let query = db.from('oportunidades_crm')
+    .select('*', { count: 'exact' })
+    .eq('empresa_id', state.empresaId)
+    .eq('status', col.status)
+    .order('created_at', { ascending: false });
+  if (busca) {
+    const like = `%${busca}%`;
+    query = query.or([
+      `titulo.ilike.${like}`,
+      `lead.ilike.${like}`,
+      `area.ilike.${like}`,
+      `tese.ilike.${like}`,
+      `tipo.ilike.${like}`,
+    ].join(','));
+  }
+  const { data, count, error } = await query.range(0, PIPELINE_LIMITE_COLUNA - 1);
+  if (error) throw error;
+  const items = (data || []).map(dbParaOportunidade);
+  items.forEach(o => _stateUpsert(state.oportunidades, o));
+  return { col, items, total: count ?? items.length };
+}
+
+async function renderPipeline() {
+  const seq = ++_pipelineSeq;
+  PIPELINE_COLUNAS.forEach(col => {
+    const el = document.getElementById(col.elId);
+    if (!el) return;
+    el.innerHTML = '<div class="empty-state">Carregando…</div>';
   });
 
-  PIPELINE_COLUNAS.forEach(col => {
+  let resultados = [];
+  try {
+    resultados = await Promise.all(PIPELINE_COLUNAS.map(carregarPipelineColuna));
+  } catch (err) {
+    if (seq !== _pipelineSeq) return;
+    PIPELINE_COLUNAS.forEach(col => {
+      const el = document.getElementById(col.elId);
+      if (el) el.innerHTML = `<div class="empty-state">Erro ao carregar: ${escHtml(err.message)}</div>`;
+    });
+    return;
+  }
+  if (seq !== _pipelineSeq) return;
+
+  resultados.forEach(({ col, items, total }) => {
     const el = document.getElementById(col.elId);
     const countEl = document.getElementById(col.countId);
     if (!el) return;
-    const items = lista.filter(o => o.status === col.status);
+    const avisoLimite = total > items.length
+      ? `<div class="empty-state" style="font-size:.72rem">Mostrando ${items.length} de ${total}. Use a busca para refinar.</div>`
+      : '';
     el.innerHTML = items.length
-      ? items.map(_oportCard).join('')
+      ? items.map(_oportCard).join('') + avisoLimite
       : `<div class="empty-state">${col.empty}</div>`;
-    if (countEl) countEl.textContent = items.length;
+    if (countEl) countEl.textContent = total;
   });
 
   if (typeof updateMobileKanbanCounts === 'function') updateMobileKanbanCounts();

@@ -88,6 +88,92 @@ function resumoUltimaSyncPJe() {
   return `Última importação: ${quando} · ${status} · ${log.inseridas || 0} nova(s), ${log.atualizadas || 0} atualizada(s), ${log.ignoradas_arquivadas || 0} preservada(s)${erros}`;
 }
 
+function pjeOrigemLabel(origem) {
+  return {
+    manual_hoje: 'Manual: hoje',
+    manual_data: 'Manual: por data',
+    cron: 'Cron automático',
+    edge_function: 'Edge Function',
+  }[origem] || origem || '—';
+}
+
+function pjePeriodoLabel(log) {
+  const ini = log.data_inicio ? formatDate(log.data_inicio) : '';
+  const fim = log.data_fim ? formatDate(log.data_fim) : '';
+  if (ini && fim && ini !== fim) return `${ini} a ${fim}`;
+  return ini || fim || '—';
+}
+
+function renderHistoricoPJe() {
+  const tbody = document.getElementById('historicoPJeBody');
+  const resumoEl = document.getElementById('historicoPJeResumo');
+  if (!tbody) return;
+
+  const filtro = document.getElementById('filtroHistoricoPJeStatus')?.value || '';
+  const logs = (state.pjeSyncLogs || []).filter(log => {
+    if (filtro === 'ok') return !!log.ok;
+    if (filtro === 'erro') return !log.ok;
+    return true;
+  });
+
+  if (resumoEl) {
+    const total = state.pjeSyncLogs?.length || 0;
+    const erros = (state.pjeSyncLogs || []).filter(l => !l.ok).length;
+    resumoEl.textContent = `${total} sincronização${total !== 1 ? 'es' : ''} carregada${total !== 1 ? 's' : ''} · ${erros} com erro`;
+  }
+
+  tbody.innerHTML = logs.length
+    ? logs.map(log => {
+        const quando = log.created_at ? new Date(log.created_at).toLocaleString('pt-BR') : '—';
+        const nomes = Array.isArray(log.nomes) ? log.nomes : [];
+        const erros = Array.isArray(log.erros) ? log.erros : [];
+        const erroResumo = erros.length
+          ? `<details><summary>${erros.length} erro${erros.length !== 1 ? 's' : ''}</summary><div style="margin-top:6px;color:var(--red);font-size:.72rem">${erros.map(e => `<div>${escHtml(e)}</div>`).join('')}</div></details>`
+          : '<span style="color:var(--mu)">—</span>';
+        return `<tr>
+          <td style="white-space:nowrap;font-size:.75rem">${escHtml(quando)}</td>
+          <td><span class="status-pill ${log.ok ? 'status-pill--done' : 'status-pill--warn'}">${log.ok ? 'OK' : 'Erro'}</span></td>
+          <td>${escHtml(pjeOrigemLabel(log.origem))}</td>
+          <td style="white-space:nowrap">${escHtml(pjePeriodoLabel(log))}</td>
+          <td style="font-size:.74rem">
+            ${Number(log.inseridas || 0)} nova(s)<br>
+            ${Number(log.atualizadas || 0)} atualizada(s)<br>
+            ${Number(log.ignoradas_arquivadas || 0)} preservada(s)
+          </td>
+          <td style="font-size:.74rem">${nomes.length ? escHtml(nomes.join(', ')) : '—'}</td>
+          <td style="font-size:.74rem;max-width:260px">${erroResumo}</td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="7" class="tbl-empty">Nenhum log encontrado para o filtro selecionado.</td></tr>`;
+}
+
+function abrirModalHistoricoPJe() {
+  renderHistoricoPJe();
+  document.getElementById('modalHistoricoPJe')?.classList.add('open');
+}
+
+function fecharModalHistoricoPJe() {
+  document.getElementById('modalHistoricoPJe')?.classList.remove('open');
+}
+
+async function recarregarHistoricoPJe() {
+  if (!state.empresaId) return;
+  const btn = document.querySelector('#modalHistoricoPJe .btn-outline[onclick="recarregarHistoricoPJe()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Recarregando…'; }
+  try {
+    const { data, error } = await db.from('pje_sync_logs')
+      .select('*')
+      .eq('empresa_id', state.empresaId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (error) { toast('Erro ao carregar histórico PJe: ' + error.message, 'error'); return; }
+    state.pjeSyncLogs = data || [];
+    renderHistoricoPJe();
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Recarregar'; }
+  }
+}
+
 async function registrarLogSyncPJe({ origem, dataInicio, dataFim, nomes, resumo, erros = [] }) {
   if (!state.empresaId) return;
   const row = {
@@ -107,7 +193,8 @@ async function registrarLogSyncPJe({ origem, dataInicio, dataFim, nomes, resumo,
     console.warn('[pje_sync_logs] falha ao registrar:', error.message);
     return;
   }
-  state.pjeSyncLogs = [data, ...(state.pjeSyncLogs || [])].slice(0, 5);
+  state.pjeSyncLogs = [data, ...(state.pjeSyncLogs || [])].slice(0, 20);
+  renderHistoricoPJe();
 }
 
 function textoLegivelIntimacao(texto) {

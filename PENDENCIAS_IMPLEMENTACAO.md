@@ -33,13 +33,14 @@ Este arquivo registra o que ainda falta implementar ou revisar para continuar a 
 - Sanitizacao expandida para helpers comuns em `js/core.js` e para renders de `js/documentos.js`, `js/financeiro.js` e `js/configuracoes.js`: textos/atributos vindos de usuario passam por escape, recibos nao recebem mais payload JSON no `onclick` e selects/tabelas de clientes, modelos, auditoria, documentos e financeiro foram revisados.
 - Sanitizacao expandida para os renders restantes de `js/dashboard.js`, `js/pastas.js`, `js/tarefas.js`, `js/agenda.js`, `js/prazos.js`, `js/atividades.js` e `js/relatorio.js`: cards, tabelas, selects, tooltips e exports HTML/PDF agora usam escape em textos e atributos dinamicos.
 - Observabilidade inicial da sincronizacao PJe: criada tabela `pje_sync_logs`, cron e sincronizacao manual registram contadores/erros, UI exibe ultima importacao com status e totais. Validado com login de teste e Edge Function remota.
+- Historico visual da sincronizacao PJe: aba de intimacoes ganhou modal "Histórico PJe" com ultimos 20 logs, filtro por status, origem, periodo, totais, nomes pesquisados e detalhes de erro.
 
 ## Revisao da auditoria de 26/04/2026
 
 O que faz sentido manter como prioridade:
 
 - Performance: `carregarDados()` ainda busca muitas tabelas inteiras no carregamento inicial. Apenas intimacoes tem limite parcial de 200 registros.
-- Sincronizacao PJe: o cron agora usa a RPC de importacao preservando status e registra log resumido; migration/deploy/teste tecnico e validacao pela UI com intimação controlada foram feitos. Falta apenas repetir em rotina real com uma intimação real quando houver caso adequado.
+- Sincronizacao PJe: o cron agora usa a RPC de importacao preservando status, registra log resumido e a UI tem historico visual dos ultimos logs. Falta apenas repetir em rotina real com uma intimação real quando houver caso adequado.
 - Sanitizacao: os principais renders de intimações, documentos, financeiro, configuracoes, dashboard, pastas, tarefas, agenda, prazos, atividades e relatorios ja usam helpers comuns de escape. O risco restante e revisar novas telas/codigo futuro para manter o padrao.
 - Numero de pasta: `gerarNumeroPasta()` continua client-side e pode gerar duplicidade com usuarios simultaneos.
 - Produto: area do cliente, onboarding, billing, notificacoes confiaveis e DRE/fluxo de caixa seguem sendo os maiores gaps para SaaS publico.
@@ -59,10 +60,10 @@ O que estava desatualizado ou deve sair do foco imediato:
    - Em novas telas, evitar interpolacao direta de dados de usuario em `innerHTML`.
    - Trocar handlers inline com payload dinamico por `data-*` + event listeners quando houver dados externos complexos.
 
-2. Melhorar historico visual da sincronizacao PJe
-   - Criar painel/modal simples com ultimas sincronizacoes.
-   - Mostrar detalhes por nome pesquisado quando houver erro.
-   - Permitir limpar/filtrar logs antigos se o volume crescer.
+2. Evoluir historico visual da sincronizacao PJe
+   - Modal de historico com ultimos 20 logs ja implementado.
+   - Adicionar limpeza/retencao automatica de logs antigos se o volume crescer.
+   - Considerar detalhes por nome pesquisado em tabela separada se a busca por muitos nomes ficar dificil de ler.
 
 3. Paginacao server-side nas listas principais
    - Prioridade: pastas, prazos, clientes, cobrancas/despesas e oportunidades.
@@ -155,18 +156,18 @@ O que estava desatualizado ou deve sair do foco imediato:
 
 Prioridade 1:
 
-Melhorar historico visual da sincronizacao PJe.
+Paginacao server-side nas listas principais.
 
 Motivo:
 
-A correcao de intimações arquivadas, a sanitizacao dos principais renders e a observabilidade basica do PJe ja foram encaminhadas. O proximo ganho pratico e transformar os logs de sincronizacao em um historico visual consultavel, para diagnosticar falhas sem depender do console/Supabase.
+A correcao de intimações arquivadas, a sanitizacao dos principais renders, a observabilidade basica do PJe e o historico visual de sincronizacao ja foram encaminhados. O proximo ganho pratico e reduzir carga inicial e melhorar escalabilidade das listas grandes.
 
 Passos sugeridos:
 
-1. Criar painel/modal com ultimas sincronizacoes.
-2. Mostrar status, data, totais e mensagem de erro.
-3. Adicionar filtro por status quando houver volume.
-4. Validar com sincronizacao manual e cron.
+1. Comecar por pastas e prazos, que impactam o carregamento geral.
+2. Buscar pagina atual no Supabase com `range()` e filtros server-side.
+3. Separar consultas de resumo/dashboard das listas completas.
+4. Repetir o padrao para clientes, cobrancas/despesas e oportunidades.
 
 ## Arquivos mais relevantes
 

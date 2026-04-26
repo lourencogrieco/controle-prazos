@@ -263,25 +263,41 @@ document.getElementById('signupForm')?.addEventListener('submit', async e => {
     if (!nome || !empresa || !email || !senha) throw new Error('Preencha todos os campos.');
 
     _criandoConta = true;
-    const { data: signUpData, error: signUpError } = await db.auth.signUp({
+    let { data: signUpData, error: signUpError } = await db.auth.signUp({
       email,
       password: senha,
       options: { data: { nome, empresa } },
     });
-    if (signUpError) throw signUpError;
+    if (signUpError) {
+      const jaExiste = /already|registered|exists|user/i.test(signUpError.message || '');
+      if (!jaExiste) throw signUpError;
+      const loginExistente = await db.auth.signInWithPassword({ email, password: senha });
+      if (loginExistente.error) {
+        throw new Error('Este e-mail já existe. Use "Já tenho conta" ou informe a senha correta para concluir o vínculo da empresa.');
+      }
+      signUpData = loginExistente.data;
+    }
 
     const userId = signUpData?.user?.id;
     if (!userId) throw new Error('Conta criada. Confirme o e-mail e faça login.');
+
+    if (!signUpData.session) {
+      const loginNovo = await db.auth.signInWithPassword({ email, password: senha });
+      if (loginNovo.error) {
+        throw new Error('Conta criada. Confirme o e-mail e depois entre com sua senha para concluir o cadastro da empresa.');
+      }
+      signUpData = loginNovo.data;
+    }
 
     const { error: rpcError } = await db.rpc('criar_empresa_e_usuario', {
       p_nome_usuario: nome,
       p_nome_empresa: empresa,
     });
     if (rpcError) {
-      throw new Error('Conta criada, mas o cadastro da empresa ainda não está habilitado no banco. Aplique a migration de onboarding e tente entrar novamente.');
+      throw new Error('Conta autenticada, mas não foi possível cadastrar a empresa: ' + rpcError.message);
     }
 
-    toast('Conta criada. Você já pode usar o sistema.');
+    toast('Conta e empresa cadastradas. Você já pode usar o sistema.');
     if (signUpData.session?.user) await onLogin(signUpData.session.user);
     else await db.auth.signOut({ scope: 'local' });
     setAuthMode('login');

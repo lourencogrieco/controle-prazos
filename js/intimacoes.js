@@ -250,11 +250,11 @@ function renderIntimacoesAba() {
     if (vinculo === 'vinculadas' && !temPasta) return false;
     if (vinculo === 'sem_vinculo' && temPasta) return false;
     const m = !busca ||
-      i.processo.toLowerCase().includes(busca) ||
-      i.orgao.toLowerCase().includes(busca) ||
-      i.tribunal.toLowerCase().includes(busca) ||
-      i.nomeClasse.toLowerCase().includes(busca) ||
-      i.tipoDocumento.toLowerCase().includes(busca);
+      String(i.processo || '').toLowerCase().includes(busca) ||
+      String(i.orgao || '').toLowerCase().includes(busca) ||
+      String(i.tribunal || '').toLowerCase().includes(busca) ||
+      String(i.nomeClasse || '').toLowerCase().includes(busca) ||
+      String(i.tipoDocumento || '').toLowerCase().includes(busca);
     const dataOk = (!de || i.dataPublicacao >= de) && (!ate || i.dataPublicacao <= ate);
     return m && (!status || st === status) && dataOk;
   });

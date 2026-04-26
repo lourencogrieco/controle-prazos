@@ -36,15 +36,12 @@ Este arquivo registra o que ainda falta implementar ou revisar para continuar a 
 - Historico visual da sincronizacao PJe: aba de intimacoes ganhou modal "Histórico PJe" com ultimos 20 logs, filtro por status, origem, periodo, totais, nomes pesquisados e detalhes de erro.
 - Paginacao server-side inicial: tabelas de Pastas e Prazos passaram a buscar a pagina atual no Supabase com `range()` e `count: exact`, mantendo o estado global para nao quebrar dashboard, modais e vinculos existentes.
 - Paginacao server-side expandida: modal de Clientes ganhou busca/paginacao server-side e Pipeline CRM passou a carregar ate 30 oportunidades por coluna com contador real por status.
-- Paginacao server-side no Financeiro: tabelas de Cobranças, Contas a Pagar e Despesas Reembolsáveis ganharam controles de página/linhas e passaram a buscar a página atual com filtros no Supabase.
-- Resumo financeiro separado das listas: cards da visão geral, próximos vencimentos e alertas financeiros agora fazem consultas recortadas no Supabase em vez de depender das listas completas em memória.
-- Dashboard geral separado parcialmente: cards, alertas, próximos prazos, tarefas pendentes, agenda da semana e riscos críticos agora usam consultas leves/limitadas no Supabase em vez de depender das listas completas carregadas no estado global.
 
 ## Revisao da auditoria de 26/04/2026
 
 O que faz sentido manter como prioridade:
 
-- Performance: Pastas, Prazos, Clientes, Pipeline CRM e tabelas financeiras ja têm carregamento paginado/limitado nas telas principais; a visão geral financeira e o dashboard principal ja usam consultas separadas. `carregarDados()` ainda busca muitas tabelas inteiras para produtividade do dashboard, modais, relatorios e vinculos.
+- Performance: Pastas, Prazos, Clientes e Pipeline CRM ja têm carregamento paginado/limitado nas telas principais, mas `carregarDados()` ainda busca muitas tabelas inteiras para dashboards, modais e vinculos. O proximo passo e separar resumos/listas para reduzir o carregamento inicial real.
 - Sincronizacao PJe: o cron agora usa a RPC de importacao preservando status, registra log resumido e a UI tem historico visual dos ultimos logs. Falta apenas repetir em rotina real com uma intimação real quando houver caso adequado.
 - Sanitizacao: os principais renders de intimações, documentos, financeiro, configuracoes, dashboard, pastas, tarefas, agenda, prazos, atividades e relatorios ja usam helpers comuns de escape. O risco restante e revisar novas telas/codigo futuro para manter o padrao.
 - Numero de pasta: `gerarNumeroPasta()` continua client-side e pode gerar duplicidade com usuarios simultaneos.
@@ -74,10 +71,8 @@ O que estava desatualizado ou deve sair do foco imediato:
    - Pastas e Prazos ja buscam a pagina atual com `range()` e `count: exact`.
    - Clientes ja buscam a pagina atual com `range()` e `count: exact`.
    - Pipeline CRM ja carrega limite por coluna com contador real por status.
-   - Financeiro ja pagina Cobrancas, Contas a Pagar e Despesas Reembolsaveis.
-   - Visao geral financeira ja usa consultas separadas para cards/alertas.
-   - Dashboard principal ja usa consultas leves para cards, alertas, listas semanais e riscos.
-   - Evitar carregar tudo no `carregarDados()`; separar produtividade, modais e relatorios das listas completas.
+   - Proxima prioridade: cobrancas, contas a pagar e despesas.
+   - Evitar carregar tudo no `carregarDados()`; carregar resumo/dashboard separado da lista paginada.
    - Manter cache apenas para dados pequenos e estaticos, como areas e tipos de pasta.
 
 4. Geracao atomica de numero de pasta
@@ -174,9 +169,9 @@ A correcao de intimações arquivadas, a sanitizacao dos principais renders, a o
 
 Passos sugeridos:
 
-1. Separar produtividade do dashboard das listas completas.
-2. Reduzir gradualmente as tabelas carregadas por `carregarDados()`.
-3. Criar consultas leves para modais, vinculos e relatorios que ainda dependem do estado global completo.
+1. Repetir o padrao de `range()` e `count: exact` para cobrancas, contas a pagar e despesas.
+2. Separar consultas de resumo/dashboard das listas completas.
+3. Reduzir gradualmente as tabelas carregadas por `carregarDados()`.
 4. Validar cada tela com filtros e navegacao entre paginas.
 
 ## Arquivos mais relevantes

@@ -81,69 +81,17 @@ function renderFinanceiro() {
 
 // ── Visão Geral ───────────────────────────────────────────────────────
 
-let _finResumoSeq = 0;
-
-async function carregarFinResumo() {
+function renderFinVisaoGeral() {
   const hoje     = new Date().toISOString().slice(0, 10);
   const mesAtual = hoje.slice(0, 7);
   const em7dias  = new Date(); em7dias.setDate(em7dias.getDate() + 7);
   const em7iso   = em7dias.toISOString().slice(0, 10);
-  const tresDiasAtras = new Date();
-  tresDiasAtras.setDate(tresDiasAtras.getDate() - 3);
-  const tresDiasAtrasIso = tresDiasAtras.toISOString().slice(0, 10);
-  const mes = _mesRange(mesAtual);
 
-  const [
-    cobsMesRes,
-    contsMesRes,
-    cobsPendRes,
-    contsPendRes,
-    proximosRes,
-    proximasContasRes,
-    despesasPendentesRes,
-    alertasRes,
-  ] = await Promise.all([
-    db.from('cobrancas').select('*').eq('empresa_id', state.empresaId).gte('data_vencimento', mes.ini).lt('data_vencimento', mes.fimExclusivo),
-    db.from('contas_pagar').select('*').eq('empresa_id', state.empresaId).gte('data_vencimento', mes.ini).lt('data_vencimento', mes.fimExclusivo),
-    db.from('cobrancas').select('*').eq('empresa_id', state.empresaId).neq('status', 'pago'),
-    db.from('contas_pagar').select('*').eq('empresa_id', state.empresaId).neq('status', 'pago'),
-    db.from('cobrancas').select('*').eq('empresa_id', state.empresaId).neq('status', 'pago').gte('data_vencimento', hoje).lte('data_vencimento', em7iso).order('data_vencimento', { ascending: true }).limit(8),
-    db.from('contas_pagar').select('*').eq('empresa_id', state.empresaId).neq('status', 'pago').gte('data_vencimento', hoje).lte('data_vencimento', em7iso).order('data_vencimento', { ascending: true }).limit(8),
-    db.from('despesas').select('*').eq('empresa_id', state.empresaId).neq('status', 'reembolsado').order('data', { ascending: true }).limit(8),
-    db.from('cobrancas').select('*').eq('empresa_id', state.empresaId).neq('status', 'pago').gte('data_vencimento', tresDiasAtrasIso).lt('data_vencimento', hoje),
-  ]);
-
-  const erro = [cobsMesRes, contsMesRes, cobsPendRes, contsPendRes, proximosRes, proximasContasRes, despesasPendentesRes, alertasRes].find(r => r.error)?.error;
-  if (erro) throw erro;
-
-  return {
-    hoje,
-    em7iso,
-    cobsMes: (cobsMesRes.data || []).map(dbParaCobranca),
-    contsMes: (contsMesRes.data || []).map(dbParaContaPagar),
-    cobsPend: (cobsPendRes.data || []).map(dbParaCobranca),
-    contsPend: (contsPendRes.data || []).map(dbParaContaPagar),
-    proximos: (proximosRes.data || []).map(dbParaCobranca),
-    proximasContas: (proximasContasRes.data || []).map(dbParaContaPagar),
-    despPendentes: (despesasPendentesRes.data || []).map(dbParaDespesa),
-    vencidasRecentes: (alertasRes.data || []).map(dbParaCobranca),
-  };
-}
-
-async function renderFinVisaoGeral() {
-  const seq = ++_finResumoSeq;
-  let resumo;
-  try {
-    resumo = await carregarFinResumo();
-  } catch (err) {
-    const alertasEl = document.getElementById('finAlertas');
-    if (alertasEl) alertasEl.innerHTML = `<div class="fin-alerta">Não foi possível carregar o resumo financeiro: ${escHtml(err.message)}</div>`;
-    return;
-  }
-  if (seq !== _finResumoSeq) return;
+  const cobs = state.cobrancas || [];
+  const conts = state.contasPagar || [];
 
   // ── Mês atual – Cobranças ──────────────────────────────────────────
-  const cobsMes = resumo.cobsMes;
+  const cobsMes = cobs.filter(c => (c.vencimento || '').startsWith(mesAtual));
   const cobsMesBruto     = cobsMes.reduce((s, c) => s + c.valor, 0);
   const cobsMesPend      = cobsMes.filter(c => _statusCob(c) !== 'pago');
   const cobsMesPago      = cobsMes.filter(c => c.status === 'pago');
@@ -151,7 +99,7 @@ async function renderFinVisaoGeral() {
   const cobsMesPagoVal   = cobsMesPago.reduce((s, c) => s + (c.valorPago || c.valor), 0);
 
   // ── Mês atual – Contas a Pagar ─────────────────────────────────────
-  const contsMes     = resumo.contsMes;
+  const contsMes     = conts.filter(c => (c.vencimento || '').startsWith(mesAtual));
   const contsMesPend = contsMes.filter(c => _statusCont(c) !== 'pago');
   const contsMesPago = contsMes.filter(c => c.status === 'pago');
   const contsMesPendVal = contsMesPend.reduce((s, c) => s + c.valor, 0);
@@ -160,15 +108,15 @@ async function renderFinVisaoGeral() {
   const resultadoMes = cobsMesPagoVal - contsMesPagoVal;
 
   // ── Consolidado ────────────────────────────────────────────────────
-  const cobsPend    = resumo.cobsPend;
-  const cobsVencidas = cobsPend.filter(c => _statusCob(c) === 'vencido');
-  const cobsAVencer = cobsPend.filter(c => _statusCob(c) === 'pendente' && c.vencimento > resumo.hoje && c.vencimento <= resumo.em7iso);
+  const cobsPend    = cobs.filter(c => _statusCob(c) !== 'pago');
+  const cobsVencidas = cobs.filter(c => _statusCob(c) === 'vencido');
+  const cobsAVencer = cobs.filter(c => _statusCob(c) === 'pendente' && c.vencimento > hoje && c.vencimento <= em7iso);
 
   const cobsPendVal    = cobsPend.reduce((s, c) => s + c.valor, 0);
   const cobsVencidasVal = cobsVencidas.reduce((s, c) => s + c.valor, 0);
   const cobsAVencerVal  = cobsAVencer.reduce((s, c) => s + c.valor, 0);
 
-  const contsPend    = resumo.contsPend;
+  const contsPend    = conts.filter(c => _statusCont(c) !== 'pago');
   const contsPendVal = contsPend.reduce((s, c) => s + c.valor, 0);
 
   const eqResultado = cobsPendVal - contsPendVal;
@@ -211,7 +159,10 @@ async function renderFinVisaoGeral() {
   _setText('finEqResultadoSub', eqResultado >= 0 ? 'resultado positivo' : 'resultado negativo');
 
   // ── Próximos vencimentos — cobranças (7 dias) ─────────────────────
-  const proximos = resumo.proximos;
+  const proximos = cobs
+    .filter(c => _statusCob(c) !== 'pago' && c.vencimento >= hoje && c.vencimento <= em7iso)
+    .sort((a, b) => a.vencimento.localeCompare(b.vencimento))
+    .slice(0, 8);
 
   const proxEl = document.getElementById('finProximos');
   if (proxEl) {
@@ -235,7 +186,10 @@ async function renderFinVisaoGeral() {
   }
 
   // ── Contas a pagar próximas (7 dias) ──────────────────────────────
-  const proximasContas = resumo.proximasContas;
+  const proximasContas = conts
+    .filter(c => _statusCont(c) !== 'pago' && c.vencimento >= hoje && c.vencimento <= em7iso)
+    .sort((a, b) => a.vencimento.localeCompare(b.vencimento))
+    .slice(0, 8);
 
   const proxContEl = document.getElementById('finProximosContas');
   if (proxContEl) {
@@ -259,7 +213,10 @@ async function renderFinVisaoGeral() {
   }
 
   // ── Despesas reembolsáveis pendentes ──────────────────────────────
-  const despPendentes = resumo.despPendentes;
+  const despPendentes = (state.despesas || [])
+    .filter(d => d.status !== 'reembolsado')
+    .sort((a, b) => (a.data || '').localeCompare(b.data || ''))
+    .slice(0, 8);
 
   const despEl = document.getElementById('finDespesasPendentes');
   if (despEl) {
@@ -283,7 +240,7 @@ async function renderFinVisaoGeral() {
   // ── Alertas ────────────────────────────────────────────────────────
   const alertasEl = document.getElementById('finAlertas');
   if (alertasEl) {
-    const vencidasHoje = resumo.vencidasRecentes;
+    const vencidasHoje = cobs.filter(c => _statusCob(c) === 'vencido' && daysUntil(c.vencimento) >= -3);
     alertasEl.innerHTML = vencidasHoje.length
       ? `<div class="fin-alerta">⚠ ${vencidasHoje.length} cobrança${vencidasHoje.length > 1 ? 's' : ''} vencida${vencidasHoje.length > 1 ? 's' : ''} nos últimos 3 dias — <button class="btn-link-sm" onclick="finMudarAba('cobrancas')">ver cobranças</button></div>`
       : '';
@@ -295,83 +252,13 @@ function _setText(id, txt) {
   if (el) el.textContent = txt;
 }
 
-const _finPag = {
-  cob: { pagina: 1, linhas: 10, seq: 0 },
-  cont: { pagina: 1, linhas: 10, seq: 0 },
-  desp: { pagina: 1, linhas: 10, seq: 0 },
-};
-
-function _mesRange(ym) {
-  if (!ym) return null;
-  const [y, m] = ym.split('-').map(Number);
-  if (!y || !m) return null;
-  const ini = `${y}-${String(m).padStart(2, '0')}-01`;
-  const prox = new Date(y, m, 1);
-  const fimExclusivo = `${prox.getFullYear()}-${String(prox.getMonth() + 1).padStart(2, '0')}-01`;
-  return { ini, fimExclusivo };
-}
-
-function _statusFinanceiroQuery(query, status, dateCol) {
-  const hoje = new Date().toISOString().slice(0, 10);
-  if (status === 'pago') return query.eq('status', 'pago');
-  if (status === 'vencido') return query.neq('status', 'pago').lt(dateCol, hoje);
-  if (status === 'pendente') return query.neq('status', 'pago').gte(dateCol, hoje);
-  return query;
-}
-
-function _renderFinPager(kind, total) {
-  const cfg = _finPag[kind];
-  const prefix = kind === 'cob' ? 'finCob' : kind === 'cont' ? 'finCont' : 'finDesp';
-  const pages = Math.max(1, Math.ceil(total / cfg.linhas));
-  if (cfg.pagina > pages) cfg.pagina = pages;
-  const inicio = (cfg.pagina - 1) * cfg.linhas;
-  const fim = Math.min(inicio + cfg.linhas, total);
-  _setText(`${prefix}PaginacaoInfo`, total ? `Exibindo ${inicio + 1} - ${fim} de ${total}` : '0 registros');
-  const sel = document.getElementById(`${prefix}Pagina`);
-  if (sel) {
-    sel.innerHTML = Array.from({ length: pages }, (_, i) =>
-      `<option value="${i + 1}" ${i + 1 === cfg.pagina ? 'selected' : ''}>${i + 1}</option>`
-    ).join('');
-  }
-  _setText(`${prefix}TotalPaginas`, `de ${pages}`);
-  const btnAnt = document.getElementById(`${prefix}PgAnterior`);
-  const btnProx = document.getElementById(`${prefix}PgProxima`);
-  if (btnAnt) btnAnt.disabled = cfg.pagina <= 1;
-  if (btnProx) btnProx.disabled = cfg.pagina >= pages;
-}
-
 // ── Cobranças ─────────────────────────────────────────────────────────
 
-async function carregarFinCobrancasPagina() {
-  const busca  = postgrestIlikeTerm(document.getElementById('buscaCob')?.value || '');
+function renderFinCobrancas() {
+  const busca  = (document.getElementById('buscaCob')?.value || '').toLowerCase();
   const fStatus = document.getElementById('filtroFinCobStatus')?.value || '';
   const fCat    = document.getElementById('filtroFinCobCat')?.value || '';
   const fMes    = document.getElementById('filtroFinCobMes')?.value || '';
-  const cfg = _finPag.cob;
-  const inicio = (cfg.pagina - 1) * cfg.linhas;
-
-  let query = db.from('cobrancas')
-    .select('*', { count: 'exact' })
-    .eq('empresa_id', state.empresaId)
-    .order('data_vencimento', { ascending: true });
-  query = _statusFinanceiroQuery(query, fStatus, 'data_vencimento');
-  if (fCat) query = query.eq('categoria', fCat);
-  const range = _mesRange(fMes);
-  if (range) query = query.gte('data_vencimento', range.ini).lt('data_vencimento', range.fimExclusivo);
-  if (busca) {
-    const like = `%${busca}%`;
-    query = query.or(`descricao.ilike.${like},cliente_nome.ilike.${like}`);
-  }
-  const { data, count, error } = await query.range(inicio, inicio + cfg.linhas - 1);
-  if (error) throw error;
-  const lista = (data || []).map(dbParaCobranca);
-  lista.forEach(c => _stateUpsert(state.cobrancas, c));
-  return { lista, total: count ?? lista.length };
-}
-
-async function renderFinCobrancas() {
-  const seq = ++_finPag.cob.seq;
-  const fMes = document.getElementById('filtroFinCobMes')?.value || '';
 
   if (fMes) {
     _setText('finCobLabelPend', `A RECEBER EM ${_formatMes(fMes)}`);
@@ -381,39 +268,33 @@ async function renderFinCobrancas() {
     _setText('finCobLabelPago', '✓ TOTAL RECEBIDO');
   }
 
-  const tbody = document.getElementById('finCobBody');
-  if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="7" class="tbl-empty">Carregando cobranças…</td></tr>`;
-  let lista = [];
-  let total = 0;
-  try {
-    ({ lista, total } = await carregarFinCobrancasPagina());
-  } catch (err) {
-    if (seq !== _finPag.cob.seq) return;
-    tbody.innerHTML = `<tr><td colspan="7" class="tbl-empty">Erro ao carregar cobranças: ${escHtml(err.message)}</td></tr>`;
-    return;
-  }
-  if (seq !== _finPag.cob.seq) return;
-  const pages = Math.max(1, Math.ceil(total / _finPag.cob.linhas));
-  if (_finPag.cob.pagina > pages) {
-    _finPag.cob.pagina = pages;
-    renderFinCobrancas();
-    return;
-  }
-  _renderFinPager('cob', total);
+  const lista = (state.cobrancas || []).filter(c => {
+    const st = _statusCob(c);
+    if (fStatus && st !== fStatus) return false;
+    if (fCat && c.categoria !== fCat) return false;
+    if (fMes && !(c.vencimento || '').startsWith(fMes)) return false;
+    if (busca) {
+      const txt = `${c.descricao} ${c.clienteNome}`.toLowerCase();
+      if (!txt.includes(busca)) return false;
+    }
+    return true;
+  }).sort((a, b) => (a.vencimento || '').localeCompare(b.vencimento || ''));
 
   const pendentes = lista.filter(c => _statusCob(c) !== 'pago');
   const pagos     = lista.filter(c => c.status === 'pago');
+
   _setText('finCobPendente',      formatCurrency(pendentes.reduce((s, c) => s + c.valor, 0)));
-  _setText('finCobPendenteCount', `${pendentes.length} pendente${pendentes.length !== 1 ? 's' : ''} nesta página`);
+  _setText('finCobPendenteCount', `${pendentes.length} cobrança${pendentes.length !== 1 ? 's' : ''} pendente${pendentes.length !== 1 ? 's' : ''}`);
   _setText('finCobPago',          formatCurrency(pagos.reduce((s, c) => s + (c.valorPago || c.valor), 0)));
-  _setText('finCobPagoCount',     `${pagos.length} baixa${pagos.length !== 1 ? 's' : ''} nesta página`);
-  _setText('finCobCount',         `${total} registro${total !== 1 ? 's' : ''}`);
+  _setText('finCobPagoCount',     `${pagos.length} baixa${pagos.length !== 1 ? 's' : ''} registrada${pagos.length !== 1 ? 's' : ''}`);
+  _setText('finCobCount',         `${lista.length} registro${lista.length !== 1 ? 's' : ''}`);
   _setText('finCobTotalPendente', formatCurrency(pendentes.reduce((s, c) => s + c.valor, 0)));
   _setText('finCobTotalPago',     formatCurrency(pagos.reduce((s, c) => s + (c.valorPago || c.valor), 0)));
 
+  const tbody = document.getElementById('finCobBody');
+  if (!tbody) return;
   if (!lista.length) {
-    tbody.innerHTML = `<tr><td colspan="7" class="tbl-empty">Nenhuma cobrança encontrada.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="tbl-empty">Nenhuma cobrança encontrada.</td></tr>`;
     return;
   }
   tbody.innerHTML = lista.map(c => {
@@ -450,33 +331,11 @@ async function renderFinCobrancas() {
 
 // ── Contas a Pagar ────────────────────────────────────────────────────
 
-async function carregarFinContasPagina() {
-  const busca   = postgrestIlikeTerm(document.getElementById('buscaCont')?.value || '');
+function renderFinContasPagar() {
+  const busca   = (document.getElementById('buscaCont')?.value || '').toLowerCase();
   const fStatus = document.getElementById('filtroFinContStatus')?.value || '';
   const fTipo   = document.getElementById('filtroFinContTipo')?.value || '';
   const fMes    = document.getElementById('filtroFinContMes')?.value || '';
-  const cfg = _finPag.cont;
-  const inicio = (cfg.pagina - 1) * cfg.linhas;
-
-  let query = db.from('contas_pagar')
-    .select('*', { count: 'exact' })
-    .eq('empresa_id', state.empresaId)
-    .order('data_vencimento', { ascending: true });
-  query = _statusFinanceiroQuery(query, fStatus, 'data_vencimento');
-  if (fTipo) query = query.eq('tipo', fTipo);
-  const range = _mesRange(fMes);
-  if (range) query = query.gte('data_vencimento', range.ini).lt('data_vencimento', range.fimExclusivo);
-  if (busca) query = query.ilike('descricao', `%${busca}%`);
-  const { data, count, error } = await query.range(inicio, inicio + cfg.linhas - 1);
-  if (error) throw error;
-  const lista = (data || []).map(dbParaContaPagar);
-  lista.forEach(c => _stateUpsert(state.contasPagar, c));
-  return { lista, total: count ?? lista.length };
-}
-
-async function renderFinContasPagar() {
-  const seq = ++_finPag.cont.seq;
-  const fMes = document.getElementById('filtroFinContMes')?.value || '';
 
   if (fMes) {
     _setText('finContLabelPend', `A PAGAR EM ${_formatMes(fMes)}`);
@@ -486,37 +345,28 @@ async function renderFinContasPagar() {
     _setText('finContLabelPago', '✓ TOTAL PAGO');
   }
 
-  const tbody = document.getElementById('finContBody');
-  if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="7" class="tbl-empty">Carregando contas…</td></tr>`;
-  let lista = [];
-  let total = 0;
-  try {
-    ({ lista, total } = await carregarFinContasPagina());
-  } catch (err) {
-    if (seq !== _finPag.cont.seq) return;
-    tbody.innerHTML = `<tr><td colspan="7" class="tbl-empty">Erro ao carregar contas: ${escHtml(err.message)}</td></tr>`;
-    return;
-  }
-  if (seq !== _finPag.cont.seq) return;
-  const pages = Math.max(1, Math.ceil(total / _finPag.cont.linhas));
-  if (_finPag.cont.pagina > pages) {
-    _finPag.cont.pagina = pages;
-    renderFinContasPagar();
-    return;
-  }
-  _renderFinPager('cont', total);
+  const lista = (state.contasPagar || []).filter(c => {
+    const st = _statusCont(c);
+    if (fStatus && st !== fStatus) return false;
+    if (fTipo && c.tipo !== fTipo) return false;
+    if (fMes && !(c.vencimento || '').startsWith(fMes)) return false;
+    if (busca && !c.descricao.toLowerCase().includes(busca)) return false;
+    return true;
+  }).sort((a, b) => (a.vencimento || '').localeCompare(b.vencimento || ''));
 
   const pendentes = lista.filter(c => _statusCont(c) !== 'pago');
   const pagos     = lista.filter(c => c.status === 'pago');
+
   _setText('finContPendente',      formatCurrency(pendentes.reduce((s, c) => s + c.valor, 0)));
-  _setText('finContPendenteCount', `${pendentes.length} pendente${pendentes.length !== 1 ? 's' : ''} nesta página`);
+  _setText('finContPendenteCount', `${pendentes.length} conta${pendentes.length !== 1 ? 's' : ''} pendente${pendentes.length !== 1 ? 's' : ''}`);
   _setText('finContPago',          formatCurrency(pagos.reduce((s, c) => s + (c.valorPago || c.valor), 0)));
-  _setText('finContPagoCount',     `${pagos.length} paga${pagos.length !== 1 ? 's' : ''} nesta página`);
-  _setText('finContCount',         `${total} registro${total !== 1 ? 's' : ''}`);
+  _setText('finContPagoCount',     `${pagos.length} paga${pagos.length !== 1 ? 's' : ''}`);
+  _setText('finContCount',         `${lista.length} registro${lista.length !== 1 ? 's' : ''}`);
   _setText('finContTotalPendente', formatCurrency(pendentes.reduce((s, c) => s + c.valor, 0)));
   _setText('finContTotalPago',     formatCurrency(pagos.reduce((s, c) => s + (c.valorPago || c.valor), 0)));
 
+  const tbody = document.getElementById('finContBody');
+  if (!tbody) return;
   if (!lista.length) {
     tbody.innerHTML = `<tr><td colspan="7" class="tbl-empty">Nenhuma conta encontrada.</td></tr>`;
     return;
@@ -550,52 +400,23 @@ async function renderFinContasPagar() {
 
 // ── Despesas ──────────────────────────────────────────────────────────
 
-async function carregarFinDespesasPagina() {
-  const busca   = postgrestIlikeTerm(document.getElementById('buscaDesp')?.value || '');
+function renderFinDespesas() {
+  const busca   = (document.getElementById('buscaDesp')?.value || '').toLowerCase();
   const fStatus = document.getElementById('filtroFinDespStatus')?.value || '';
-  const cfg = _finPag.desp;
-  const inicio = (cfg.pagina - 1) * cfg.linhas;
 
-  let query = db.from('despesas')
-    .select('*', { count: 'exact' })
-    .eq('empresa_id', state.empresaId)
-    .order('data', { ascending: false });
-  if (fStatus) query = query.eq('status', fStatus);
-  if (busca) {
-    const like = `%${busca}%`;
-    query = query.or(`descricao.ilike.${like},cliente_nome.ilike.${like},categoria.ilike.${like}`);
-  }
-  const { data, count, error } = await query.range(inicio, inicio + cfg.linhas - 1);
-  if (error) throw error;
-  const lista = (data || []).map(dbParaDespesa);
-  lista.forEach(d => _stateUpsert(state.despesas, d));
-  return { lista, total: count ?? lista.length };
-}
+  const lista = (state.despesas || []).filter(d => {
+    if (fStatus && d.status !== fStatus) return false;
+    if (busca) {
+      const txt = `${d.descricao} ${d.clienteNome}`.toLowerCase();
+      if (!txt.includes(busca)) return false;
+    }
+    return true;
+  }).sort((a, b) => (b.data || '').localeCompare(a.data || ''));
 
-async function renderFinDespesas() {
-  const seq = ++_finPag.desp.seq;
+  _setText('finDespCount', `${lista.length} registro${lista.length !== 1 ? 's' : ''}`);
+
   const tbody = document.getElementById('finDespBody');
   if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="6" class="tbl-empty">Carregando despesas…</td></tr>`;
-  let lista = [];
-  let total = 0;
-  try {
-    ({ lista, total } = await carregarFinDespesasPagina());
-  } catch (err) {
-    if (seq !== _finPag.desp.seq) return;
-    tbody.innerHTML = `<tr><td colspan="6" class="tbl-empty">Erro ao carregar despesas: ${escHtml(err.message)}</td></tr>`;
-    return;
-  }
-  if (seq !== _finPag.desp.seq) return;
-  const pages = Math.max(1, Math.ceil(total / _finPag.desp.linhas));
-  if (_finPag.desp.pagina > pages) {
-    _finPag.desp.pagina = pages;
-    renderFinDespesas();
-    return;
-  }
-  _renderFinPager('desp', total);
-  _setText('finDespCount', `${total} registro${total !== 1 ? 's' : ''}`);
-
   if (!lista.length) {
     tbody.innerHTML = `<tr><td colspan="6" class="tbl-empty">Nenhuma despesa encontrada.</td></tr>`;
     return;
@@ -1343,29 +1164,17 @@ document.querySelectorAll('[data-fin-tab]').forEach(btn => {
 // ── Filter listeners ──────────────────────────────────────────────────
 
 ['buscaCob','filtroFinCobStatus','filtroFinCobCat','filtroFinCobMes'].forEach(id => {
-  document.getElementById(id)?.addEventListener('input', () => { _finPag.cob.pagina = 1; renderFinCobrancas(); });
-  document.getElementById(id)?.addEventListener('change', () => { _finPag.cob.pagina = 1; renderFinCobrancas(); });
+  document.getElementById(id)?.addEventListener('input', renderFinCobrancas);
+  document.getElementById(id)?.addEventListener('change', renderFinCobrancas);
 });
 ['buscaCont','filtroFinContStatus','filtroFinContTipo','filtroFinContMes'].forEach(id => {
-  document.getElementById(id)?.addEventListener('input', () => { _finPag.cont.pagina = 1; renderFinContasPagar(); });
-  document.getElementById(id)?.addEventListener('change', () => { _finPag.cont.pagina = 1; renderFinContasPagar(); });
+  document.getElementById(id)?.addEventListener('input', renderFinContasPagar);
+  document.getElementById(id)?.addEventListener('change', renderFinContasPagar);
 });
 ['buscaDesp','filtroFinDespStatus'].forEach(id => {
-  document.getElementById(id)?.addEventListener('input', () => { _finPag.desp.pagina = 1; renderFinDespesas(); });
-  document.getElementById(id)?.addEventListener('change', () => { _finPag.desp.pagina = 1; renderFinDespesas(); });
+  document.getElementById(id)?.addEventListener('input', renderFinDespesas);
+  document.getElementById(id)?.addEventListener('change', renderFinDespesas);
 });
-document.getElementById('finCobLinhas')?.addEventListener('change', e => { _finPag.cob.linhas = Number(e.target.value) || 10; _finPag.cob.pagina = 1; renderFinCobrancas(); });
-document.getElementById('finCobPagina')?.addEventListener('change', e => { _finPag.cob.pagina = Number(e.target.value) || 1; renderFinCobrancas(); });
-document.getElementById('finCobPgAnterior')?.addEventListener('click', () => { if (_finPag.cob.pagina > 1) { _finPag.cob.pagina--; renderFinCobrancas(); } });
-document.getElementById('finCobPgProxima')?.addEventListener('click', () => { _finPag.cob.pagina++; renderFinCobrancas(); });
-document.getElementById('finContLinhas')?.addEventListener('change', e => { _finPag.cont.linhas = Number(e.target.value) || 10; _finPag.cont.pagina = 1; renderFinContasPagar(); });
-document.getElementById('finContPagina')?.addEventListener('change', e => { _finPag.cont.pagina = Number(e.target.value) || 1; renderFinContasPagar(); });
-document.getElementById('finContPgAnterior')?.addEventListener('click', () => { if (_finPag.cont.pagina > 1) { _finPag.cont.pagina--; renderFinContasPagar(); } });
-document.getElementById('finContPgProxima')?.addEventListener('click', () => { _finPag.cont.pagina++; renderFinContasPagar(); });
-document.getElementById('finDespLinhas')?.addEventListener('change', e => { _finPag.desp.linhas = Number(e.target.value) || 10; _finPag.desp.pagina = 1; renderFinDespesas(); });
-document.getElementById('finDespPagina')?.addEventListener('change', e => { _finPag.desp.pagina = Number(e.target.value) || 1; renderFinDespesas(); });
-document.getElementById('finDespPgAnterior')?.addEventListener('click', () => { if (_finPag.desp.pagina > 1) { _finPag.desp.pagina--; renderFinDespesas(); } });
-document.getElementById('finDespPgProxima')?.addEventListener('click', () => { _finPag.desp.pagina++; renderFinDespesas(); });
 ['relFinTipo','relFinBusca','relFinStatus','relFinCategoria','relFinDe','relFinAte'].forEach(id => {
   document.getElementById(id)?.addEventListener('input', renderFinRelatorio);
   document.getElementById(id)?.addEventListener('change', renderFinRelatorio);

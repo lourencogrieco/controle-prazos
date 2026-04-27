@@ -103,7 +103,11 @@ document.getElementById('formUploadDoc').addEventListener('submit', async e => {
       tamanho_bytes: arquivo.size,
       criado_por:    state.meuPerfil?.nome || '',
     });
-    if (dbErr) { toast('Erro ao salvar metadados: ' + dbErr.message, 'error'); return; }
+    if (dbErr) {
+      await db.storage.from('documentos').remove([path]);
+      toast('Erro ao salvar metadados: ' + dbErr.message, 'error');
+      return;
+    }
 
     document.getElementById('modalUploadDoc').classList.remove('open');
     toast('Documento enviado com sucesso!');

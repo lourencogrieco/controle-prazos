@@ -506,6 +506,7 @@ document.getElementById('formCobranca').addEventListener('submit', async e => {
   btn.disabled = true; btn.textContent = 'Salvando…';
   try {
     const id = document.getElementById('cobId').value;
+    const existente = id ? (state.cobrancas || []).find(x => x.id === id) : null;
     const obj = {
       id:              id || uid(),
       empresa_id:      state.empresaId,
@@ -516,9 +517,15 @@ document.getElementById('formCobranca').addEventListener('submit', async e => {
       categoria:       document.getElementById('cobCategoria').value || null,
       recorrencia:     document.getElementById('cobRecorrencia').value || 'nenhuma',
       observacoes:     document.getElementById('cobObservacoes').value.trim() || null,
-      status:          id ? undefined : 'pendente',
+      status:          existente?.status || 'pendente',
+      data_pagamento:  existente?.dataPagamento || null,
+      valor_pago:      existente?.valorPago || null,
     };
-    if (!id) delete obj.status; // let DB default apply
+    if (!id) {
+      delete obj.status;
+      delete obj.data_pagamento;
+      delete obj.valor_pago;
+    }
 
     const { error } = await salvarRegistroEmpresa('cobrancas', obj, id, 'Sem resposta ao salvar cobrança em 12s');
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
@@ -574,6 +581,7 @@ document.getElementById('formContaPagar').addEventListener('submit', async e => 
   btn.disabled = true; btn.textContent = 'Salvando…';
   try {
     const id = document.getElementById('contId').value;
+    const existente = id ? (state.contasPagar || []).find(x => x.id === id) : null;
     const obj = {
       id:              id || uid(),
       empresa_id:      state.empresaId,
@@ -583,7 +591,15 @@ document.getElementById('formContaPagar').addEventListener('submit', async e => 
       data_vencimento: document.getElementById('contVencimento').value || null,
       recorrencia:     document.getElementById('contRecorrencia').value || 'nenhuma',
       observacoes:     document.getElementById('contObservacoes').value.trim() || null,
+      status:          existente?.status || 'pendente',
+      data_pagamento:  existente?.dataPagamento || null,
+      valor_pago:      existente?.valorPago || null,
     };
+    if (!id) {
+      delete obj.status;
+      delete obj.data_pagamento;
+      delete obj.valor_pago;
+    }
 
     const { error } = await salvarRegistroEmpresa('contas_pagar', obj, id, 'Sem resposta ao salvar conta em 12s');
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
@@ -643,6 +659,7 @@ document.getElementById('formDespesa').addEventListener('submit', async e => {
   btn.disabled = true; btn.textContent = 'Salvando…';
   try {
     const id = document.getElementById('despId').value;
+    const existente = id ? (state.despesas || []).find(x => x.id === id) : null;
     const obj = {
       id:          id || uid(),
       empresa_id:  state.empresaId,
@@ -652,7 +669,9 @@ document.getElementById('formDespesa').addEventListener('submit', async e => {
       data:        document.getElementById('despData').value || null,
       categoria:   document.getElementById('despCategoria').value || null,
       observacoes: document.getElementById('despObservacoes').value.trim() || null,
+      status:      existente?.status || 'pendente',
     };
+    if (!id) delete obj.status;
 
     const { error } = await salvarRegistroEmpresa('despesas', obj, id, 'Sem resposta ao salvar despesa em 12s');
     if (error) { toast('Erro: ' + error.message, 'error'); return; }

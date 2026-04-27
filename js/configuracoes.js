@@ -136,16 +136,22 @@ document.getElementById('novoTipoForm').addEventListener('submit', async e => {
   if (state.tiposPasta.some(t => t.areaId === areaId && t.codigo === codigo)) {
     toast(`Código ${codigo} já existe nesta área`, 'error'); return;
   }
+  if (!state.empresaId) {
+    toast('Sessão sem empresa vinculada. Recarregue a página e tente novamente.', 'error'); return;
+  }
 
   if (btn) { btn.disabled = true; btn.textContent = 'Adicionando…'; }
   try {
     const obj = { id: uid(), empresa_id: state.empresaId, codigo, nome, area_id: areaId };
-    const { data, error } = await db.from('tipos_pasta').insert(obj).select('*').single();
-    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    const { error } = await db.from('tipos_pasta').insert(obj);
+    if (error) {
+      console.warn('[tipos_pasta] erro ao inserir:', error);
+      toast('Erro: ' + error.message, 'error'); return;
+    }
     _cacheInvalidar(`lhub_tipos_${state.empresaId}`);
     toast('Tipo adicionado');
     e.target.reset();
-    state.tiposPasta.push(dbParaTipoPasta(data || obj));
+    state.tiposPasta.push(dbParaTipoPasta(obj));
     state.tiposPasta.sort((a, b) => (a.areaId || '').localeCompare(b.areaId || '') || a.codigo - b.codigo);
     renderListaTipos();
     popularDropdownTipos();

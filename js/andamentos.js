@@ -252,6 +252,10 @@ document.getElementById('formAndamentoManual').addEventListener('submit', async 
     const tipo    = document.getElementById('andManualTipo').value;
     const desc    = document.getElementById('andManualDesc').value.trim();
     const grau    = document.getElementById('andManualGrau').value;
+    const numeroProcesso = (pasta?.processo || pasta?.numero || '').trim();
+
+    if (!pasta) { toast('Pasta não encontrada. Reabra a pasta e tente novamente.', 'error'); return; }
+    if (!data || !tipo || !desc) { toast('Preencha data, tipo e descrição do andamento.', 'error'); return; }
 
     if (isEdit) {
       const { error } = await db.from('andamentos_processo').update({
@@ -265,10 +269,9 @@ document.getElementById('formAndamentoManual').addEventListener('submit', async 
       toast('Andamento atualizado!');
     } else {
       const row = {
-        id:              uid(),
         empresa_id:      state.empresaId,
         pasta_id:        pastaId,
-        numero_processo: pasta?.processo || null,
+        numero_processo: numeroProcesso,
         data_hora:       data + 'T00:00:00',
         nome:            tipo,
         complemento:     desc,

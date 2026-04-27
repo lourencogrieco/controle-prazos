@@ -13,6 +13,27 @@ const CORS = {
 // Timeout em ms para cada chamada à API do PJe
 const PJE_TIMEOUT_MS = 10_000;
 
+function normalizarOabBuscaPJe(valor: unknown): string {
+  const raw = String(valor || "").trim().toUpperCase();
+  if (!raw) return "";
+  const semPrefixo = raw.replace(/^OAB\s*/i, "").replace(/[.\-\s]/g, "");
+  const matchUfPrimeiro = semPrefixo.match(/^([A-Z]{2})(\d{3,})$/);
+  if (matchUfPrimeiro) return `${matchUfPrimeiro[1]}${matchUfPrimeiro[2]}`;
+  const matchNumeroPrimeiro = semPrefixo.match(/^(\d{3,})\/?([A-Z]{2})$/);
+  if (matchNumeroPrimeiro) return `${matchNumeroPrimeiro[2]}${matchNumeroPrimeiro[1]}`;
+  return semPrefixo;
+}
+
+function termosBuscaPJe(cfg: Record<string, unknown>): string[] {
+  const nomes = Array.isArray(cfg.nomes) ? cfg.nomes : [];
+  const oabs = Array.isArray(cfg.oabs) ? cfg.oabs : [];
+  const termos = [
+    ...nomes.map((nome) => String(nome || "").trim()).filter(Boolean),
+    ...oabs.map(normalizarOabBuscaPJe).filter(Boolean),
+  ];
+  return [...new Set(termos)];
+}
+
 async function fetchPje(url: string): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), PJE_TIMEOUT_MS);
@@ -71,7 +92,8 @@ serve(async (req) => {
     const resultados: Record<string, unknown>[] = [];
 
     for (const cfg of configs) {
-      const nomes: string[] = cfg.nomes ?? [];
+      const termos = termosBuscaPJe(cfg);
+      const idsImportados = new Set<string>();
       const empresaResult: { empresa_id: string; nomes: Record<string, unknown> } = {
         empresa_id: cfg.empresa_id,
         nomes: {},
@@ -82,19 +104,19 @@ serve(async (req) => {
       let empresaComErro = false;
       const empresaErros: string[] = [];
 
-      for (const nome of nomes) {
+      for (const termo of termos) {
         let pagina = 1;
         let totalApi = Infinity;
-        let nomeInseridas = 0;
-        let nomeAtualizadas = 0;
-        let nomeIgnoradasArquivadas = 0;
-        const nomeErros: string[] = [];
+        let termoInseridas = 0;
+        let termoAtualizadas = 0;
+        let termoIgnoradasArquivadas = 0;
+        const termoErros: string[] = [];
 
         while ((pagina - 1) * 50 < totalApi) {
           const url =
             `https://comunicaapi.pje.jus.br/api/v1/comunicacao` +
             `?pagina=${pagina}&itensPorPagina=50` +
-            `&texto=${encodeURIComponent(nome)}` +
+            `&texto=${encodeURIComponent(termo)}` +
             `&dataDisponibilizacaoInicio=${dataInicio}` +
             `&dataDisponibilizacaoFim=${dataFim}`;
 
@@ -106,23 +128,23 @@ serve(async (req) => {
             const detail = msg.includes("AbortError") || msg.includes("abort")
               ? `timeout (>${PJE_TIMEOUT_MS}ms) — página ${pagina}`
               : `network error — ${msg}`;
-            console.error(`[sync-intimacoes] ${nome} p${pagina}: ${detail}`);
-            nomeErros.push(detail);
-            empresaErros.push(`${nome}: ${detail}`);
+            console.error(`[sync-intimacoes] ${termo} p${pagina}: ${detail}`);
+            termoErros.push(detail);
+            empresaErros.push(`${termo}: ${detail}`);
             empresaComErro = true;
             break;
           }
 
           if (!res.ok) {
             const detail = `HTTP ${res.status} — página ${pagina}`;
-            console.error(`[sync-intimacoes] ${nome}: ${detail}`);
-            nomeErros.push(detail);
-            empresaErros.push(`${nome}: ${detail}`);
+            console.error(`[sync-intimacoes] ${termo}: ${detail}`);
+            termoErros.push(detail);
+            empresaErros.push(`${termo}: ${detail}`);
             empresaComErro = true;
-            // 429 = rate limit — para o loop completamente para este nome
+            // 429 = rate limit — para o loop completamente para este termo
             if (res.status === 429) break;
             // Outros erros: tenta próxima página até 3 falhas seguidas
-            if (nomeErros.length >= 3) break;
+            if (termoErros.length >= 3) break;
             pagina++;
             continue;
           }
@@ -132,17 +154,23 @@ serve(async (req) => {
             json = await res.json();
           } catch {
             const detail = `JSON inválido — página ${pagina}`;
-            console.error(`[sync-intimacoes] ${nome}: ${detail}`);
-            nomeErros.push(detail);
-            empresaErros.push(`${nome}: ${detail}`);
+            console.error(`[sync-intimacoes] ${termo}: ${detail}`);
+            termoErros.push(detail);
+            empresaErros.push(`${termo}: ${detail}`);
             break;
           }
 
           totalApi = json.count ?? 0;
           const items = json.items ?? [];
+          const novosItems = items.filter((i) => {
+            const id = String(i.id || "");
+            if (!id || idsImportados.has(id)) return false;
+            idsImportados.add(id);
+            return true;
+          });
 
-          if (items.length) {
-            const rows = items.map((i) => ({
+          if (novosItems.length) {
+            const rows = novosItems.map((i) => ({
               id:                       i.id,
               empresa_id:               cfg.empresa_id,
               data_disponibilizacao:    i.data_disponibilizacao,
@@ -167,15 +195,15 @@ serve(async (req) => {
 
             if (importErr) {
               const detail = `importacao falhou: ${importErr.message}`;
-              console.error(`[sync-intimacoes] ${nome} p${pagina}: ${detail}`);
-              nomeErros.push(detail);
-              empresaErros.push(`${nome}: ${detail}`);
+              console.error(`[sync-intimacoes] ${termo} p${pagina}: ${detail}`);
+              termoErros.push(detail);
+              empresaErros.push(`${termo}: ${detail}`);
               empresaComErro = true;
             } else {
               const stats = Array.isArray(importResult) ? importResult[0] : importResult;
-              nomeInseridas += Number(stats?.inseridas ?? 0);
-              nomeAtualizadas += Number(stats?.atualizadas ?? 0);
-              nomeIgnoradasArquivadas += Number(stats?.ignoradas_arquivadas ?? 0);
+              termoInseridas += Number(stats?.inseridas ?? 0);
+              termoAtualizadas += Number(stats?.atualizadas ?? 0);
+              termoIgnoradasArquivadas += Number(stats?.ignoradas_arquivadas ?? 0);
             }
           }
 
@@ -183,21 +211,21 @@ serve(async (req) => {
           if (items.length < 50) break;
         }
 
-        empresaInseridas += nomeInseridas;
-        empresaAtualizadas += nomeAtualizadas;
-        empresaIgnoradasArquivadas += nomeIgnoradasArquivadas;
-        total_inseridas  += nomeInseridas;
-        total_atualizadas += nomeAtualizadas;
-        total_ignoradas_arquivadas += nomeIgnoradasArquivadas;
-        empresaResult.nomes[nome] = {
-          inseridas: nomeInseridas,
-          atualizadas: nomeAtualizadas,
-          ignoradas_arquivadas: nomeIgnoradasArquivadas,
-          ...(nomeErros.length ? { erros: nomeErros } : {}),
+        empresaInseridas += termoInseridas;
+        empresaAtualizadas += termoAtualizadas;
+        empresaIgnoradasArquivadas += termoIgnoradasArquivadas;
+        total_inseridas  += termoInseridas;
+        total_atualizadas += termoAtualizadas;
+        total_ignoradas_arquivadas += termoIgnoradasArquivadas;
+        empresaResult.nomes[termo] = {
+          inseridas: termoInseridas,
+          atualizadas: termoAtualizadas,
+          ignoradas_arquivadas: termoIgnoradasArquivadas,
+          ...(termoErros.length ? { erros: termoErros } : {}),
         };
       }
 
-      // Só atualiza ultima_sync se ao menos um nome sincronizou sem erros críticos
+      // Só atualiza ultima_sync se ao menos um termo sincronizou sem erros críticos
       if (!empresaComErro || empresaInseridas > 0) {
         await db
           .from("pje_config")
@@ -210,7 +238,7 @@ serve(async (req) => {
         origem: "cron",
         data_inicio: dataInicio,
         data_fim: dataFim,
-        nomes,
+        nomes: termos,
         inseridas: empresaInseridas,
         atualizadas: empresaAtualizadas,
         ignoradas_arquivadas: empresaIgnoradasArquivadas,

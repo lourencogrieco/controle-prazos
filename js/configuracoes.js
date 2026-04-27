@@ -547,9 +547,12 @@ async function renderConfiguracoes() {
       state.areas.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
   }
 
-  // PJe nomes
+  // PJe nomes e OABs
   const ta = document.getElementById('cfgPjeNomes');
-  if (ta && state.pjeConfig?.nomes) ta.value = state.pjeConfig.nomes.join('\n');
+  const taOabs = document.getElementById('cfgPjeOabs');
+  const termosPje = Array.isArray(state.pjeConfig?.nomes) ? state.pjeConfig.nomes : [];
+  if (ta) ta.value = termosPje.filter(t => !pareceOabBuscaPJe(t)).join('\n');
+  if (taOabs) taOabs.value = termosPje.filter(pareceOabBuscaPJe).join('\n');
 
   // Usuários
   const { data: usuarios } = await db
@@ -581,13 +584,31 @@ async function renderConfiguracoes() {
   renderAuditLog();
 }
 
+function normalizarOabBuscaPJe(valor) {
+  const raw = String(valor || '').trim().toUpperCase();
+  if (!raw) return '';
+  const semPrefixo = raw.replace(/^OAB\s*/i, '').replace(/[.\-\s]/g, '');
+  const matchUfPrimeiro = semPrefixo.match(/^([A-Z]{2})(\d{3,})$/);
+  if (matchUfPrimeiro) return `${matchUfPrimeiro[1]}${matchUfPrimeiro[2]}`;
+  const matchNumeroPrimeiro = semPrefixo.match(/^(\d{3,})\/?([A-Z]{2})$/);
+  if (matchNumeroPrimeiro) return `${matchNumeroPrimeiro[2]}${matchNumeroPrimeiro[1]}`;
+  return semPrefixo;
+}
+
+function pareceOabBuscaPJe(valor) {
+  return /^[A-Z]{2}\d{3,}$/.test(normalizarOabBuscaPJe(valor));
+}
+
 async function salvarPjeConfig() {
   const ta = document.getElementById('cfgPjeNomes');
+  const taOabs = document.getElementById('cfgPjeOabs');
   const nomes = ta.value.split('\n').map(n => n.trim()).filter(Boolean);
-  if (!nomes.length) { toast('Informe ao menos um nome.', 'error'); return; }
+  const oabs = (taOabs?.value || '').split('\n').map(normalizarOabBuscaPJe).filter(Boolean);
+  const termos = [...new Set([...nomes, ...oabs])];
+  if (!termos.length) { toast('Informe ao menos um nome ou OAB.', 'error'); return; }
   const payload = {
     empresa_id: state.empresaId,
-    nomes,
+    nomes: termos,
     ativo: true,
   };
   const { error } = await db.from('pje_config')

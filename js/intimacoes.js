@@ -197,6 +197,16 @@ async function registrarLogSyncPJe({ origem, dataInicio, dataFim, nomes, resumo,
   renderHistoricoPJe();
 }
 
+function termosBuscaPJe() {
+  const nomes = Array.isArray(state.pjeConfig?.nomes) ? state.pjeConfig.nomes : [];
+  const oabs = Array.isArray(state.pjeConfig?.oabs) ? state.pjeConfig.oabs : [];
+  const termos = [
+    ...nomes.map(n => String(n || '').trim()).filter(Boolean),
+    ...oabs.map(normalizarOabBuscaPJe).filter(Boolean),
+  ];
+  return [...new Set(termos)];
+}
+
 function textoLegivelIntimacao(texto) {
   const raw = String(texto || '').trim();
   if (!raw) return '';
@@ -606,6 +616,57 @@ async function importarIntimacoesPJe(rows) {
   };
 }
 
+async function buscarEImportarPJe({ dataInicio, dataFim }) {
+  const termos = termosBuscaPJe();
+  if (!termos.length) {
+    toast('Configure ao menos um nome ou OAB para busca de intimações.', 'error');
+    return null;
+  }
+
+  const resumo = { inseridas: 0, atualizadas: 0, ignoradas_arquivadas: 0 };
+  const erros = [];
+  const idsImportados = new Set();
+
+  for (const termo of termos) {
+    let pagina = 1;
+    let totalApi = Infinity;
+    while ((pagina - 1) * 50 < totalApi) {
+      const url = `/api/pje-proxy` +
+        `?pagina=${pagina}&itensPorPagina=50` +
+        `&texto=${encodeURIComponent(termo)}` +
+        `&dataInicio=${dataInicio}` +
+        `&dataFim=${dataFim}`;
+      const res = await proxyFetch(url);
+      if (!res.ok) {
+        erros.push(`${termo}: HTTP ${res.status} na página ${pagina}`);
+        break;
+      }
+
+      const json = await res.json();
+      totalApi = json.count ?? 0;
+      const items = json.items ?? [];
+      const novosItems = items.filter(item => {
+        const id = String(item?.id || '');
+        if (!id || idsImportados.has(id)) return false;
+        idsImportados.add(id);
+        return true;
+      });
+      const rows = novosItems.map(linhaPJeParaDb);
+      if (rows.length) {
+        const parcial = await importarIntimacoesPJe(rows);
+        resumo.inseridas += parcial.inseridas;
+        resumo.atualizadas += parcial.atualizadas;
+        resumo.ignoradas_arquivadas += parcial.ignoradas_arquivadas;
+      }
+
+      pagina++;
+      if (items.length < 50) break;
+    }
+  }
+
+  return { termos, resumo, erros };
+}
+
 async function sincronizarPJeData() {
   const de  = document.getElementById('filtroIntimacoesDe')?.value;
   const ate = document.getElementById('filtroIntimacoesAte')?.value;
@@ -613,40 +674,10 @@ async function sincronizarPJeData() {
   const btn = document.getElementById('btnBuscarData');
   if (btn) { btn.disabled = true; btn.textContent = 'Buscando…'; }
   try {
-    const nomes = state.pjeConfig?.nomes ?? [];
-    if (!nomes.length) { toast('Nenhum nome configurado para busca de intimações.', 'error'); return; }
-
-    const resumo = { inseridas: 0, atualizadas: 0, ignoradas_arquivadas: 0 };
-    const erros = [];
-    for (const nome of nomes) {
-      let pagina = 1;
-      let totalApi = Infinity;
-      while ((pagina - 1) * 50 < totalApi) {
-        const url = `/api/pje-proxy` +
-          `?pagina=${pagina}&itensPorPagina=50` +
-          `&texto=${encodeURIComponent(nome)}` +
-          `&dataInicio=${de}` +
-          `&dataFim=${ate || de}`;
-        const res = await proxyFetch(url);
-        if (!res.ok) {
-          erros.push(`${nome}: HTTP ${res.status} na página ${pagina}`);
-          break;
-        }
-        const json = await res.json();
-        totalApi = json.count ?? 0;
-        const items = json.items ?? [];
-        const rows = items.map(linhaPJeParaDb);
-        if (rows.length) {
-          const parcial = await importarIntimacoesPJe(rows);
-          resumo.inseridas += parcial.inseridas;
-          resumo.atualizadas += parcial.atualizadas;
-          resumo.ignoradas_arquivadas += parcial.ignoradas_arquivadas;
-        }
-        pagina++;
-        if (items.length < 50) break;
-      }
-    }
-    await registrarLogSyncPJe({ origem: 'manual_data', dataInicio: de, dataFim: ate || de, nomes, resumo, erros });
+    const resultado = await buscarEImportarPJe({ dataInicio: de, dataFim: ate || de });
+    if (!resultado) return;
+    const { termos, resumo, erros } = resultado;
+    await registrarLogSyncPJe({ origem: 'manual_data', dataInicio: de, dataFim: ate || de, nomes: termos, resumo, erros });
     if (erros.length) {
       toast(`PJe indisponível para ${erros.length} consulta(s). Registrei o log e mantive os dados atuais.`, 'error');
       return;
@@ -672,37 +703,10 @@ async function sincronizarPJe() {
   const btn = document.getElementById('btnSyncPJe');
   if (btn) { btn.disabled = true; btn.textContent = 'Sincronizando…'; }
   try {
-    const nomes = state.pjeConfig?.nomes ?? [];
-    if (!nomes.length) { toast('Nenhum nome configurado para busca de intimações.', 'error'); return; }
-
-    const resumo = { inseridas: 0, atualizadas: 0, ignoradas_arquivadas: 0 };
-    const erros = [];
-    for (const nome of nomes) {
-      let pagina = 1;
-      let totalApi = Infinity;
-      while ((pagina - 1) * 50 < totalApi) {
-        const url = `/api/pje-proxy?pagina=${pagina}&itensPorPagina=50` +
-          `&texto=${encodeURIComponent(nome)}&dataInicio=${hoje}&dataFim=${hoje}`;
-        const res = await proxyFetch(url);
-        if (!res.ok) {
-          erros.push(`${nome}: HTTP ${res.status} na página ${pagina}`);
-          break;
-        }
-        const json = await res.json();
-        totalApi = json.count ?? 0;
-        const items = json.items ?? [];
-        const rows = items.map(linhaPJeParaDb);
-        if (rows.length) {
-          const parcial = await importarIntimacoesPJe(rows);
-          resumo.inseridas += parcial.inseridas;
-          resumo.atualizadas += parcial.atualizadas;
-          resumo.ignoradas_arquivadas += parcial.ignoradas_arquivadas;
-        }
-        pagina++;
-        if (items.length < 50) break;
-      }
-    }
-    await registrarLogSyncPJe({ origem: 'manual_hoje', dataInicio: hoje, dataFim: hoje, nomes, resumo, erros });
+    const resultado = await buscarEImportarPJe({ dataInicio: hoje, dataFim: hoje });
+    if (!resultado) return;
+    const { termos, resumo, erros } = resultado;
+    await registrarLogSyncPJe({ origem: 'manual_hoje', dataInicio: hoje, dataFim: hoje, nomes: termos, resumo, erros });
     if (erros.length) {
       toast(`PJe indisponível para ${erros.length} consulta(s). Registrei o log e mantive os dados atuais.`, 'error');
       return;

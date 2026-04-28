@@ -1881,6 +1881,10 @@ tbody td {
   padding: 16px;
 }
 
+.instancia-card--recursal + .instancia-card--recursal {
+  border-top: 1px solid var(--br);
+}
+
 .instancia-nav-btn {
   width: 32px;
   height: 32px;

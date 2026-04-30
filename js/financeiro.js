@@ -481,7 +481,7 @@ function abrirModalCobranca(id) {
   document.getElementById('cobId').value           = c?.id || '';
   document.getElementById('cobDescricao').value    = c?.descricao || '';
   document.getElementById('cobClienteNome').value  = c?.clienteNome || '';
-  document.getElementById('cobValor').value        = c?.valor || '';
+  setarValorMoeda(document.getElementById('cobValor'), c?.valor || '');
   document.getElementById('cobVencimento').value   = c?.vencimento || '';
   document.getElementById('cobCategoria').value    = c?.categoria || '';
   document.getElementById('cobRecorrencia').value  = c?.recorrencia || 'nenhuma';
@@ -512,7 +512,7 @@ document.getElementById('formCobranca').addEventListener('submit', async e => {
       empresa_id:      state.empresaId,
       cliente_nome:    document.getElementById('cobClienteNome').value.trim() || null,
       descricao:       document.getElementById('cobDescricao').value.trim(),
-      valor:           parseFloat(document.getElementById('cobValor').value) || 0,
+      valor:           lerValorMoeda(document.getElementById('cobValor')) || 0,
       data_vencimento: document.getElementById('cobVencimento').value || null,
       categoria:       document.getElementById('cobCategoria').value || null,
       recorrencia:     document.getElementById('cobRecorrencia').value || 'nenhuma',
@@ -561,7 +561,7 @@ function abrirModalContaPagar(id) {
   document.getElementById('contId').value          = c?.id || '';
   document.getElementById('contDescricao').value   = c?.descricao || '';
   document.getElementById('contTipo').value        = c?.tipo || '';
-  document.getElementById('contValor').value       = c?.valor || '';
+  setarValorMoeda(document.getElementById('contValor'), c?.valor || '');
   document.getElementById('contVencimento').value  = c?.vencimento || '';
   document.getElementById('contRecorrencia').value = c?.recorrencia || 'nenhuma';
   document.getElementById('contObservacoes').value = c?.observacoes || '';
@@ -587,7 +587,7 @@ document.getElementById('formContaPagar').addEventListener('submit', async e => 
       empresa_id:      state.empresaId,
       descricao:       document.getElementById('contDescricao').value.trim(),
       tipo:            document.getElementById('contTipo').value || null,
-      valor:           parseFloat(document.getElementById('contValor').value) || 0,
+      valor:           lerValorMoeda(document.getElementById('contValor')) || 0,
       data_vencimento: document.getElementById('contVencimento').value || null,
       recorrencia:     document.getElementById('contRecorrencia').value || 'nenhuma',
       observacoes:     document.getElementById('contObservacoes').value.trim() || null,
@@ -635,7 +635,7 @@ function abrirModalDespesa(id) {
   document.getElementById('despId').value          = d?.id || '';
   document.getElementById('despDescricao').value   = d?.descricao || '';
   document.getElementById('despClienteNome').value = d?.clienteNome || '';
-  document.getElementById('despValor').value       = d?.valor || '';
+  setarValorMoeda(document.getElementById('despValor'), d?.valor || '');
   document.getElementById('despData').value        = d?.data || '';
   document.getElementById('despCategoria').value   = d?.categoria || '';
   document.getElementById('despObservacoes').value = d?.observacoes || '';
@@ -665,7 +665,7 @@ document.getElementById('formDespesa').addEventListener('submit', async e => {
       empresa_id:  state.empresaId,
       cliente_nome: document.getElementById('despClienteNome').value.trim() || null,
       descricao:   document.getElementById('despDescricao').value.trim(),
-      valor:       parseFloat(document.getElementById('despValor').value) || 0,
+      valor:       lerValorMoeda(document.getElementById('despValor')) || 0,
       data:        document.getElementById('despData').value || null,
       categoria:   document.getElementById('despCategoria').value || null,
       observacoes: document.getElementById('despObservacoes').value.trim() || null,
@@ -706,14 +706,16 @@ function abrirDarBaixa(id, tipo) {
   document.getElementById('baixaId').value   = id;
   document.getElementById('baixaTipo').value = tipo;
   document.getElementById('baixaData').value = new Date().toISOString().slice(0, 10);
-  document.getElementById('baixaValor').value = '';
+
+  const baixaValorEl = document.getElementById('baixaValor');
+  baixaValorEl.value = '';
 
   // Pre-fill valor original
   let item = null;
   if (tipo === 'cob')  item = (state.cobrancas || []).find(x => x.id === id);
   if (tipo === 'cont') item = (state.contasPagar || []).find(x => x.id === id);
   if (tipo === 'desp') item = (state.despesas || []).find(x => x.id === id);
-  if (item) document.getElementById('baixaValor').value = item.valor;
+  if (item) setarValorMoeda(baixaValorEl, item.valor);
 
   document.getElementById('modalDarBaixa').classList.add('open');
 }
@@ -726,16 +728,18 @@ document.getElementById('formDarBaixa').addEventListener('submit', async e => {
     const id    = document.getElementById('baixaId').value;
     const tipo  = document.getElementById('baixaTipo').value;
     const data  = document.getElementById('baixaData').value;
-    const valor = parseFloat(document.getElementById('baixaValor').value) || null;
+    const valor = lerValorMoeda(document.getElementById('baixaValor'));
 
     let tabela, novoStatus;
     if (tipo === 'cob')  { tabela = 'cobrancas';    novoStatus = 'pago'; }
     if (tipo === 'cont') { tabela = 'contas_pagar';  novoStatus = 'pago'; }
     if (tipo === 'desp') { tabela = 'despesas';       novoStatus = 'reembolsado'; }
 
-    const upd = { status: novoStatus, data_pagamento: data };
-    if (valor) upd.valor_pago = valor;
-    if (tipo === 'desp') { delete upd.data_pagamento; /* preserva data original da despesa */ }
+    const upd = { status: novoStatus };
+    if (tipo !== 'desp') {
+      upd.data_pagamento = data;
+      if (valor) upd.valor_pago = valor;
+    }
 
     const { error } = await db.from(tabela)
       .update(upd)
@@ -1164,6 +1168,13 @@ ${filtros ? `<p class="filtros">Filtros: ${filtros}</p>` : ''}
   const w = window.open('', '_blank', 'width=1000,height=750');
   if (w) { w.document.write(html); w.document.close(); }
 }
+
+// ── Inicializar máscaras de moeda ─────────────────────────────────────
+
+['cobValor', 'contValor', 'despValor', 'baixaValor'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) formatarInputMoeda(el);
+});
 
 // ── Subtabs event listener ────────────────────────────────────────────
 

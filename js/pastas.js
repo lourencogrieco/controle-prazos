@@ -112,7 +112,9 @@ function abrirModalNovaPasta(numero) {
   document.getElementById('pTipoAcao').value       = p?.servico || '';
   document.getElementById('pComarca').value        = p?.comarca || '';
   document.getElementById('pProcesso').value       = p?.processo || '';
-  document.getElementById('pValorCausa').value     = p?.valorCausa || '';
+  { const vc = document.getElementById('pValorCausa');
+    if (p?.valorCausa && p.valorCausa !== 'R$ 0,00') vc.value = p.valorCausa;
+    else vc.value = ''; }
   document.getElementById('pObs').value            = p?.descricao || '';
   document.getElementById('pDataAb').value         = p?.dataDistribuicao
     ? p.dataDistribuicao.split('/').reverse().join('-') : '';
@@ -527,3 +529,6 @@ document.getElementById('pastaLinhasPorPagina').addEventListener('change', e => 
 document.getElementById('buscaPasta').addEventListener('input', () => {
   pastaPagAtual = 1; renderPastaList();
 });
+
+// ── Máscara de moeda ──────────────────────────────────────────────────
+{ const el = document.getElementById('pValorCausa'); if (el) formatarInputMoeda(el); }

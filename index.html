@@ -1247,7 +1247,7 @@
               </div>
               <div class="field">
                 <span class="field-label">Valor (R$) <span style="color:var(--red)">*</span></span>
-                <input type="number" id="cobValor" required min="0" step="0.01" placeholder="0,00">
+                <input type="text" id="cobValor" required inputmode="numeric" placeholder="R$ 0,00">
               </div>
               <div class="field">
                 <span class="field-label">Vencimento <span style="color:var(--red)">*</span></span>
@@ -1320,7 +1320,7 @@
               </div>
               <div class="field">
                 <span class="field-label">Valor (R$) <span style="color:var(--red)">*</span></span>
-                <input type="number" id="contValor" required min="0" step="0.01" placeholder="0,00">
+                <input type="text" id="contValor" required inputmode="numeric" placeholder="R$ 0,00">
               </div>
               <div class="field">
                 <span class="field-label">Vencimento <span style="color:var(--red)">*</span></span>
@@ -1375,7 +1375,7 @@
               </div>
               <div class="field">
                 <span class="field-label">Valor (R$) <span style="color:var(--red)">*</span></span>
-                <input type="number" id="despValor" required min="0" step="0.01" placeholder="0,00">
+                <input type="text" id="despValor" required inputmode="numeric" placeholder="R$ 0,00">
               </div>
               <div class="field">
                 <span class="field-label">Data <span style="color:var(--red)">*</span></span>
@@ -1425,7 +1425,7 @@
               </div>
               <div class="field modal-full">
                 <span class="field-label">Valor pago (R$)</span>
-                <input type="number" id="baixaValor" min="0" step="0.01" placeholder="Deixe em branco para usar o valor original">
+                <input type="text" id="baixaValor" inputmode="numeric" placeholder="Deixe em branco para usar o valor original">
               </div>
             </div>
             <div class="form-foot" style="margin-top:20px">
@@ -1470,7 +1470,7 @@
               </div>
               <div class="field">
                 <span class="field-label">Valor estimado (R$)</span>
-                <input type="number" id="oportValor" min="0" step="0.01" placeholder="0,00">
+                <input type="text" id="oportValor" inputmode="numeric" placeholder="R$ 0,00">
               </div>
               <div class="field">
                 <span class="field-label">Data</span>
@@ -3281,15 +3281,15 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/core.js?v=65"></script>
-<script src="js/auth.js?v=61"></script>
-<script src="js/mappers.js?v=57"></script>
-<script src="js/dashboard.js?v=60"></script>
+<script src="js/core.js?v=66"></script>
+<script src="js/auth.js?v=62"></script>
+<script src="js/mappers.js?v=58"></script>
+<script src="js/dashboard.js?v=61"></script>
 <script src="js/nav.js?v=59"></script>
 <script src="js/atividades.js?v=51"></script>
-<script src="js/prospeccao.js?v=56"></script>
+<script src="js/prospeccao.js?v=57"></script>
 <script src="js/configuracoes.js?v=67"></script>
-<script src="js/agenda.js?v=55"></script>
+<script src="js/agenda.js?v=56"></script>
 <script src="js/prazo-calculo.js?v=1"></script>
 <script src="js/intimacoes.js?v=73"></script>
 <script src="js/prazos.js?v=60"></script>
@@ -3298,7 +3298,7 @@
 <script src="js/relatorio.js?v=51"></script>
 <script src="js/andamentos.js?v=66"></script>
 <script src="js/documentos.js?v=59"></script>
-<script src="js/financeiro.js?v=59"></script>
+<script src="js/financeiro.js?v=60"></script>
 <script src="js/realtime.js?v=59"></script>
 </body>
 </html>

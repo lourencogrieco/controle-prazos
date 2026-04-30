@@ -189,7 +189,7 @@ function abrirModalOportunidade(id) {
   document.getElementById('oportTitulo').value       = o?.titulo || '';
   document.getElementById('oportArea').value         = o?.area || '';
   document.getElementById('oportTipo').value         = o?.tipo || '';
-  document.getElementById('oportValor').value        = o?.valor || '';
+  setarValorMoeda(document.getElementById('oportValor'), o?.valor || '');
   document.getElementById('oportData').value         = o?.data || '';
   document.getElementById('oportResponsavel').value  = o?.responsavel || '';
   document.getElementById('oportTese').value         = o?.tese || '';
@@ -220,7 +220,7 @@ document.getElementById('formOportunidade').addEventListener('submit', async e =
       titulo:       document.getElementById('oportTitulo').value.trim(),
       area:         document.getElementById('oportArea').value || null,
       tipo:         document.getElementById('oportTipo').value.trim() || null,
-      valor:        parseFloat(document.getElementById('oportValor').value) || 0,
+      valor:        lerValorMoeda(document.getElementById('oportValor')) || 0,
       data:         document.getElementById('oportData').value || null,
       responsavel:  document.getElementById('oportResponsavel').value.trim() || null,
       tese:         document.getElementById('oportTese').value.trim() || null,
@@ -261,3 +261,6 @@ async function excluirOportunidade(id) {
 // ── Search listener ───────────────────────────────────────────────────
 
 document.getElementById('buscaPipeline')?.addEventListener('input', renderPipeline);
+
+// ── Máscara de moeda ──────────────────────────────────────────────────
+{ const el = document.getElementById('oportValor'); if (el) formatarInputMoeda(el); }

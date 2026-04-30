@@ -248,6 +248,45 @@ function currentTime() {
   return new Date().toLocaleTimeString('pt-BR');
 }
 
+// ── Máscara de moeda R$ x.xxx,xx ─────────────────────────────────────
+
+function formatarInputMoeda(el) {
+  el.addEventListener('input', _mascaraMoeda);
+  el.addEventListener('focus', function () {
+    if (!this.value) this.value = 'R$ ';
+    const len = this.value.length;
+    setTimeout(() => this.setSelectionRange(len, len), 0);
+  });
+  el.addEventListener('blur', function () {
+    if (this.value === 'R$ ' || this.value === 'R$') this.value = '';
+  });
+}
+
+function _mascaraMoeda(e) {
+  let v = e.target.value.replace(/\D/g, '');
+  if (!v) { e.target.value = ''; return; }
+  v = v.replace(/^0+/, '') || '0';
+  const cents = v.padStart(3, '0');
+  const intPart = cents.slice(0, -2);
+  const decPart = cents.slice(-2);
+  const formatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + decPart;
+  e.target.value = 'R$ ' + formatted;
+}
+
+function setarValorMoeda(el, num) {
+  if (!num && num !== 0) { el.value = ''; return; }
+  const cents = Math.round(Number(num) * 100).toString().padStart(3, '0');
+  const intPart = cents.slice(0, -2);
+  const decPart = cents.slice(-2);
+  el.value = 'R$ ' + intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + decPart;
+}
+
+function lerValorMoeda(el) {
+  const raw = (el.value || '').replace(/\D/g, '');
+  if (!raw) return null;
+  return parseInt(raw, 10) / 100;
+}
+
 // ── State helpers (local updates sem recarregar tudo) ─────────────────
 
 function _stateUpsert(array, novo) {

@@ -51,6 +51,15 @@ function normalizarNumeroProcesso(value) {
   return String(value || '').replace(/\D/g, '');
 }
 
+function toggleRecursalCard(cardId) {
+  const wrap = document.getElementById(cardId);
+  const chevron = document.getElementById(cardId + '-chevron');
+  if (!wrap) return;
+  const open = wrap.style.display !== 'none';
+  wrap.style.display = open ? 'none' : '';
+  if (chevron) chevron.style.transform = open ? '' : 'rotate(90deg)';
+}
+
 function agruparAndamentosPorProcesso(andamentos) {
   const grupos = new Map();
 
@@ -184,6 +193,23 @@ function renderAndamentosNasInstancias(andamentos) {
     </tr>`;
   };
 
+  // Versão compacta para cards recursais: sem repetir processo/classe em cada linha
+  const rowHtmlCompacto = a => {
+    const data = a.data_hora ? new Date(a.data_hora).toLocaleDateString('pt-BR') : '—';
+    const isVirtual = !!a._virtualIntimacao;
+    const tipoBadge = a.is_intimacao
+      ? '<span style="background:rgba(255,170,0,.15);color:#ffaa00;padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase">Intimação</span>'
+      : '<span style="background:var(--s2);color:var(--mu);padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase">Movimento</span>';
+    const vinculoBadge = isVirtual
+      ? '<span style="background:var(--ac-soft);color:var(--ac);padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase;margin-left:4px">Vinculada</span>'
+      : '';
+    return `<tr style="cursor:pointer" onclick="abrirDetalheAndamento('${a.id}')">
+      <td style="white-space:nowrap;font-size:.78rem">${data}</td>
+      <td><div style="font-size:.82rem">${escAndamento(a.nome || '—')}</div></td>
+      <td style="white-space:nowrap">${tipoBadge}${vinculoBadge}</td>
+    </tr>`;
+  };
+
   const num1El  = document.getElementById('instanciaNumero1');
   const com1El  = document.getElementById('instanciaComarca1');
 
@@ -200,15 +226,29 @@ function renderAndamentosNasInstancias(andamentos) {
 
   if (g2.length && body2Wrap) {
     const gruposRecursais = agruparAndamentosPorProcesso(g2);
-    const processosUnicos = gruposRecursais.map(g => escAndamento(g.numero || '—'));
-    body2Wrap.innerHTML = `
+    body2Wrap.innerHTML = gruposRecursais.map((grupo, index) => {
+      // Extrair classe do primeiro andamento que tenha (ex: "AGRAVO DE INSTRUMENTO")
+      const classeRaw = grupo.andamentos.find(a => a._intimacao?.nomeClasse)
+        ?._intimacao?.nomeClasse
+        || grupo.andamentos.find(a => a.complemento && a.complemento.includes('Classe:'))
+          ?.complemento?.match(/Classe:\s*([^\n]+)/)?.[1]?.trim()
+        || '';
+      const classeHtml = classeRaw
+        ? `<span style="font-size:.72rem;color:var(--mu);margin-left:8px">${escAndamento(classeRaw)}</span>`
+        : '';
+      const cardId = `recursal-card-${index}`;
+      return `
       <div class="instancia-card instancia-card--recursal">
         <div class="instancia-content">
-          <div class="instancia-row instancia-row--recursal">
-            <span class="instancia-name">Processos recursais</span>
+          <div class="instancia-row instancia-row--recursal" style="cursor:pointer" onclick="toggleRecursalCard('${cardId}')">
+            <span class="instancia-name" style="display:flex;align-items:center;gap:6px">
+              <span class="recursal-chevron" id="${cardId}-chevron" style="transition:transform .2s;display:inline-block">▸</span>
+              Processo recursal${gruposRecursais.length > 1 ? ` ${index + 1}` : ''}
+              ${classeHtml}
+            </span>
           </div>
-          <p class="instancia-num">${processosUnicos.join(' · ')}</p>
-          <div class="andamento-table-wrap">
+          <p class="instancia-num" style="cursor:pointer" onclick="toggleRecursalCard('${cardId}')">${escAndamento(grupo.numero || '—')}</p>
+          <div class="andamento-table-wrap" id="${cardId}" style="display:none">
             <table class="andamento-table">
               <thead>
                 <tr>
@@ -218,14 +258,15 @@ function renderAndamentosNasInstancias(andamentos) {
                 </tr>
               </thead>
               <tbody>
-                ${g2.sort((a, b) => String(b.data_hora || '').localeCompare(String(a.data_hora || ''))).map(rowHtml).join('')}
+                ${grupo.andamentos.map(rowHtmlCompacto).join('')}
               </tbody>
             </table>
-            <p class="tbl-count">${g2.length} movimentação(ões) recursal(is)</p>
+            <p class="tbl-count">${grupo.andamentos.length} movimentação(ões) recursal(is)</p>
           </div>
         </div>
       </div>
     `;
+    }).join('');
   } else {
     if (body2Wrap) {
       body2Wrap.innerHTML = `

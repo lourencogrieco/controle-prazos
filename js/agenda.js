@@ -319,7 +319,7 @@ document.getElementById('eventoForm').addEventListener('submit', async e => {
 // ──────────────────────────────────────────────────────────────────────
 // INIT AGENDA
 // ──────────────────────────────────────────────────────────────────────
-renderPipeline();
+// renderPipeline() removido — é chamado por nav.js quando a aba Pipeline é aberta
 renderCalendario();
 
 const _h   = new Date();

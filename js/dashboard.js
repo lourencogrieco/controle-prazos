@@ -139,7 +139,7 @@ function renderDashboard() {
   const alertas = state.prazos.filter(p => {
     if (p.status === 'Concluído') return false;
     return daysUntil(p.prazoFatal) <= 3;
-  }).sort((a, b) => a.prazoFatal.localeCompare(b.prazoFatal));
+  }).sort((a, b) => (a.prazoFatal || '').localeCompare(b.prazoFatal || ''));
 
   const alertaEl = document.getElementById('dashAlertasPrazos');
   if (alertaEl) {
@@ -163,7 +163,7 @@ function renderDashboard() {
   // ── Próximos prazos ────────────────────────────────────────────────
   const proximos = state.prazos
     .filter(p => p.status !== 'Concluído' && daysUntil(p.prazoFatal) >= 0)
-    .sort((a, b) => a.prazoFatal.localeCompare(b.prazoFatal))
+    .sort((a, b) => (a.prazoFatal || '').localeCompare(b.prazoFatal || ''))
     .slice(0, 6);
 
   const contPrazos = document.getElementById('dashProximosPrazos');
@@ -254,7 +254,7 @@ function renderDashboardRiscos() {
   const hoje = new Date().toISOString().slice(0, 10);
   const prazosVencidos = state.prazos
     .filter(p => p.status !== 'Concluído' && daysUntil(p.prazoFatal) < 0)
-    .sort((a, b) => a.prazoFatal.localeCompare(b.prazoFatal));
+    .sort((a, b) => (a.prazoFatal || '').localeCompare(b.prazoFatal || ''));
   const intimacoesPendentes = state.intimacoes
     .filter(i => (i.status || 'pendente') === 'pendente')
     .sort((a, b) => (b.dataPublicacao || '').localeCompare(a.dataPublicacao || ''));

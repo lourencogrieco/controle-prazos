@@ -350,7 +350,7 @@ function renderFinContasPagar() {
     if (fStatus && st !== fStatus) return false;
     if (fTipo && c.tipo !== fTipo) return false;
     if (fMes && !(c.vencimento || '').startsWith(fMes)) return false;
-    if (busca && !c.descricao.toLowerCase().includes(busca)) return false;
+    if (busca && !(c.descricao || '').toLowerCase().includes(busca)) return false;
     return true;
   }).sort((a, b) => (a.vencimento || '').localeCompare(b.vencimento || ''));
 
@@ -735,7 +735,7 @@ document.getElementById('formDarBaixa').addEventListener('submit', async e => {
 
     const upd = { status: novoStatus, data_pagamento: data };
     if (valor) upd.valor_pago = valor;
-    if (tipo === 'desp') { delete upd.data_pagamento; upd.data = data; }
+    if (tipo === 'desp') { delete upd.data_pagamento; /* preserva data original da despesa */ }
 
     const { error } = await db.from(tabela)
       .update(upd)
@@ -867,7 +867,7 @@ function renderFinRelatorio() {
         <td>${_catBadge(c.categoria)}</td>
         <td class="fin-cell-date">${c.vencimento ? formatDate(c.vencimento) : '—'}</td>
         <td class="fin-cell-mono">${formatCurrency(c.valor)}</td>
-        <td>${_badgeRecorrencia(c.recorrencia, c.vencimento)}</td>
+        <td>${_badgeRecorrencia(c.recorrencia, c.parcelaNum, c.parcelaTotal)}</td>
         <td>${_badgeStatus(st)}</td>
         <td class="fin-cell-date">${c.dataPagamento ? formatDate(c.dataPagamento) : '—'}</td>
       </tr>`;
@@ -880,7 +880,7 @@ function renderFinRelatorio() {
       if (fCat && c.tipo !== fCat) return false;
       if (fDe  && (c.vencimento || '') < fDe)  return false;
       if (fAte && (c.vencimento || '') > fAte + '-31') return false;
-      if (busca && !c.descricao.toLowerCase().includes(busca)) return false;
+      if (busca && !(c.descricao || '').toLowerCase().includes(busca)) return false;
       return true;
     }).sort((a, b) => (a.vencimento || '').localeCompare(b.vencimento || ''));
 
@@ -897,7 +897,7 @@ function renderFinRelatorio() {
         <td>${escHtml(c.tipo || '—')}</td>
         <td class="fin-cell-date">${c.vencimento ? formatDate(c.vencimento) : '—'}</td>
         <td class="fin-cell-mono">${formatCurrency(c.valor)}</td>
-        <td>${_badgeRecorrencia(c.recorrencia, c.vencimento)}</td>
+        <td>${_badgeRecorrencia(c.recorrencia, c.parcelaNum, c.parcelaTotal)}</td>
         <td>${_badgeStatus(st)}</td>
         <td class="fin-cell-date">${c.dataPagamento ? formatDate(c.dataPagamento) : '—'}</td>
       </tr>`;

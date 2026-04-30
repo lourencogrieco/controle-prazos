@@ -143,7 +143,7 @@ function dbParaCobranca(row) {
     id:            row.id,
     clienteId:     row.cliente_id || null,
     clienteNome:   row.cliente_nome || '',
-    descricao:     row.descricao,
+    descricao:     row.descricao || '',
     valor:         Number(row.valor) || 0,
     vencimento:    row.data_vencimento || null,
     categoria:     row.categoria || '',
@@ -161,7 +161,7 @@ function dbParaCobranca(row) {
 function dbParaContaPagar(row) {
   return {
     id:            row.id,
-    descricao:     row.descricao,
+    descricao:     row.descricao || '',
     tipo:          row.tipo || '',
     valor:         Number(row.valor) || 0,
     vencimento:    row.data_vencimento || null,
@@ -181,7 +181,7 @@ function dbParaDespesa(row) {
     id:          row.id,
     clienteId:   row.cliente_id || null,
     clienteNome: row.cliente_nome || '',
-    descricao:   row.descricao,
+    descricao:   row.descricao || '',
     data:        row.data || null,
     valor:       Number(row.valor) || 0,
     categoria:   row.categoria || '',

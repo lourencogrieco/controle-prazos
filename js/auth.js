@@ -169,7 +169,11 @@ let _idleWarnShown  = false;
 let _authActivityBound = false;
 const _authActivityEvents = ['mousemove', 'keydown', 'touchstart', 'click'];
 
+let _idleThrottle = null;
 function _resetIdleTimer() {
+  if (_idleThrottle) return;
+  _idleThrottle = setTimeout(() => { _idleThrottle = null; }, 2000);
+
   clearTimeout(_idleTimer);
   clearTimeout(_idleWarnTimer);
   _idleWarnShown = false;

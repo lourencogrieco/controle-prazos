@@ -5,8 +5,8 @@ const TIPO_COR = { 'Prazo':'prazo', 'Audiência':'audiencia', 'Reunião':'reunia
 
 // agendaEventos é declarado em core.js (carregado antes deste arquivo)
 
-let calAno = 2026;
-let calMes = 3;
+let calAno = new Date().getFullYear();
+let calMes = new Date().getMonth();
 let calDataSelecionada = null;
 let agendaFiltro = 'todos'; // 'todos' | 'minha'
 

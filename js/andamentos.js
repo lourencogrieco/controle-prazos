@@ -12,6 +12,19 @@ async function carregarAndamentosCNJ(pastaId) {
 
   if (error) { console.error('Erro ao carregar andamentos:', error); return; }
 
+  // Atualizar índice de processos com os recursais desta pasta
+  if (data) {
+    for (const a of data) {
+      if (a.numero_processo) {
+        const chave = a.numero_processo.replace(/\D/g, '');
+        if (chave && !_pastasPorProcesso.has(chave)) {
+          const pasta = state.pastas.find(p => p.id === pastaId);
+          if (pasta) _pastasPorProcesso.set(chave, pasta);
+        }
+      }
+    }
+  }
+
   state.andamentosCNJ = montarAndamentosComIntimacoesVinculadas(data || [], pastaId);
   renderAndamentosNasInstancias(state.andamentosCNJ);
 }
@@ -67,29 +80,53 @@ function agruparAndamentosPorProcesso(andamentos) {
 
 function montarAndamentosComIntimacoesVinculadas(andamentos, pastaId) {
   const base = [...(andamentos || [])];
+
+  // Mapa de numero_processo normalizado → grau dos andamentos reais (CNJ)
+  // para que intimações vinculadas herdem o grau correto e sejam agrupadas
+  // no mesmo card do processo, em vez de criar um card duplicado.
+  const grauPorProcesso = new Map();
+  base.forEach(a => {
+    if (a.numero_processo) {
+      const chave = normalizarNumeroProcesso(a.numero_processo);
+      if (chave && !grauPorProcesso.has(chave)) grauPorProcesso.set(chave, a.grau || 'G1');
+    }
+  });
+
+  // Se o processo da pasta é o mesmo da intimação, grau deve ser G1
+  const pasta = (state.pastas || []).find(p => p.id === pastaId);
+  const processoPasta = normalizarNumeroProcesso(pasta?.processo);
+  if (processoPasta) grauPorProcesso.set(processoPasta, grauPorProcesso.get(processoPasta) || 'G1');
+
   const vinculadas = (state.intimacoes || [])
     .filter(i => i.pastaId === pastaId && (i.status || 'pendente') !== 'arquivada')
-    .map(i => ({
-      id: `intimacao-${i.id}`,
-      _virtualIntimacao: true,
-      intimacao_id: i.id,
-      empresa_id: state.empresaId,
-      pasta_id: pastaId,
-      numero_processo: i.processo || '',
-      data_hora: i.dataPublicacao ? `${i.dataPublicacao}T12:00:00` : null,
-      nome: i.tipoDocumento || i.tipoComunicacao || 'Intimação',
-      _intimacao: i,
-      complemento: [
-        i.nomeClasse ? `Classe: ${i.nomeClasse}` : '',
-        i.orgao ? `Órgão: ${i.orgao}` : '',
-        textoAndamentoIntimacao(i.texto) || '',
-      ].filter(Boolean).join('\n'),
-      codigo: null,
-      is_intimacao: true,
-      grau: grauDaIntimacao(i),
-      tribunal: i.tribunal || 'intimacoes_pje',
-      sincronizado_em: null,
-    }));
+    .map(i => {
+      const numNorm = normalizarNumeroProcesso(i.processo);
+      // Herdar grau de andamentos existentes com mesmo processo;
+      // caso contrário, deduzir pelo número do processo
+      const grau = grauPorProcesso.get(numNorm) || grauDaIntimacao(i);
+
+      return {
+        id: `intimacao-${i.id}`,
+        _virtualIntimacao: true,
+        intimacao_id: i.id,
+        empresa_id: state.empresaId,
+        pasta_id: pastaId,
+        numero_processo: i.processo || '',
+        data_hora: i.dataPublicacao ? `${i.dataPublicacao}T12:00:00` : null,
+        nome: i.tipoDocumento || i.tipoComunicacao || 'Intimação',
+        _intimacao: i,
+        complemento: [
+          i.nomeClasse ? `Classe: ${i.nomeClasse}` : '',
+          i.orgao ? `Órgão: ${i.orgao}` : '',
+          textoAndamentoIntimacao(i.texto) || '',
+        ].filter(Boolean).join('\n'),
+        codigo: null,
+        is_intimacao: true,
+        grau,
+        tribunal: i.tribunal || 'intimacoes_pje',
+        sincronizado_em: null,
+      };
+    });
 
   return [...base, ...vinculadas]
     .sort((a, b) => String(b.data_hora || '').localeCompare(String(a.data_hora || '')));

@@ -271,12 +271,13 @@ async function carregarDados() {
     db.from('oportunidades_crm').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
     db.from('modelos_documentos').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
     db.from('pje_sync_logs').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }).limit(20),
+    db.from('andamentos_processo').select('numero_processo,pasta_id').eq('empresa_id', eid),
   ];
 
-  const [pr, pz, tf, tp, cl, ar, it, cfg, ev, us, hon, cob, ctp, dep, opo, mod, pjeLogs] = await Promise.all(queries);
+  const [pr, pz, tf, tp, cl, ar, it, cfg, ev, us, hon, cob, ctp, dep, opo, mod, pjeLogs, andProc] = await Promise.all(queries);
 
   state.pastas     = (pr.data || []).map(dbParaPasta);
-  _reconstruirIndicePastas();
+  _reconstruirIndicePastas(andProc.data);
 
   // Mapa de pastas por ID para enriquecer prazos (O(1) em vez de find)
   const _pastasPorId = new Map(state.pastas.map(p => [p.id, p]));

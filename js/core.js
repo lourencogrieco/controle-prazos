@@ -63,11 +63,26 @@ async function proxyFetch(url, options = {}) {
 // ──────────────────────────────────────────────────────────────────────
 const _pastasPorProcesso = new Map();
 
-function _reconstruirIndicePastas() {
+function _reconstruirIndicePastas(andamentosProcessos) {
   _pastasPorProcesso.clear();
+  // Indexar pelo processo principal da pasta
   for (const p of state.pastas) {
     if (p.processo) {
       _pastasPorProcesso.set(p.processo.replace(/\D/g, ''), p);
+    }
+  }
+  // Indexar também pelos processos recursais dos andamentos (CNJ)
+  // para que intimações de processos recursais encontrem a pasta correta
+  if (andamentosProcessos) {
+    const pastaPorId = new Map(state.pastas.map(p => [p.id, p]));
+    for (const row of andamentosProcessos) {
+      if (row.numero_processo && row.pasta_id) {
+        const chave = row.numero_processo.replace(/\D/g, '');
+        if (chave && !_pastasPorProcesso.has(chave)) {
+          const pasta = pastaPorId.get(row.pasta_id);
+          if (pasta) _pastasPorProcesso.set(chave, pasta);
+        }
+      }
     }
   }
 }

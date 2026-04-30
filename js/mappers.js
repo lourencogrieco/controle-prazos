@@ -89,6 +89,7 @@ function dbParaIntimacao(row) {
     status:           row.status_lhub || (row.lida ? 'cumprida' : 'pendente'),
     arquivadaEm:      row.arquivada_em || null,
     meioCompleto:     row.meio_completo || '',
+    grau:             row.grau || null,
   };
 }
 

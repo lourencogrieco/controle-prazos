@@ -17,6 +17,7 @@ async function carregarAndamentosCNJ(pastaId) {
 }
 
 function grauDaIntimacao(intim) {
+  if (intim?.grau) return intim.grau;
   const digits = (intim?.processo || '').replace(/\D/g, '');
   const foro = digits.length >= 20 ? digits.slice(16) : '';
   return foro === '0000' ? 'G2' : 'G1';

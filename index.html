@@ -1268,7 +1268,7 @@
               </div>
               <div class="field">
                 <span class="field-label">Recorrência</span>
-                <select id="cobRecorrencia">
+                <select id="cobRecorrencia" onchange="togglePeriodoRecorrencia('cob')">
                   <option value="nenhuma">Sem recorrência</option>
                   <option value="semanal">Semanal</option>
                   <option value="quinzenal">Quinzenal</option>
@@ -1278,6 +1278,10 @@
                   <option value="semestral">Semestral</option>
                   <option value="anual">Anual</option>
                 </select>
+              </div>
+              <div class="field" id="cobPeriodoWrap" style="display:none">
+                <span class="field-label">Nº de parcelas</span>
+                <input type="number" id="cobParcelas" min="2" max="120" placeholder="Ex: 12">
               </div>
               <div class="field modal-full">
                 <span class="field-label">Observações</span>
@@ -1328,7 +1332,7 @@
               </div>
               <div class="field">
                 <span class="field-label">Recorrência</span>
-                <select id="contRecorrencia">
+                <select id="contRecorrencia" onchange="togglePeriodoRecorrencia('cont')">
                   <option value="nenhuma">Sem recorrência</option>
                   <option value="semanal">Semanal</option>
                   <option value="quinzenal">Quinzenal</option>
@@ -1338,6 +1342,10 @@
                   <option value="semestral">Semestral</option>
                   <option value="anual">Anual</option>
                 </select>
+              </div>
+              <div class="field" id="contPeriodoWrap" style="display:none">
+                <span class="field-label">Nº de parcelas</span>
+                <input type="number" id="contParcelas" min="2" max="120" placeholder="Ex: 12">
               </div>
               <div class="field modal-full">
                 <span class="field-label">Observações</span>

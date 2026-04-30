@@ -44,6 +44,14 @@ function _badgeRecorrencia(rec, parcelaNum, parcelaTotal) {
   return `<span class="badge-recorr">${label}</span>`;
 }
 
+// ── Período de recorrência (show/hide) ───────────────────────────────
+
+function togglePeriodoRecorrencia(prefix) {
+  const rec = document.getElementById(prefix + 'Recorrencia').value;
+  const wrap = document.getElementById(prefix + 'PeriodoWrap');
+  if (wrap) wrap.style.display = rec !== 'nenhuma' ? '' : 'none';
+}
+
 // ── Tab switching ─────────────────────────────────────────────────────
 
 function finMudarAba(tab) {
@@ -485,6 +493,8 @@ function abrirModalCobranca(id) {
   document.getElementById('cobVencimento').value   = c?.vencimento || '';
   document.getElementById('cobCategoria').value    = c?.categoria || '';
   document.getElementById('cobRecorrencia').value  = c?.recorrencia || 'nenhuma';
+  document.getElementById('cobParcelas').value     = c?.parcelaTotal || '';
+  togglePeriodoRecorrencia('cob');
   document.getElementById('cobObservacoes').value  = c?.observacoes || '';
 
   // Populate clientes datalist
@@ -498,6 +508,7 @@ function abrirModalCobranca(id) {
 function fecharModalCobranca() {
   document.getElementById('modalCobranca').classList.remove('open');
   document.getElementById('formCobranca').reset();
+  document.getElementById('cobPeriodoWrap').style.display = 'none';
 }
 
 document.getElementById('formCobranca').addEventListener('submit', async e => {
@@ -516,6 +527,8 @@ document.getElementById('formCobranca').addEventListener('submit', async e => {
       data_vencimento: document.getElementById('cobVencimento').value || null,
       categoria:       document.getElementById('cobCategoria').value || null,
       recorrencia:     document.getElementById('cobRecorrencia').value || 'nenhuma',
+      parcela_total:   parseInt(document.getElementById('cobParcelas').value) || null,
+      parcela_num:     existente?.parcelaNum || (parseInt(document.getElementById('cobParcelas').value) ? 1 : null),
       observacoes:     document.getElementById('cobObservacoes').value.trim() || null,
       status:          existente?.status || 'pendente',
       data_pagamento:  existente?.dataPagamento || null,
@@ -564,6 +577,8 @@ function abrirModalContaPagar(id) {
   setarValorMoeda(document.getElementById('contValor'), c?.valor || '');
   document.getElementById('contVencimento').value  = c?.vencimento || '';
   document.getElementById('contRecorrencia').value = c?.recorrencia || 'nenhuma';
+  document.getElementById('contParcelas').value    = c?.parcelaTotal || '';
+  togglePeriodoRecorrencia('cont');
   document.getElementById('contObservacoes').value = c?.observacoes || '';
 
   document.getElementById('modalContaTitulo').textContent = c ? 'Editar Conta a Pagar' : 'Nova Conta a Pagar';
@@ -573,6 +588,7 @@ function abrirModalContaPagar(id) {
 function fecharModalContaPagar() {
   document.getElementById('modalContaPagar').classList.remove('open');
   document.getElementById('formContaPagar').reset();
+  document.getElementById('contPeriodoWrap').style.display = 'none';
 }
 
 document.getElementById('formContaPagar').addEventListener('submit', async e => {
@@ -590,6 +606,8 @@ document.getElementById('formContaPagar').addEventListener('submit', async e => 
       valor:           lerValorMoeda(document.getElementById('contValor')) || 0,
       data_vencimento: document.getElementById('contVencimento').value || null,
       recorrencia:     document.getElementById('contRecorrencia').value || 'nenhuma',
+      parcela_total:   parseInt(document.getElementById('contParcelas').value) || null,
+      parcela_num:     existente?.parcelaNum || (parseInt(document.getElementById('contParcelas').value) ? 1 : null),
       observacoes:     document.getElementById('contObservacoes').value.trim() || null,
       status:          existente?.status || 'pendente',
       data_pagamento:  existente?.dataPagamento || null,

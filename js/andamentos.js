@@ -463,7 +463,58 @@ async function sincronizarAndamentos(silencioso = false) {
 
 // ── ANDAMENTO MANUAL ─────────────────────────────────────────────────────────
 
-function abrirAndamentoManual() {
+function _buildProcessoDestinoOptions(pasta, preselectGrau, preselectProcesso) {
+  const sel = document.getElementById('andManualProcessoDestino');
+  if (!sel) return;
+  sel.innerHTML = '';
+
+  // 1ª Instância — processo principal da pasta
+  const proc1 = pasta?.processo || '';
+  const opt1 = document.createElement('option');
+  opt1.value = `G1|${proc1}`;
+  opt1.textContent = `1ª Instância${proc1 ? ' — ' + proc1 : ''}`;
+  sel.appendChild(opt1);
+
+  // Processos recursais existentes (G2, STJ, STF) extraídos dos andamentos atuais
+  const seen = new Set();
+  (state.andamentosCNJ || []).forEach(a => {
+    if (!a.numero_processo || a.grau === 'G1' || a.grau === 'JE') return;
+    const chave = `${a.grau || 'G2'}|${a.numero_processo}`;
+    if (seen.has(chave)) return;
+    seen.add(chave);
+    const grauLabel = { G2: '2ª Inst.', STJ: 'STJ', STF: 'STF', SUP: 'STJ' }[a.grau] || a.grau;
+    const opt = document.createElement('option');
+    opt.value = chave;
+    opt.textContent = `${grauLabel} — ${a.numero_processo}`;
+    sel.appendChild(opt);
+  });
+
+  // Opções para novo processo
+  ['G2|__novo__', 'STJ|__novo__', 'STF|__novo__'].forEach(val => {
+    const [g] = val.split('|');
+    const label = { G2: '2ª Instância', STJ: 'STJ', STF: 'STF' }[g];
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = `+ Novo processo — ${label}`;
+    sel.appendChild(opt);
+  });
+
+  // Preselecionar
+  if (preselectProcesso && preselectGrau) {
+    const target = `${preselectGrau}|${preselectProcesso}`;
+    if ([...sel.options].some(o => o.value === target)) sel.value = target;
+  }
+  toggleNovoProcessoInput();
+}
+
+function toggleNovoProcessoInput() {
+  const sel = document.getElementById('andManualProcessoDestino');
+  const wrap = document.getElementById('andManualNovoProcessoWrap');
+  if (!sel || !wrap) return;
+  wrap.style.display = sel.value.includes('__novo__') ? '' : 'none';
+}
+
+function abrirAndamentoManual(grau, numeroProcesso) {
   const pasta = state.pastas.find(p => p.id === state.currentPastaId);
   if (!pasta) { toast('Abra uma pasta primeiro.', 'error'); return; }
   document.getElementById('andManualId').value      = '';
@@ -471,9 +522,10 @@ function abrirAndamentoManual() {
   document.getElementById('andManualData').value    = new Date().toISOString().slice(0, 10);
   document.getElementById('andManualTipo').value    = '';
   document.getElementById('andManualDesc').value    = '';
-  document.getElementById('andManualGrau').value    = 'G1';
+  document.getElementById('andManualNovoProcesso').value = '';
   document.getElementById('andManualModalTitle').textContent = 'Lançar Andamento';
   document.getElementById('btnSalvarAndManual').textContent  = 'Salvar';
+  _buildProcessoDestinoOptions(pasta, grau || 'G1', numeroProcesso || pasta?.processo);
   document.getElementById('modalAndamentoManual').classList.add('open');
 }
 
@@ -489,19 +541,29 @@ document.getElementById('formAndamentoManual').addEventListener('submit', async 
     const data    = document.getElementById('andManualData').value;
     const tipo    = document.getElementById('andManualTipo').value;
     const desc    = document.getElementById('andManualDesc').value.trim();
-    const grau    = document.getElementById('andManualGrau').value;
-    const numeroProcesso = (pasta?.processo || pasta?.numero || '').trim();
+
+    // Extrair grau e numero_processo do dropdown de processo destino
+    const destino = document.getElementById('andManualProcessoDestino').value || 'G1|';
+    const [grau, processoDestino] = destino.split('|');
+    let numeroProcesso;
+    if (processoDestino === '__novo__') {
+      numeroProcesso = (document.getElementById('andManualNovoProcesso').value || '').trim();
+      if (!numeroProcesso) { toast('Informe o número do novo processo.', 'error'); return; }
+    } else {
+      numeroProcesso = processoDestino || (pasta?.processo || pasta?.numero || '').trim();
+    }
 
     if (!pasta) { toast('Pasta não encontrada. Reabra a pasta e tente novamente.', 'error'); return; }
     if (!data || !tipo || !desc) { toast('Preencha data, tipo e descrição do andamento.', 'error'); return; }
 
     if (isEdit) {
       const { error } = await db.from('andamentos_processo').update({
-        data_hora:    data + 'T00:00:00',
-        nome:         tipo,
-        complemento:  desc,
+        data_hora:       data + 'T00:00:00',
+        nome:            tipo,
+        complemento:     desc,
         grau,
-        is_intimacao: /intima[çc]/i.test(tipo),
+        numero_processo: numeroProcesso,
+        is_intimacao:    /intima[çc]/i.test(tipo),
       }).eq('id', andId).eq('empresa_id', state.empresaId);
       if (error) { toast('Erro ao atualizar: ' + error.message, 'error'); return; }
       toast('Andamento atualizado!');
@@ -629,12 +691,14 @@ function editarAndamentoAtual() {
   if (!a || a.tribunal !== 'manual') return;
   document.getElementById('modalDetalheAndamento').classList.remove('open');
 
+  const pasta = state.pastas.find(p => p.id === a.pasta_id);
   document.getElementById('andManualId').value      = a.id;
   document.getElementById('andManualPastaId').value = a.pasta_id;
   document.getElementById('andManualData').value    = a.data_hora?.slice(0, 10) || '';
   document.getElementById('andManualTipo').value    = a.nome || '';
   document.getElementById('andManualDesc').value    = a.complemento || '';
-  document.getElementById('andManualGrau').value    = a.grau || 'G1';
+  document.getElementById('andManualNovoProcesso').value = '';
+  _buildProcessoDestinoOptions(pasta, a.grau || 'G1', a.numero_processo);
   document.getElementById('andManualModalTitle').textContent = 'Editar Andamento';
   document.getElementById('btnSalvarAndManual').textContent  = 'Atualizar';
   document.getElementById('modalAndamentoManual').classList.add('open');

@@ -3193,13 +3193,15 @@
             <input type="date" id="andManualData" required>
           </div>
           <div class="field">
-            <span class="field-label">Instância</span>
-            <select id="andManualGrau">
-              <option value="G1">1ª Instância</option>
-              <option value="G2">2ª Instância</option>
-              <option value="STJ">Superior Tribunal de Justiça</option>
-              <option value="STF">Supremo Tribunal Federal</option>
+            <span class="field-label">Processo destino</span>
+            <select id="andManualProcessoDestino" onchange="toggleNovoProcessoInput()">
+              <!-- Populado dinamicamente por abrirAndamentoManual -->
             </select>
+          </div>
+          <input type="hidden" id="andManualGrau">
+          <div class="field" id="andManualNovoProcessoWrap" style="display:none;grid-column:1/-1">
+            <span class="field-label">Nº do novo processo</span>
+            <input type="text" id="andManualNovoProcesso" placeholder="Ex: 1234567-89.2024.8.26.0000">
           </div>
         </div>
         <div class="field" style="margin-top:12px">

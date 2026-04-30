@@ -193,33 +193,68 @@ function renderAndamentosNasInstancias(andamentos) {
     </tr>`;
   };
 
-  // Versão compacta para cards recursais: sem repetir processo/classe em cada linha
+  // Versão compacta para cards colapsáveis: sem repetir processo em cada linha, mostra nome + descrição
   const rowHtmlCompacto = a => {
     const data = a.data_hora ? new Date(a.data_hora).toLocaleDateString('pt-BR') : '—';
+    const isManual = a.tribunal === 'manual';
     const isVirtual = !!a._virtualIntimacao;
     const tipoBadge = a.is_intimacao
       ? '<span style="background:rgba(255,170,0,.15);color:#ffaa00;padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase">Intimação</span>'
       : '<span style="background:var(--s2);color:var(--mu);padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase">Movimento</span>';
+    const manualBadge = isManual
+      ? '<span style="background:rgba(0,200,150,.12);color:#00c896;padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase;margin-left:4px">Manual</span>'
+      : '';
     const vinculoBadge = isVirtual
       ? '<span style="background:var(--ac-soft);color:var(--ac);padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase;margin-left:4px">Vinculada</span>'
       : '';
+    const snippet = a.complemento ? `<div style="font-size:.72rem;color:var(--mu);margin-top:2px">${escAndamento(a.complemento.slice(0,80))}${a.complemento.length > 80 ? '…' : ''}</div>` : '';
     return `<tr style="cursor:pointer" onclick="abrirDetalheAndamento('${a.id}')">
       <td style="white-space:nowrap;font-size:.78rem">${data}</td>
-      <td><div style="font-size:.82rem">${escAndamento(a.nome || '—')}</div></td>
-      <td style="white-space:nowrap">${tipoBadge}${vinculoBadge}</td>
+      <td>
+        <div style="font-size:.82rem">${escAndamento(a.nome || '—')}</div>
+        ${snippet}
+      </td>
+      <td style="white-space:nowrap">${tipoBadge}${manualBadge}${vinculoBadge}</td>
     </tr>`;
   };
 
   const num1El  = document.getElementById('instanciaNumero1');
   const com1El  = document.getElementById('instanciaComarca1');
+  const card1El = document.getElementById('instanciaCard1');
 
   if (g1.length) {
-    body1.innerHTML = g1.map(rowHtml).join('');
+    // Tornar colapsável como os cards recursais
+    const tableWrap = card1El ? card1El.querySelector('.andamento-table-wrap') : null;
+    if (tableWrap && !tableWrap.id) tableWrap.id = 'g1-card-table';
+    if (tableWrap) tableWrap.style.display = 'none';
+
+    // Adicionar chevron e tornar header clicável
+    const nameEl = card1El ? card1El.querySelector('.instancia-name') : null;
+    if (nameEl && !nameEl.querySelector('.recursal-chevron')) {
+      nameEl.style.display = 'flex';
+      nameEl.style.alignItems = 'center';
+      nameEl.style.gap = '6px';
+      nameEl.insertAdjacentHTML('afterbegin', '<span class="recursal-chevron" id="g1-card-table-chevron" style="transition:transform .2s;display:inline-block">▸</span>');
+    }
+    const row1 = card1El ? card1El.querySelector('.instancia-row') : null;
+    if (row1) {
+      row1.style.cursor = 'pointer';
+      row1.onclick = () => toggleRecursalCard('g1-card-table');
+    }
+    if (num1El) {
+      num1El.style.cursor = 'pointer';
+      num1El.onclick = () => toggleRecursalCard('g1-card-table');
+    }
+    if (com1El) {
+      com1El.style.cursor = 'pointer';
+      com1El.onclick = () => toggleRecursalCard('g1-card-table');
+    }
+
+    body1.innerHTML = g1.map(rowHtmlCompacto).join('');
     if (count1) count1.textContent = `${g1.length} movimentação(ões) · CNJ/DataJud + intimações vinculadas`;
   } else {
     body1.innerHTML = '<tr><td colspan="3" class="tbl-empty">Nenhum andamento de 1ª instância. Clique em "Sincronizar CNJ".</td></tr>';
     if (count1) count1.textContent = '';
-    // Limpa número/comarca se não há andamentos de 1ª instância
     if (num1El && !g1.length) num1El.textContent = '—';
     if (com1El && !g1.length) com1El.textContent = 'Comarca: —';
   }
@@ -303,10 +338,10 @@ function renderAndamentosNasInstancias(andamentos) {
   if (num2El && !body2Wrap) num2El.textContent = g2.find(a => a.numero_processo)?.numero_processo || '—';
 
   // STJ
-  _renderInstanciaSuperior(stj, 'instanciaSTJBody', 'andamentosBodySTJ', 'andamentosCountSTJ', 'instanciaNumeroSTJ', 'Recurso ao STJ', 'STJ', rowHtml);
+  _renderInstanciaSuperior(stj, 'instanciaSTJBody', 'andamentosBodySTJ', 'andamentosCountSTJ', 'instanciaNumeroSTJ', 'Recurso ao STJ', 'STJ', rowHtmlCompacto);
 
   // STF
-  _renderInstanciaSuperior(stf, 'instanciaSTFBody', 'andamentosBodySTF', 'andamentosCountSTF', 'instanciaNumeroSTF', 'Recurso ao STF', 'STF', rowHtml);
+  _renderInstanciaSuperior(stf, 'instanciaSTFBody', 'andamentosBodySTF', 'andamentosCountSTF', 'instanciaNumeroSTF', 'Recurso ao STF', 'STF', rowHtmlCompacto);
 }
 
 function _renderInstanciaSuperior(lista, bodyWrapId, bodyId, countId, numId, label, sigla, rowHtml) {

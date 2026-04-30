@@ -169,7 +169,7 @@ function renderAndamentosNasInstancias(andamentos) {
     const vinculoBadge = isVirtual
       ? '<span style="background:var(--ac-soft);color:var(--ac);padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:.5px;text-transform:uppercase;margin-left:4px">Vinculada</span>'
       : '';
-    const processo = isVirtual && a.numero_processo
+    const processo = a.numero_processo
       ? `<div style="font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--ac);margin-top:2px">${escAndamento(a.numero_processo)}</div>`
       : '';
     const snippet = a.complemento ? `<div style="font-size:.72rem;color:var(--mu);margin-top:2px">${escAndamento(a.complemento.slice(0,80))}${a.complemento.length > 80 ? '…' : ''}</div>` : '';
@@ -200,13 +200,14 @@ function renderAndamentosNasInstancias(andamentos) {
 
   if (g2.length && body2Wrap) {
     const gruposRecursais = agruparAndamentosPorProcesso(g2);
-    body2Wrap.innerHTML = gruposRecursais.map((grupo, index) => `
+    const processosUnicos = gruposRecursais.map(g => escAndamento(g.numero || '—'));
+    body2Wrap.innerHTML = `
       <div class="instancia-card instancia-card--recursal">
         <div class="instancia-content">
           <div class="instancia-row instancia-row--recursal">
-            <span class="instancia-name">Processo recursal${gruposRecursais.length > 1 ? ` ${index + 1}` : ''}</span>
+            <span class="instancia-name">Processos recursais</span>
           </div>
-          <p class="instancia-num">${escAndamento(grupo.numero || '—')}</p>
+          <p class="instancia-num">${processosUnicos.join(' · ')}</p>
           <div class="andamento-table-wrap">
             <table class="andamento-table">
               <thead>
@@ -217,14 +218,14 @@ function renderAndamentosNasInstancias(andamentos) {
                 </tr>
               </thead>
               <tbody>
-                ${grupo.andamentos.map(rowHtml).join('')}
+                ${g2.sort((a, b) => String(b.data_hora || '').localeCompare(String(a.data_hora || ''))).map(rowHtml).join('')}
               </tbody>
             </table>
-            <p class="tbl-count">${grupo.andamentos.length} movimentação(ões) recursal(is)</p>
+            <p class="tbl-count">${g2.length} movimentação(ões) recursal(is)</p>
           </div>
         </div>
       </div>
-    `).join('');
+    `;
   } else {
     if (body2Wrap) {
       body2Wrap.innerHTML = `

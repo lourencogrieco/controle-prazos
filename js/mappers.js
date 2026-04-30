@@ -277,6 +277,7 @@ async function carregarDados() {
   const [pr, pz, tf, tp, cl, ar, it, cfg, ev, us, hon, cob, ctp, dep, opo, mod, pjeLogs, andProc] = await Promise.all(queries);
 
   state.pastas     = (pr.data || []).map(dbParaPasta);
+  if (andProc.error) console.warn('Erro ao carregar índice de processos recursais:', andProc.error.message);
   _reconstruirIndicePastas(andProc.data);
 
   // Mapa de pastas por ID para enriquecer prazos (O(1) em vez de find)

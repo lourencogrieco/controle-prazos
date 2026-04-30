@@ -2055,6 +2055,72 @@
                   </div>
                 </div>
               </div>
+
+              <!-- SUPERIOR TRIBUNAL DE JUSTIÇA -->
+              <div class="instancia-section" id="instanciaSectionSTJ">
+                <div class="instancia-head">
+                  <strong class="instancia-label">SUPERIOR TRIBUNAL DE JUSTIÇA</strong>
+                  <button class="btn-outline btn-sm">+ Novo incidente/recurso</button>
+                </div>
+                <div id="instanciaSTJBody">
+                  <div class="instancia-card">
+                    <div class="instancia-content">
+                      <div class="instancia-row instancia-row--recursal">
+                        <span class="instancia-name">Recurso ao STJ</span>
+                      </div>
+                      <p class="instancia-num" id="instanciaNumeroSTJ">—</p>
+                      <div class="andamento-table-wrap">
+                        <table class="andamento-table">
+                          <thead>
+                            <tr>
+                              <th style="width:110px">Data</th>
+                              <th>Andamento</th>
+                              <th style="width:90px">Tipo</th>
+                            </tr>
+                          </thead>
+                          <tbody id="andamentosBodySTJ">
+                            <tr><td colspan="3" class="tbl-empty">Nenhum andamento no STJ encontrado.</td></tr>
+                          </tbody>
+                        </table>
+                        <p class="tbl-count" id="andamentosCountSTJ"></p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SUPREMO TRIBUNAL FEDERAL -->
+              <div class="instancia-section" id="instanciaSectionSTF">
+                <div class="instancia-head">
+                  <strong class="instancia-label">SUPREMO TRIBUNAL FEDERAL</strong>
+                  <button class="btn-outline btn-sm">+ Novo incidente/recurso</button>
+                </div>
+                <div id="instanciaSTFBody">
+                  <div class="instancia-card">
+                    <div class="instancia-content">
+                      <div class="instancia-row instancia-row--recursal">
+                        <span class="instancia-name">Recurso ao STF</span>
+                      </div>
+                      <p class="instancia-num" id="instanciaNumeroSTF">—</p>
+                      <div class="andamento-table-wrap">
+                        <table class="andamento-table">
+                          <thead>
+                            <tr>
+                              <th style="width:110px">Data</th>
+                              <th>Andamento</th>
+                              <th style="width:90px">Tipo</th>
+                            </tr>
+                          </thead>
+                          <tbody id="andamentosBodySTF">
+                            <tr><td colspan="3" class="tbl-empty">Nenhum andamento no STF encontrado.</td></tr>
+                          </tbody>
+                        </table>
+                        <p class="tbl-count" id="andamentosCountSTF"></p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- DADOS DO PROCESSO -->
@@ -3123,7 +3189,8 @@
             <select id="andManualGrau">
               <option value="G1">1ª Instância</option>
               <option value="G2">2ª Instância</option>
-              <option value="SUP">Superior</option>
+              <option value="STJ">Superior Tribunal de Justiça</option>
+              <option value="STF">Supremo Tribunal Federal</option>
             </select>
           </div>
         </div>
@@ -3229,7 +3296,7 @@
 <script src="js/tarefas.js?v=64"></script>
 <script src="js/pastas.js?v=62"></script>
 <script src="js/relatorio.js?v=51"></script>
-<script src="js/andamentos.js?v=63"></script>
+<script src="js/andamentos.js?v=64"></script>
 <script src="js/documentos.js?v=59"></script>
 <script src="js/financeiro.js?v=59"></script>
 <script src="js/realtime.js?v=59"></script>

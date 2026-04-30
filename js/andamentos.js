@@ -105,8 +105,10 @@ function renderAndamentosNasInstancias(andamentos) {
   const num2El  = document.getElementById('instanciaNumero2');
   if (!body1) return;
 
-  const g1 = andamentos.filter(a => !a.grau || a.grau === 'G1' || a.grau === 'JE');
-  const g2 = andamentos.filter(a => a.grau === 'G2' || a.grau === 'SUP');
+  const g1  = andamentos.filter(a => !a.grau || a.grau === 'G1' || a.grau === 'JE');
+  const g2  = andamentos.filter(a => a.grau === 'G2');
+  const stj = andamentos.filter(a => a.grau === 'STJ' || a.grau === 'SUP');
+  const stf = andamentos.filter(a => a.grau === 'STF');
 
   const tribunal = andamentos[0]?.tribunal || '';
   if (badgeEl) badgeEl.textContent = tribunal.replace('api_publica_', '').toUpperCase();
@@ -213,6 +215,72 @@ function renderAndamentosNasInstancias(andamentos) {
   }
 
   if (num2El && !body2Wrap) num2El.textContent = g2.find(a => a.numero_processo)?.numero_processo || '—';
+
+  // STJ
+  _renderInstanciaSuperior(stj, 'instanciaSTJBody', 'andamentosBodySTJ', 'andamentosCountSTJ', 'instanciaNumeroSTJ', 'Recurso ao STJ', 'STJ', rowHtml);
+
+  // STF
+  _renderInstanciaSuperior(stf, 'instanciaSTFBody', 'andamentosBodySTF', 'andamentosCountSTF', 'instanciaNumeroSTF', 'Recurso ao STF', 'STF', rowHtml);
+}
+
+function _renderInstanciaSuperior(lista, bodyWrapId, bodyId, countId, numId, label, sigla, rowHtml) {
+  const bodyWrap = document.getElementById(bodyWrapId);
+  if (!bodyWrap) return;
+
+  if (lista.length) {
+    const grupos = agruparAndamentosPorProcesso(lista);
+    bodyWrap.innerHTML = grupos.map((grupo, index) => `
+      <div class="instancia-card instancia-card--recursal">
+        <div class="instancia-content">
+          <div class="instancia-row instancia-row--recursal">
+            <span class="instancia-name">${label}${grupos.length > 1 ? ` ${index + 1}` : ''}</span>
+          </div>
+          <p class="instancia-num">${escAndamento(grupo.numero || '—')}</p>
+          <div class="andamento-table-wrap">
+            <table class="andamento-table">
+              <thead>
+                <tr>
+                  <th style="width:110px">Data</th>
+                  <th>Andamento</th>
+                  <th style="width:90px">Tipo</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${grupo.andamentos.map(rowHtml).join('')}
+              </tbody>
+            </table>
+            <p class="tbl-count">${grupo.andamentos.length} movimentação(ões) no ${sigla}</p>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } else {
+    bodyWrap.innerHTML = `
+      <div class="instancia-card">
+        <div class="instancia-content">
+          <div class="instancia-row instancia-row--recursal">
+            <span class="instancia-name">${label}</span>
+          </div>
+          <p class="instancia-num" id="${numId}">—</p>
+          <div class="andamento-table-wrap">
+            <table class="andamento-table">
+              <thead>
+                <tr>
+                  <th style="width:110px">Data</th>
+                  <th>Andamento</th>
+                  <th style="width:90px">Tipo</th>
+                </tr>
+              </thead>
+              <tbody id="${bodyId}">
+                <tr><td colspan="3" class="tbl-empty">Nenhum andamento no ${sigla} encontrado.</td></tr>
+              </tbody>
+            </table>
+            <p class="tbl-count" id="${countId}"></p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
 }
 
 async function sincronizarAndamentos(silencioso = false) {
@@ -398,7 +466,7 @@ function abrirDetalheAndamento(andamentoId) {
   const intimacao = isVirtual
     ? (a._intimacao || state.intimacoes.find(i => String(i.id) === String(a.intimacao_id)))
     : null;
-  const grauMap  = { G1: '1ª Instância', G2: '2ª Instância', SUP: 'Superior', JE: 'Juizado Especial' };
+  const grauMap  = { G1: '1ª Instância', G2: '2ª Instância', STJ: 'Superior Tribunal de Justiça', STF: 'Supremo Tribunal Federal', SUP: 'Superior Tribunal de Justiça', JE: 'Juizado Especial' };
   const data     = a.data_hora ? new Date(a.data_hora).toLocaleDateString('pt-BR') : '—';
 
   document.getElementById('detalheAndTitulo').textContent = a.nome || 'Andamento';

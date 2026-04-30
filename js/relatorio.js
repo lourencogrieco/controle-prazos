@@ -34,6 +34,7 @@ async function gerarRelatorio() {
     const termoPasta   = document.getElementById('relNumeroPasta').value.trim().toLowerCase();
     const termoCliente = document.getElementById('relCliente').value.trim().toLowerCase();
     const termoProc    = document.getElementById('relProcesso').value.trim().toLowerCase();
+    const termoVinculo = document.getElementById('relVinculo')?.value.trim().toLowerCase() || '';
 
     // ── Busca no banco ───────────────────────────────────────────────
     let query = db
@@ -48,15 +49,21 @@ async function gerarRelatorio() {
     const { data: rows, error } = await query;
     if (error) { toast('Erro ao buscar andamentos: ' + error.message, 'error'); return; }
 
+    // ── Índice de vínculo por nome do cliente ────────────────────────
+    const _vinculoPorCliente = {};
+    state.clientes.forEach(c => { if (c.vinculo) _vinculoPorCliente[c.nome.toLowerCase()] = c.vinculo; });
+
     // ── Mapeamento ───────────────────────────────────────────────────
     let resultado = (rows || []).map(a => {
       const p   = a.pastas || {};
       const data = a.data_hora ? a.data_hora.slice(0, 10) : '';
+      const clienteNome = p.cliente || '—';
       return {
         id:        a.id,
         pastaNr:   p.numero    || '—',
         codigoSIA: p.codigo_lhub || '—',
-        cliente:   p.cliente   || '—',
+        cliente:   clienteNome,
+        vinculo:   _vinculoPorCliente[clienteNome.toLowerCase()] || '',
         area:      p.area      || '—',
         advogado:  p.advogado  || '—',
         processo:  p.processo  || '',
@@ -77,6 +84,7 @@ async function gerarRelatorio() {
       if (tipo === 'pasta'   && termoPasta   && !a.pastaNr.toLowerCase().includes(termoPasta))     return false;
       if (tipo === 'cliente' && termoCliente && !a.cliente.toLowerCase().includes(termoCliente))   return false;
       if (tipo === 'processo' && termoProc   && !a.processo.toLowerCase().includes(termoProc))     return false;
+      if (tipo === 'vinculo' && termoVinculo && !a.vinculo.toLowerCase().includes(termoVinculo))   return false;
       return true;
     });
 
@@ -86,8 +94,8 @@ async function gerarRelatorio() {
     document.getElementById('btnExportarPdf').disabled   = false;
     document.getElementById('btnExportarExcel').disabled = false;
 
-    const tipoLabel  = { pasta: 'Por pasta', cliente: 'Por cliente', processo: 'Por número de processo' }[tipo];
-    const termoLabel = tipo === 'pasta' ? termoPasta : tipo === 'cliente' ? termoCliente : termoProc;
+    const tipoLabel  = { pasta: 'Por pasta', cliente: 'Por cliente', processo: 'Por número de processo', vinculo: 'Por vínculo' }[tipo];
+    const termoLabel = tipo === 'pasta' ? termoPasta : tipo === 'cliente' ? termoCliente : tipo === 'processo' ? termoProc : termoVinculo;
     document.getElementById('relResultadoKicker').textContent = tipoLabel;
     document.getElementById('relResultadoTitulo').textContent = termoLabel || 'Todos os registros';
 
@@ -106,13 +114,14 @@ async function gerarRelatorio() {
             <td><span class="table-link">${escHtml(a.pastaNr)}</span></td>
             <td>${escHtml(a.codigoSIA)}</td>
             <td>${escHtml(a.cliente)}</td>
+            <td>${escHtml(a.vinculo || '—')}</td>
             <td>${escHtml(a.area)}</td>
             <td>${formatDate(a.data)}</td>
             <td title="${escAttr(a.complemento)}">${escHtml(a.andamento)}</td>
             <td>${escHtml(a.advogado)}</td>
             <td><span class="tag ${a.manual ? 'tag--manual' : 'tag--area'}">${escHtml(a.tipo)}</span></td>
           </tr>`).join('')
-      : `<tr><td colspan="8" class="tbl-empty">Nenhum andamento encontrado com os filtros aplicados.</td></tr>`;
+      : `<tr><td colspan="9" class="tbl-empty">Nenhum andamento encontrado com os filtros aplicados.</td></tr>`;
 
     document.getElementById('relCount').textContent =
       `${resultado.length} registro${resultado.length !== 1 ? 's' : ''} encontrado${resultado.length !== 1 ? 's' : ''}`;
@@ -131,7 +140,10 @@ document.querySelectorAll('input[name="relTipo"]').forEach(radio => {
     document.getElementById('filterIdentPasta').classList.add('hidden');
     document.getElementById('filterIdentCliente').classList.add('hidden');
     document.getElementById('filterIdentProcesso').classList.add('hidden');
-    document.getElementById(`filterIdent${radio.value.charAt(0).toUpperCase() + radio.value.slice(1)}`).classList.remove('hidden');
+    document.getElementById('filterIdentVinculo').classList.add('hidden');
+    const key = radio.value.charAt(0).toUpperCase() + radio.value.slice(1);
+    document.getElementById(`filterIdent${key}`).classList.remove('hidden');
+    if (key === 'Vinculo') popularDatalistVinculos();
   });
 });
 
@@ -154,7 +166,8 @@ document.getElementById('btnLimparFiltros').addEventListener('click', () => {
   document.getElementById('filterIdentPasta').classList.remove('hidden');
   document.getElementById('filterIdentCliente').classList.add('hidden');
   document.getElementById('filterIdentProcesso').classList.add('hidden');
-  ['relNumeroPasta','relCliente','relProcesso','relDataInicio','relDataFim'].forEach(id => {
+  document.getElementById('filterIdentVinculo').classList.add('hidden');
+  ['relNumeroPasta','relCliente','relProcesso','relVinculo','relDataInicio','relDataFim'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.getElementById('relArea').value = '';
@@ -171,7 +184,7 @@ document.getElementById('btnLimparFiltros').addEventListener('click', () => {
 document.getElementById('btnExportarExcel').addEventListener('click', () => {
   const rows = [...document.querySelectorAll('#relTabelaBody tr')];
   if (!rows.length) return;
-  const headers = ['N° da pasta','Código LHub','Cliente','Área','Data','Andamento','Advogado','Tipo'];
+  const headers = ['N° da pasta','Código LHub','Cliente','Vínculo','Área','Data','Andamento','Advogado','Tipo'];
   const csv = [headers.join(';'), ...rows.map(tr =>
     [...tr.querySelectorAll('td')].map(td => `"${td.textContent.trim()}"`).join(';')
   )].join('\n');

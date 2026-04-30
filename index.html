@@ -739,6 +739,9 @@
             <label class="radio-item">
               <input type="radio" name="relTipo" value="processo"> Por número de processo
             </label>
+            <label class="radio-item">
+              <input type="radio" name="relTipo" value="vinculo"> Por vínculo
+            </label>
           </div>
 
           <hr class="filter-divider">
@@ -760,6 +763,13 @@
             <label class="field">
               <span>N° do processo</span>
               <input type="text" id="relProcesso" placeholder="Ex.: 1000909-52.2022.8.26.0067">
+            </label>
+          </div>
+          <div id="filterIdentVinculo" class="filter-ident hidden">
+            <label class="field">
+              <span>Vínculo / Associação</span>
+              <input type="text" id="relVinculo" list="listaVinculosRel" placeholder="Ex.: Associação dos Engenheiros">
+              <datalist id="listaVinculosRel"></datalist>
             </label>
           </div>
 
@@ -872,6 +882,7 @@
                       <th>N° da pasta</th>
                       <th>Código LHub</th>
                       <th>Cliente</th>
+                      <th>Vínculo</th>
                       <th>Área</th>
                       <th>Data</th>
                       <th>Andamento</th>
@@ -2834,6 +2845,11 @@
         <div class="field">
           <span class="field-label">E-mail</span>
           <input type="email" id="cEmail" placeholder="contato@empresa.com.br">
+        </div>
+        <div class="field">
+          <span class="field-label">Vínculo</span>
+          <input type="text" id="cVinculo" list="listaVinculos" placeholder="Ex.: Associação dos Engenheiros">
+          <datalist id="listaVinculos"></datalist>
         </div>
         <div class="modal-section-label" style="margin-top:16px">Endereço</div>
         <div class="form-grid" style="grid-template-columns:1fr 90px;gap:12px">

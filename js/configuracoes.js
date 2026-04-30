@@ -174,6 +174,15 @@ async function excluirTipoPasta(id) {
 // ──────────────────────────────────────────────────────────────────────
 // CRUD — CLIENTES
 // ──────────────────────────────────────────────────────────────────────
+function popularDatalistVinculos() {
+  const vinculos = [...new Set(state.clientes.map(c => c.vinculo).filter(Boolean))].sort();
+  const html = vinculos.map(v => `<option value="${escAttr(v)}">`).join('');
+  const dl1 = document.getElementById('listaVinculos');
+  if (dl1) dl1.innerHTML = html;
+  const dl2 = document.getElementById('listaVinculosRel');
+  if (dl2) dl2.innerHTML = html;
+}
+
 function abrirModalNovoCliente(contexto, cliente) {
   const g = id => document.getElementById(id);
   g('clienteId').value   = cliente?.id || '';
@@ -190,6 +199,8 @@ function abrirModalNovoCliente(contexto, cliente) {
   if (g('cCep'))         g('cCep').value          = cliente?.cep || '';
   if (g('cCidade'))      g('cCidade').value       = cliente?.cidade || '';
   if (g('cEstado'))      g('cEstado').value       = cliente?.estado || '';
+  if (g('cVinculo'))     g('cVinculo').value      = cliente?.vinculo || '';
+  popularDatalistVinculos();
   g('tituloClienteModal').textContent = cliente ? 'Editar Cliente' : 'Novo Cliente';
   g('_clienteContexto').value = contexto || '';
   g('modalNovoCliente').classList.add('open');
@@ -232,6 +243,7 @@ document.getElementById('novoClienteForm').addEventListener('submit', async e =>
       cep:         g('cCep')?.value?.trim() || null,
       cidade:      g('cCidade')?.value?.trim() || null,
       estado:      g('cEstado')?.value || null,
+      vinculo:     g('cVinculo')?.value?.trim() || null,
     };
 
     const { error } = await salvarRegistroEmpresa('clientes_lhub', obj, existingId, 'Sem resposta do banco em 12s. Verifique as políticas RLS da tabela clientes_lhub.');
@@ -294,6 +306,7 @@ async function carregarClientesPagina() {
       `telefone.ilike.${like}`,
       `cidade.ilike.${like}`,
       `email.ilike.${like}`,
+      `vinculo.ilike.${like}`,
     ].join(','));
   }
 
@@ -355,6 +368,7 @@ async function renderListaClientes() {
       <th style="text-align:left;padding:5px 8px;font-size:.68rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Tipo</th>
       <th style="text-align:left;padding:5px 8px;font-size:.68rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Telefone</th>
       <th style="text-align:left;padding:5px 8px;font-size:.68rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Cidade</th>
+      <th style="text-align:left;padding:5px 8px;font-size:.68rem;color:var(--mu);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;border-bottom:1px solid var(--br)">Vínculo</th>
       <th style="width:72px;border-bottom:1px solid var(--br)"></th>
     </tr></thead>
     <tbody>${clientes.map(c => `
@@ -363,6 +377,7 @@ async function renderListaClientes() {
         <td style="padding:6px 8px;font-size:.78rem;color:var(--mu)">${escHtml(c.tipo)}</td>
         <td style="padding:6px 8px;font-size:.78rem;color:var(--mu)">${escHtml(c.telefone || '—')}</td>
         <td style="padding:6px 8px;font-size:.78rem;color:var(--mu)">${escHtml(c.cidade || '—')}</td>
+        <td style="padding:6px 8px;font-size:.78rem;color:var(--mu)">${escHtml(c.vinculo || '—')}</td>
         <td style="padding:6px 8px;display:flex;gap:6px">
           <button onclick="editarCliente('${escAttr(c.id)}')" style="background:none;border:none;color:var(--mu);cursor:pointer;font-size:.85rem" title="Editar">✎</button>
           <button onclick="excluirCliente('${escAttr(c.id)}')" style="background:none;border:none;color:var(--mu);cursor:pointer;font-size:.85rem" title="Excluir">✕</button>

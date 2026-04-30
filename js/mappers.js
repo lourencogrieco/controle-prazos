@@ -116,6 +116,7 @@ function dbParaCliente(row) {
     cep:         row.cep || '',
     cidade:      row.cidade || '',
     estado:      row.estado || '',
+    vinculo:     row.vinculo || '',
   };
 }
 

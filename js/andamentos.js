@@ -111,8 +111,8 @@ function renderAndamentosNasInstancias(andamentos) {
   const stj = andamentos.filter(a => a.grau === 'STJ' || a.grau === 'SUP');
   const stf = andamentos.filter(a => a.grau === 'STF');
 
-  const tribunal = andamentos[0]?.tribunal || '';
-  if (badgeEl) badgeEl.textContent = tribunal.replace('api_publica_', '').toUpperCase();
+  const tribunalG1 = g1.find(a => a.tribunal && a.tribunal !== 'manual' && a.tribunal !== 'intimacoes_pje')?.tribunal || '';
+  if (badgeEl) badgeEl.textContent = tribunalG1 ? tribunalG1.replace('api_publica_', '').toUpperCase() : '';
 
   const sinc = andamentos[0]?.sincronizado_em
     ? new Date(andamentos[0].sincronizado_em).toLocaleString('pt-BR')
@@ -147,12 +147,18 @@ function renderAndamentosNasInstancias(andamentos) {
     </tr>`;
   };
 
+  const num1El  = document.getElementById('instanciaNumero1');
+  const com1El  = document.getElementById('instanciaComarca1');
+
   if (g1.length) {
     body1.innerHTML = g1.map(rowHtml).join('');
     if (count1) count1.textContent = `${g1.length} movimentação(ões) · CNJ/DataJud + intimações vinculadas`;
   } else {
     body1.innerHTML = '<tr><td colspan="3" class="tbl-empty">Nenhum andamento de 1ª instância. Clique em "Sincronizar CNJ".</td></tr>';
     if (count1) count1.textContent = '';
+    // Limpa número/comarca se não há andamentos de 1ª instância
+    if (num1El && !g1.length) num1El.textContent = '—';
+    if (com1El && !g1.length) com1El.textContent = 'Comarca: —';
   }
 
   if (g2.length && body2Wrap) {

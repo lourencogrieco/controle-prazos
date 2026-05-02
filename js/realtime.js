@@ -31,7 +31,10 @@ function _iniciarRealtime() {
       } else if (eventType === 'DELETE') {
         _stateRemove(state.prazos, antigo.id);
       }
-      _rtRender('prazos', () => { renderPrazosAba(); renderDashboard(); renderNavBadges(); });
+      _rtRender('prazos', () => {
+        if (typeof atualizarViewsPrazoAposMudanca === 'function') atualizarViewsPrazoAposMudanca();
+        else { renderPrazosAba(); renderDashboard(); renderNavBadges(); }
+      });
     })
 
     // ── Tarefas ───────────────────────────────────────────────────────
@@ -72,6 +75,22 @@ function _iniciarRealtime() {
       }
       _reconstruirIndicePastas();
       _rtRender('pastas', () => { renderPastaList(); renderDashboard(); popularSelectsPastas(); });
+    })
+
+    // ── Andamentos ───────────────────────────────────────────────────
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: 'andamentos_processo',
+      filter: `empresa_id=eq.${eid}`,
+    }, ({ eventType, new: novo, old: antigo }) => {
+      const pastaId = (eventType === 'DELETE' ? antigo?.pasta_id : novo?.pasta_id) || null;
+      if (pastaId && pastaId === state.currentPastaId && typeof carregarAndamentosCNJ === 'function') {
+        _rtRender('andamentos', () => carregarAndamentosCNJ(pastaId));
+      }
+      if (novo?.numero_processo && novo?.pasta_id) {
+        const pasta = state.pastas.find(p => p.id === novo.pasta_id);
+        const chave = novo.numero_processo.replace(/\D/g, '');
+        if (pasta && chave) _pastasPorProcesso.set(chave, pasta);
+      }
     })
 
     .subscribe(status => {

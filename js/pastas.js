@@ -72,12 +72,15 @@ function adicionarNomeManualPastaCliente() {
   input.value = '';
 }
 
-function popularSelectsPastas() {
+function popularSelectsPastas(valores = {}) {
   const opts = '<option value="">— sem pasta vinculada —</option>' +
     state.pastas.map(p => `<option value="${escAttr(p.id)}">${escHtml(p.numero)} — ${escHtml(p.cliente)}</option>`).join('');
   ['prazoPastaSelect', 'tarefaPastaSelect'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.innerHTML = opts;
+    if (!el) return;
+    const valorAtual = Object.prototype.hasOwnProperty.call(valores, id) ? valores[id] : el.value;
+    el.innerHTML = opts;
+    if (valorAtual && state.pastas.some(p => p.id === valorAtual)) el.value = valorAtual;
   });
 }
 

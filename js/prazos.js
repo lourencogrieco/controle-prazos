@@ -4,11 +4,13 @@
 document.getElementById('prazoForm').addEventListener('submit', async e => {
   e.preventDefault();
   if (!state.empresaId) { toast('Faça login primeiro', 'error'); return; }
+  const processoOuPasta = document.getElementById('processo').value.trim();
+  const pastaVinculada = encontrarPastaParaPrazo(processoOuPasta);
   const obj = {
     id:          uid(),
     empresa_id:  state.empresaId,
-    pasta_id:    document.getElementById('processo').value.trim() || null,
-    cliente:     document.getElementById('cliente').value.trim(),
+    pasta_id:    pastaVinculada?.id || null,
+    cliente:     document.getElementById('cliente').value.trim() || pastaVinculada?.cliente || null,
     tipo:        document.getElementById('tipo').value,
     prazo:       document.getElementById('dataFatal').value,
     responsavel: document.getElementById('responsavel').value,
@@ -22,8 +24,28 @@ document.getElementById('prazoForm').addEventListener('submit', async e => {
   logAuditoria('criar', 'prazos_lhub', obj.id, `Prazo criado: ${obj.tipo} — ${obj.cliente || '—'}`);
   e.target.reset();
   toast('Prazo cadastrado');
-  renderPrazosAba(); renderDashboard(); renderNavBadges();
+  atualizarViewsPrazoAposMudanca();
 });
+
+function encontrarPastaParaPrazo(valor) {
+  const raw = String(valor || '').trim();
+  if (!raw) return null;
+  const norm = raw.replace(/\D/g, '');
+  return state.pastas.find(p =>
+    p.id === raw ||
+    p.numero === raw ||
+    (p.processo && p.processo.replace(/\D/g, '') === norm)
+  ) || null;
+}
+
+function atualizarViewsPrazoAposMudanca() {
+  renderPrazosAba();
+  renderAtividades();
+  renderDashboard();
+  renderNavBadges();
+  if (typeof renderPrazosNaPasta === 'function') renderPrazosNaPasta();
+  if (typeof renderSolicitacoesNaPasta === 'function') renderSolicitacoesNaPasta();
+}
 
 // Preenche datalist de responsáveis filtrando pelo area_id da pasta
 function popularResponsaveisDatalist(areaId) {
@@ -39,6 +61,7 @@ function popularResponsaveisDatalist(areaId) {
 function abrirModalNovoPrazo(id) {
   const p = id ? state.prazos.find(x => x.id === id) : null;
   document.querySelector('#modalNovoPrazo .modal-head h3').textContent = p ? 'Editar Prazo' : 'Novo Prazo';
+  popularSelectsPastas({ prazoPastaSelect: p?.pastaId || '' });
   document.getElementById('prazoId').value           = p?.id || '';
   document.getElementById('prazoIntimacaoId').value  = p?.intimacaoId || '';
   document.getElementById('prazoPastaSelect').value  = p?.pastaId || '';
@@ -59,7 +82,6 @@ function abrirModalNovoPrazo(id) {
     fatalEl.dataset.sugerida = p.prazoFatal || '';
   }
   renderPrazoCalculoInfo(p);
-  popularSelectsPastas();
   popularRespPicker('prazoRespPicker', p?.responsavel || '', state.usuarios);
 
   // Controle de permissão para data fatal
@@ -252,7 +274,7 @@ document.getElementById('novoPrazoForm').addEventListener('submit', async e => {
     logAuditoria(prazoId ? 'editar' : 'criar', 'prazos_lhub', obj.id, `Prazo ${prazoId ? 'editado' : 'criado'}: ${obj.tipo} — ${obj.cliente || '—'}`);
     fecharModalNovoPrazo();
     toast('Prazo salvo!');
-    renderPrazosAba(); renderDashboard(); renderNavBadges();
+    atualizarViewsPrazoAposMudanca();
   } catch (err) {
     toast('Erro inesperado: ' + err.message, 'error');
     console.error('[prazo] exception:', err);
@@ -269,7 +291,7 @@ async function excluirPrazo(id) {
   logAuditoria('excluir', 'prazos_lhub', id, `Prazo excluído: ${p?.tipoPrazo || '—'} — ${p?.cliente || '—'}`);
   _stateRemove(state.prazos, id);
   toast('Prazo excluído');
-  renderPrazosAba(); renderDashboard(); renderNavBadges();
+  atualizarViewsPrazoAposMudanca();
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -343,19 +365,7 @@ async function carregarPrazosPagina() {
 
   if (st) query = query.eq('status', prazoStatusParaDb(st));
   if (resp) query = query.ilike('responsavel', `%${postgrestIlikeTerm(resp)}%`);
-  if (busca) {
-    const like = `%${busca}%`;
-    query = query.or([
-      `cliente.ilike.${like}`,
-      `tipo.ilike.${like}`,
-      `descricao.ilike.${like}`,
-      `responsavel.ilike.${like}`,
-    ].join(','));
-  }
-
-  const { data, count, error } = await query.range(inicio, inicio + prazoLinhas - 1);
-  if (error) throw error;
-  const lista = (data || []).map(row => {
+  const mapRow = row => {
     const p = dbParaPrazo(row);
     if (row.pastas) {
       p.pastaNr = row.pastas.numero || '';
@@ -366,7 +376,27 @@ async function carregarPrazosPagina() {
     }
     _stateUpsert(state.prazos, p);
     return p;
-  });
+  };
+
+  if (busca) {
+    const { data, error } = await query.limit(1000);
+    if (error) throw error;
+    const termo = busca.toLowerCase();
+    const filtrada = (data || []).map(mapRow).filter(p =>
+      (p.cliente || '').toLowerCase().includes(termo) ||
+      (p.tipoPrazo || '').toLowerCase().includes(termo) ||
+      (p.descricao || '').toLowerCase().includes(termo) ||
+      (p.responsavel || '').toLowerCase().includes(termo) ||
+      (p.pastaNr || '').toLowerCase().includes(termo) ||
+      (p.processo || '').toLowerCase().includes(termo) ||
+      (p.comarca || '').toLowerCase().includes(termo)
+    );
+    return { lista: filtrada.slice(inicio, inicio + prazoLinhas), total: filtrada.length };
+  }
+
+  const { data, count, error } = await query.range(inicio, inicio + prazoLinhas - 1);
+  if (error) throw error;
+  const lista = (data || []).map(mapRow);
   return { lista, total: count ?? lista.length };
 }
 

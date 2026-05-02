@@ -2,7 +2,10 @@
 // CNJ DATAJUD — ANDAMENTOS DO TRIBUNAL
 // ──────────────────────────────────────────────────────────────────────
 
+let _andamentosLoadSeq = 0;
+
 async function carregarAndamentosCNJ(pastaId) {
+  const seq = ++_andamentosLoadSeq;
   const { data, error } = await db
     .from('andamentos_processo')
     .select('*')
@@ -11,6 +14,7 @@ async function carregarAndamentosCNJ(pastaId) {
     .order('data_hora', { ascending: false });
 
   if (error) { console.error('Erro ao carregar andamentos:', error); return; }
+  if (seq !== _andamentosLoadSeq || state.currentPastaId !== pastaId) return;
 
   // Atualizar índice de processos com os recursais desta pasta
   if (data) {
@@ -478,6 +482,7 @@ async function sincronizarAndamentos(silencioso = false) {
       .eq('pasta_id', pasta.id)
       .eq('empresa_id', state.empresaId)
       .order('data_hora', { ascending: false });
+    if (state.currentPastaId !== pasta.id) return;
     state.andamentosCNJ = montarAndamentosComIntimacoesVinculadas(data || [], pasta.id);
     renderAndamentosNasInstancias(state.andamentosCNJ);
 
@@ -623,11 +628,13 @@ document.getElementById('formAndamentoManual').addEventListener('submit', async 
 
     document.getElementById('modalAndamentoManual').classList.remove('open');
 
-    const { data: rows } = await db.from('andamentos_processo')
+    const { data: rows, error: reloadError } = await db.from('andamentos_processo')
       .select('*')
       .eq('pasta_id', pastaId)
       .eq('empresa_id', state.empresaId)
       .order('data_hora', { ascending: false });
+    if (reloadError) { toast('Andamento salvo, mas a lista não recarregou: ' + reloadError.message, 'error'); return; }
+    if (state.currentPastaId !== pastaId) return;
     state.andamentosCNJ = montarAndamentosComIntimacoesVinculadas(rows || [], pastaId);
     renderAndamentosNasInstancias(state.andamentosCNJ);
   } catch (err) {
@@ -712,11 +719,13 @@ async function excluirAndamentoAtual() {
   if (error) { toast('Erro ao excluir: ' + error.message, 'error'); return; }
   document.getElementById('modalDetalheAndamento').classList.remove('open');
   toast('Andamento excluído.');
-  const { data: rows } = await db.from('andamentos_processo')
+  const { data: rows, error: reloadError } = await db.from('andamentos_processo')
     .select('*')
     .eq('pasta_id', a.pasta_id)
     .eq('empresa_id', state.empresaId)
     .order('data_hora', { ascending: false });
+  if (reloadError) { toast('Andamento excluído, mas a lista não recarregou: ' + reloadError.message, 'error'); return; }
+  if (state.currentPastaId !== a.pasta_id) return;
   state.andamentosCNJ = montarAndamentosComIntimacoesVinculadas(rows || [], state.currentPastaId);
   renderAndamentosNasInstancias(state.andamentosCNJ);
 }

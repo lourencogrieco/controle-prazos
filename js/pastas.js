@@ -502,6 +502,7 @@ document.querySelectorAll('.pasta-tab[data-ptab]').forEach(btn => {
     document.querySelectorAll('.pasta-tab').forEach(b => b.classList.remove('is-active'));
     document.querySelectorAll('.pasta-pane').forEach(pn => pn.classList.remove('is-active'));
     btn.classList.add('is-active');
+    btn.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
     document.getElementById(`ptab-${btn.dataset.ptab}`)?.classList.add('is-active');
     if (btn.dataset.ptab === 'documentos')    carregarDocumentos(state.currentPastaId);
     if (btn.dataset.ptab === 'prazos')        renderPrazosNaPasta();

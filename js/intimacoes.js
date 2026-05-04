@@ -430,12 +430,34 @@ function renderOpcoesVinculoIntimacao(busca = '') {
   }
 }
 
+function _grauLabel(grau) {
+  const labels = { G1: '1ª Instância', G2: '2ª Instância / Recursal', STJ: 'STJ', STF: 'STF' };
+  return labels[grau] || grau || '—';
+}
+
 function abrirModalVincularIntimacao(intim) {
   _intimacaoVinculoAtual = intim;
   document.getElementById('vincularIntimacaoId').value = intim.id || '';
   document.getElementById('vincularIntimacaoProcesso').textContent = intim.processo || '—';
   document.getElementById('vincularIntimacaoMeta').textContent =
     `${intim.tribunal || 'Tribunal'} · ${formatDate(intim.dataPublicacao)} · ${intim.orgao || '—'}`;
+
+  // Preencher seletor de instância: se já tem grau salvo usa ele; senão detecta
+  const grauSel = document.getElementById('vincularIntimacaoGrau');
+  const grauInfo = document.getElementById('vincularIntimacaoGrauInfo');
+  if (grauSel) {
+    if (intim.grau) {
+      grauSel.value = intim.grau;
+      if (grauInfo) grauInfo.textContent = `Instância salva: ${_grauLabel(intim.grau)}`;
+    } else {
+      const detectedGrau = (typeof detectarGrauPorProcesso === 'function')
+        ? detectarGrauPorProcesso(intim.processo, intim.tribunal)
+        : 'G1';
+      grauSel.value = 'auto';
+      if (grauInfo) grauInfo.textContent = `Detecção automática: ${_grauLabel(detectedGrau)}`;
+    }
+  }
+
   const busca = document.getElementById('buscaVincularIntimacaoPasta');
   if (busca) busca.value = '';
   renderOpcoesVinculoIntimacao();
@@ -450,6 +472,10 @@ function fecharModalVincularIntimacao() {
   document.getElementById('vincularIntimacaoPasta').value = '';
   const busca = document.getElementById('buscaVincularIntimacaoPasta');
   if (busca) busca.value = '';
+  const grauSel = document.getElementById('vincularIntimacaoGrau');
+  if (grauSel) grauSel.value = 'auto';
+  const grauInfo = document.getElementById('vincularIntimacaoGrauInfo');
+  if (grauInfo) grauInfo.textContent = '';
   _intimacaoVinculoAtual = null;
 }
 
@@ -485,12 +511,23 @@ async function salvarVinculoIntimacao() {
   const pastaId = document.getElementById('vincularIntimacaoPasta').value;
   if (!id || !pastaId) { toast('Selecione uma pasta para vincular.', 'error'); return; }
 
+  // Determinar grau: se "auto", detectar pelo processo; senão usar seleção manual
+  const grauSel = document.getElementById('vincularIntimacaoGrau');
+  let grau = grauSel?.value || 'auto';
+  if (grau === 'auto') {
+    const intim = _intimacaoVinculoAtual;
+    grau = (typeof detectarGrauPorProcesso === 'function')
+      ? detectarGrauPorProcesso(intim?.processo, intim?.tribunal)
+      : 'G1';
+  }
+
   const btn = document.getElementById('btnSalvarVinculoIntimacao');
   if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
   try {
     const { data, error } = await db.rpc('vincular_intimacao_pasta', {
       p_intimacao_id: id,
       p_pasta_id: pastaId,
+      p_grau: grau,
     });
     const row = Array.isArray(data) ? data[0] : data;
 
@@ -500,7 +537,7 @@ async function salvarVinculoIntimacao() {
     }
 
     const item = state.intimacoes.find(i => mesmoIdIntimacao(i.id, id));
-    if (item) item.pastaId = row.pasta_id;
+    if (item) { item.pastaId = row.pasta_id; item.grau = row.grau || grau; }
     fecharModalVincularIntimacao();
     renderIntimacoesAba();
     if (state.currentPastaId === row.pasta_id && typeof carregarAndamentosCNJ === 'function') {

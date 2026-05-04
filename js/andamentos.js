@@ -35,8 +35,27 @@ async function carregarAndamentosCNJ(pastaId) {
 
 function grauDaIntimacao(intim) {
   if (intim?.grau) return intim.grau;
-  const digits = (intim?.processo || '').replace(/\D/g, '');
-  const foro = digits.length >= 20 ? digits.slice(16) : '';
+  return detectarGrauPorProcesso(intim?.processo, intim?.tribunal);
+}
+
+// Detecta a instância pelo número CNJ (NNNNNNN-DD.AAAA.J.TT.OOOO) e/ou nome do tribunal.
+// J=1→STF, J=3→STJ, J=4→Federal(TRF), J=8→Estadual; foro 0000→2ª instância.
+function detectarGrauPorProcesso(processo, tribunal) {
+  const trib = (tribunal || '').toUpperCase();
+  if (trib.includes('STF') || trib === 'STF') return 'STF';
+  if (trib.includes('STJ') || trib === 'STJ') return 'STJ';
+  if (trib.startsWith('TRF') || trib.includes('TRIBUNAL REGIONAL FEDERAL')) return 'G2';
+
+  const digits = (processo || '').replace(/\D/g, '');
+  if (digits.length < 20) return 'G1';
+
+  const segmento = digits[13];
+  const foro = digits.slice(16, 20);
+
+  if (segmento === '1') return 'STF';
+  if (segmento === '3') return 'STJ';
+  if (segmento === '4') return foro === '0000' ? 'G2' : 'G1'; // TRF
+  // Segmento 8 = Estadual; foro 0000 = CPOSG (2ª instância/recursal)
   return foro === '0000' ? 'G2' : 'G1';
 }
 
@@ -105,18 +124,22 @@ function montarAndamentosComIntimacoesVinculadas(andamentos, pastaId) {
     }
   });
 
-  // Se o processo da pasta é o mesmo da intimação, grau deve ser G1
+  // Para processos ainda não presentes no mapa (sem andamentos CNJ sincronizados),
+  // detectar a instância pelo próprio número CNJ em vez de assumir G1.
   const pasta = (state.pastas || []).find(p => p.id === pastaId);
   const processoPasta = normalizarNumeroProcesso(pasta?.processo);
-  if (processoPasta) grauPorProcesso.set(processoPasta, grauPorProcesso.get(processoPasta) || 'G1');
+  if (processoPasta && !grauPorProcesso.has(processoPasta)) {
+    grauPorProcesso.set(processoPasta, detectarGrauPorProcesso(pasta?.processo));
+  }
 
   const vinculadas = (state.intimacoes || [])
     .filter(i => i.pastaId === pastaId && (i.status || 'pendente') !== 'arquivada')
     .map(i => {
       const numNorm = normalizarNumeroProcesso(i.processo);
-      // Herdar grau de andamentos existentes com mesmo processo;
-      // caso contrário, deduzir pelo número do processo
-      const grau = grauPorProcesso.get(numNorm) || grauDaIntimacao(i);
+      // Prioridade: grau salvo na intimação > detecção pelo número CNJ > andamentos existentes
+      // (andamentos sincronizados podem estar classificados erroneamente se o processo
+      // mudou de instância após a sincronização)
+      const grau = i.grau || detectarGrauPorProcesso(i.processo, i.tribunal) || grauPorProcesso.get(numNorm) || 'G1';
 
       return {
         id: `intimacao-${i.id}`,

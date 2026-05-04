@@ -1977,7 +1977,7 @@
               <button class="pasta-tab" data-ptab="tarefas">Tarefas</button>
               <button class="pasta-tab" data-ptab="documentos">Documentos</button>
               <button class="pasta-tab" data-ptab="contrato">Contrato e adendo/aditamento</button>
-              <button class="pasta-tab" data-ptab="procuracao">Procuração/Substabelecimento</button>
+              <button class="pasta-tab" data-ptab="procuracao" title="Procuração/Substabelecimento">Procuração</button>
               <button class="pasta-tab-more" title="Mais abas">›</button>
             </nav>
 
@@ -3153,6 +3153,17 @@
         <span class="field-label">Pasta correta</span>
         <select id="vincularIntimacaoPasta"></select>
         <small id="vincularIntimacaoPastaInfo" class="field-help"></small>
+      </div>
+      <div class="field">
+        <span class="field-label">Instância processual</span>
+        <select id="vincularIntimacaoGrau">
+          <option value="auto">Detectar automaticamente</option>
+          <option value="G1">1ª Instância</option>
+          <option value="G2">2ª Instância / Recursal</option>
+          <option value="STJ">STJ — Superior Tribunal de Justiça</option>
+          <option value="STF">STF — Supremo Tribunal Federal</option>
+        </select>
+        <small id="vincularIntimacaoGrauInfo" class="field-help" style="color:var(--mu)"></small>
       </div>
     </div>
     <div class="form-foot" style="display:flex;justify-content:flex-end;gap:8px">

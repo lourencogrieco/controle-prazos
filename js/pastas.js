@@ -511,6 +511,12 @@ document.querySelectorAll('.pasta-tab[data-ptab]').forEach(btn => {
   });
 });
 
+// Botão "›": ativa a última aba (Procuração/Substabelecimento)
+document.querySelector('.pasta-tab-more')?.addEventListener('click', () => {
+  const tabs = document.querySelectorAll('.pasta-tab[data-ptab]');
+  tabs[tabs.length - 1]?.click();
+});
+
 document.getElementById('sidebarCollapseBtn').addEventListener('click', () => {
   const sidebar = document.getElementById('pastaSidebar');
   const btn     = document.getElementById('sidebarCollapseBtn');

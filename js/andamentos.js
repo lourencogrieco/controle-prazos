@@ -124,18 +124,22 @@ function montarAndamentosComIntimacoesVinculadas(andamentos, pastaId) {
     }
   });
 
-  // Se o processo da pasta é o mesmo da intimação, grau deve ser G1
+  // Para processos ainda não presentes no mapa (sem andamentos CNJ sincronizados),
+  // detectar a instância pelo próprio número CNJ em vez de assumir G1.
   const pasta = (state.pastas || []).find(p => p.id === pastaId);
   const processoPasta = normalizarNumeroProcesso(pasta?.processo);
-  if (processoPasta) grauPorProcesso.set(processoPasta, grauPorProcesso.get(processoPasta) || 'G1');
+  if (processoPasta && !grauPorProcesso.has(processoPasta)) {
+    grauPorProcesso.set(processoPasta, detectarGrauPorProcesso(pasta?.processo));
+  }
 
   const vinculadas = (state.intimacoes || [])
     .filter(i => i.pastaId === pastaId && (i.status || 'pendente') !== 'arquivada')
     .map(i => {
       const numNorm = normalizarNumeroProcesso(i.processo);
-      // Herdar grau de andamentos existentes com mesmo processo;
-      // caso contrário, deduzir pelo número do processo
-      const grau = grauPorProcesso.get(numNorm) || grauDaIntimacao(i);
+      // Prioridade: grau salvo na intimação > detecção pelo número CNJ > andamentos existentes
+      // (andamentos sincronizados podem estar classificados erroneamente se o processo
+      // mudou de instância após a sincronização)
+      const grau = i.grau || detectarGrauPorProcesso(i.processo, i.tribunal) || grauPorProcesso.get(numNorm) || 'G1';
 
       return {
         id: `intimacao-${i.id}`,

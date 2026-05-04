@@ -511,11 +511,24 @@ document.querySelectorAll('.pasta-tab[data-ptab]').forEach(btn => {
   });
 });
 
-// Botão "›": ativa a última aba (Procuração/Substabelecimento)
-document.querySelector('.pasta-tab-more')?.addEventListener('click', () => {
-  const tabs = document.querySelectorAll('.pasta-tab[data-ptab]');
-  tabs[tabs.length - 1]?.click();
-});
+// Botão "›": ativa a última aba e só aparece quando o container tem overflow
+const _tabNav = document.querySelector('.pasta-tabs');
+const _tabMore = document.querySelector('.pasta-tab-more');
+
+function _updateTabMoreVisibility() {
+  if (!_tabNav || !_tabMore) return;
+  _tabMore.style.display = _tabNav.scrollWidth > _tabNav.clientWidth + 2 ? '' : 'none';
+}
+
+if (_tabMore) {
+  _tabMore.addEventListener('click', () => {
+    const tabs = document.querySelectorAll('.pasta-tab[data-ptab]');
+    tabs[tabs.length - 1]?.click();
+  });
+}
+
+window.addEventListener('resize', _updateTabMoreVisibility);
+_updateTabMoreVisibility();
 
 document.getElementById('sidebarCollapseBtn').addEventListener('click', () => {
   const sidebar = document.getElementById('pastaSidebar');

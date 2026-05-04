@@ -35,8 +35,27 @@ async function carregarAndamentosCNJ(pastaId) {
 
 function grauDaIntimacao(intim) {
   if (intim?.grau) return intim.grau;
-  const digits = (intim?.processo || '').replace(/\D/g, '');
-  const foro = digits.length >= 20 ? digits.slice(16) : '';
+  return detectarGrauPorProcesso(intim?.processo, intim?.tribunal);
+}
+
+// Detecta a instância pelo número CNJ (NNNNNNN-DD.AAAA.J.TT.OOOO) e/ou nome do tribunal.
+// J=1→STF, J=3→STJ, J=4→Federal(TRF), J=8→Estadual; foro 0000→2ª instância.
+function detectarGrauPorProcesso(processo, tribunal) {
+  const trib = (tribunal || '').toUpperCase();
+  if (trib.includes('STF') || trib === 'STF') return 'STF';
+  if (trib.includes('STJ') || trib === 'STJ') return 'STJ';
+  if (trib.startsWith('TRF') || trib.includes('TRIBUNAL REGIONAL FEDERAL')) return 'G2';
+
+  const digits = (processo || '').replace(/\D/g, '');
+  if (digits.length < 20) return 'G1';
+
+  const segmento = digits[13];
+  const foro = digits.slice(16, 20);
+
+  if (segmento === '1') return 'STF';
+  if (segmento === '3') return 'STJ';
+  if (segmento === '4') return foro === '0000' ? 'G2' : 'G1'; // TRF
+  // Segmento 8 = Estadual; foro 0000 = CPOSG (2ª instância/recursal)
   return foro === '0000' ? 'G2' : 'G1';
 }
 

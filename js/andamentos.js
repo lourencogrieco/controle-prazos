@@ -673,7 +673,7 @@ document.getElementById('formAndamentoManual').addEventListener('submit', async 
 function podeExcluirAndamento(a) {
   if (!a || a._virtualIntimacao) return false;
   if (!(typeof podeEditarRegistro === 'function' ? podeEditarRegistro() : true)) return false;
-  return a.tribunal === 'manual' || a.nome === 'Processo recursal vinculado';
+  return !!a.pasta_id && !String(a.id || '').startsWith('intimacao-');
 }
 
 function abrirDetalheAndamento(andamentoId) {

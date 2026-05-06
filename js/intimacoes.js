@@ -75,6 +75,21 @@ function mesmoIdIntimacao(a, b) {
   return String(a ?? '') === String(b ?? '');
 }
 
+function grauProcessoIntimacao(intim) {
+  if (intim?.grau) return intim.grau;
+  const tribunal = String(intim?.tribunal || '').toLowerCase();
+  if (tribunal.includes('stf')) return 'STF';
+  if (tribunal.includes('stj')) return 'STJ';
+
+  const digits = String(intim?.processo || intim?.numero_processo || '').replace(/\D/g, '');
+  const foro = digits.length >= 20 ? digits.slice(16) : '';
+  return foro === '0000' ? 'G2' : 'G1';
+}
+
+function isGrauRecursal(grau) {
+  return ['G2', 'STJ', 'STF', 'SUP'].includes(String(grau || '').toUpperCase());
+}
+
 function intimacaoPorId(id) {
   return state.intimacoes.find(i => mesmoIdIntimacao(i.id, id)) || null;
 }
@@ -456,9 +471,12 @@ function fecharModalVincularIntimacao() {
 function criarPastaDaIntimacaoVinculada() {
   const intim = _intimacaoVinculoAtual;
   if (!intim?.id) { toast('Intimação não encontrada para criar pasta.', 'error'); return; }
+  const grau = grauProcessoIntimacao(intim);
+  const recursal = isGrauRecursal(grau);
   state.intimacaoParaVincularNovaPasta = {
     id: intim.id,
     processo: intim.processo || '',
+    grau,
     classe: intim.nomeClasse || '',
     orgao: intim.orgao || '',
     tribunal: intim.tribunal || '',
@@ -468,12 +486,13 @@ function criarPastaDaIntimacaoVinculada() {
   fecharModalVincularIntimacao();
   abrirModalNovaPasta(null);
   document.getElementById('pCategoria').value = 'Contencioso Judicial';
-  document.getElementById('pProcesso').value = intim.processo || '';
+  document.getElementById('pProcesso').value = recursal ? '' : (intim.processo || '');
   document.getElementById('pTipoAcao').value = (intim.nomeClasse || intim.tipoDocumento || 'Intimação').toUpperCase();
   document.getElementById('pComarca').value = intim.orgao || '';
   document.getElementById('pDataAb').value = intim.dataPublicacao || '';
   document.getElementById('pObs').value = [
     `Pasta criada a partir de intimação vinculada.`,
+    recursal && intim.processo ? `Processo recursal (${grau}): ${intim.processo}` : '',
     intim.tribunal ? `Tribunal: ${intim.tribunal}` : '',
     intim.orgao ? `Órgão: ${intim.orgao}` : '',
     textoLegivelIntimacao(intim.texto) || '',
@@ -501,12 +520,21 @@ async function salvarVinculoIntimacao() {
 
     const item = state.intimacoes.find(i => mesmoIdIntimacao(i.id, id));
     if (item) item.pastaId = row.pasta_id;
+    let avisoProcesso = '';
+    if (typeof aplicarProcessoDaIntimacaoNaPasta === 'function') {
+      try {
+        await aplicarProcessoDaIntimacaoNaPasta(row.pasta_id, item || intimacaoPorId(id));
+      } catch (processoError) {
+        console.warn('[intimacoes] falha ao aplicar processo da intimação:', processoError);
+        avisoProcesso = 'Intimação vinculada, mas não foi possível registrar o processo: ' + processoError.message;
+      }
+    }
     fecharModalVincularIntimacao();
     renderIntimacoesAba();
     if (state.currentPastaId === row.pasta_id && typeof carregarAndamentosCNJ === 'function') {
       carregarAndamentosCNJ(row.pasta_id);
     }
-    toast('Intimação vinculada à pasta.');
+    toast(avisoProcesso || 'Intimação vinculada à pasta.', avisoProcesso ? 'error' : undefined);
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Vincular pasta'; }
   }
@@ -544,6 +572,8 @@ function criarPrazoDaIntimacao(intim) {
   const pasta = pastaDaIntimacao(intim);
   document.getElementById('prazoIntimacaoId').value = intim.id || '';
   document.getElementById('prazoTipo').value        = 'Manifestação';
+  const diasEl = document.getElementById('prazoDiasUteis');
+  if (diasEl) diasEl.value = '15';
   document.getElementById('prazoFatal').dataset.dataBase = intim.dataPublicacao || '';
   document.getElementById('prazoDescricao').value   =
     `Intimação ${intim.tipoDocumento || intim.nomeClasse || ''} — ${intim.orgao} (${formatDate(intim.dataPublicacao)})`.trim();

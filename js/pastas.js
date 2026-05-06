@@ -144,6 +144,102 @@ document.getElementById('pAreaPasta').addEventListener('change', () => {
 document.getElementById('pTipoPasta').addEventListener('change', atualizarPreviewNumero);
 document.getElementById('pAno').addEventListener('input', atualizarPreviewNumero);
 
+async function registrarProcessoRecursalDaIntimacao(pastaId, intimacao) {
+  const processo = (intimacao?.processo || '').trim();
+  const grau = typeof grauProcessoIntimacao === 'function'
+    ? grauProcessoIntimacao(intimacao)
+    : (intimacao?.grau || 'G1');
+  const recursal = typeof isGrauRecursal === 'function'
+    ? isGrauRecursal(grau)
+    : ['G2', 'STJ', 'STF', 'SUP'].includes(String(grau || '').toUpperCase());
+
+  if (!pastaId || !processo || !recursal) return null;
+
+  const { data: existentes, error: buscaError } = await db
+    .from('andamentos_processo')
+    .select('id')
+    .eq('empresa_id', state.empresaId)
+    .eq('pasta_id', pastaId)
+    .eq('numero_processo', processo)
+    .eq('grau', grau)
+    .eq('nome', 'Processo recursal vinculado')
+    .limit(1);
+  if (buscaError) throw buscaError;
+
+  const row = {
+    empresa_id: state.empresaId,
+    pasta_id: pastaId,
+    numero_processo: processo,
+    data_hora: intimacao.dataPublicacao ? `${intimacao.dataPublicacao}T12:00:00` : new Date().toISOString(),
+    nome: 'Processo recursal vinculado',
+    complemento: [
+      `Incluído a partir da intimação ${intimacao.id || ''}`.trim(),
+      (intimacao.classe || intimacao.nomeClasse) ? `Classe: ${intimacao.classe || intimacao.nomeClasse}` : '',
+      intimacao.orgao ? `Órgão: ${intimacao.orgao}` : '',
+      intimacao.texto || '',
+    ].filter(Boolean).join('\n'),
+    codigo: null,
+    is_intimacao: false,
+    grau,
+    tribunal: intimacao.tribunal || 'intimacoes_pje',
+    sincronizado_em: new Date().toISOString(),
+  };
+
+  const existenteId = existentes?.[0]?.id;
+  const { error } = existenteId
+    ? await db.from('andamentos_processo').update(row).eq('id', existenteId).eq('empresa_id', state.empresaId)
+    : await db.from('andamentos_processo').insert(row);
+  if (error) throw error;
+
+  const pasta = state.pastas.find(p => p.id === pastaId);
+  const chave = processo.replace(/\D/g, '');
+  if (pasta && chave) _pastasPorProcesso.set(chave, pasta);
+  return row;
+}
+
+async function aplicarProcessoDaIntimacaoNaPasta(pastaId, intimacao) {
+  const processo = (intimacao?.processo || '').trim();
+  const grau = typeof grauProcessoIntimacao === 'function'
+    ? grauProcessoIntimacao(intimacao)
+    : (intimacao?.grau || 'G1');
+  const recursal = typeof isGrauRecursal === 'function'
+    ? isGrauRecursal(grau)
+    : ['G2', 'STJ', 'STF', 'SUP'].includes(String(grau || '').toUpperCase());
+
+  if (recursal) return registrarProcessoRecursalDaIntimacao(pastaId, intimacao);
+  if (!pastaId || !processo) return null;
+
+  const { data: pastaRow, error: buscaError } = await db
+    .from('pastas')
+    .select('numero_processo')
+    .eq('empresa_id', state.empresaId)
+    .eq('id', pastaId)
+    .maybeSingle();
+  if (buscaError) throw buscaError;
+
+  if (pastaRow?.numero_processo) {
+    const pasta = state.pastas.find(p => p.id === pastaId);
+    const chave = processo.replace(/\D/g, '');
+    if (pasta && chave && String(pastaRow.numero_processo || '').replace(/\D/g, '') === chave) {
+      pasta.processo = pastaRow.numero_processo;
+      _pastasPorProcesso.set(chave, pasta);
+    }
+    return null;
+  }
+
+  const { error } = await db
+    .from('pastas')
+    .update({ numero_processo: processo })
+    .eq('empresa_id', state.empresaId)
+    .eq('id', pastaId);
+  if (error) throw error;
+
+  const pasta = state.pastas.find(p => p.id === pastaId);
+  const chave = processo.replace(/\D/g, '');
+  if (pasta) pasta.processo = processo;
+  if (pasta && chave) _pastasPorProcesso.set(chave, pasta);
+  return { numero_processo: processo, grau: 'G1' };
+}
 
 document.getElementById('novaPastaForm').addEventListener('submit', async e => {
   e.preventDefault();
@@ -175,6 +271,13 @@ document.getElementById('novaPastaForm').addEventListener('submit', async e => {
     const clientePrinc  = state.clientes.find(c => c.nome === primeiroNome);
 
     const uc = v => (v || '').trim().toUpperCase();
+    const intimacaoPendente = state.intimacaoParaVincularNovaPasta;
+    const grauIntimacaoPendente = intimacaoPendente && typeof grauProcessoIntimacao === 'function'
+      ? grauProcessoIntimacao(intimacaoPendente)
+      : (intimacaoPendente?.grau || 'G1');
+    const processoIntimacaoPendente = (intimacaoPendente?.processo || '').trim();
+    const processoInput = document.getElementById('pProcesso')?.value.trim() || '';
+    const processoPasta = processoInput || (!isGrauRecursal(grauIntimacaoPendente) ? processoIntimacaoPendente : '');
     const obj = pastaParaDb({
       id:               pastaId || uid(),
       numero,
@@ -185,7 +288,7 @@ document.getElementById('novaPastaForm').addEventListener('submit', async e => {
       servico:          uc(document.getElementById('pTipoAcao')?.value),
       advogado:         advogado,
       comarca:          uc(document.getElementById('pComarca')?.value),
-      processo:         document.getElementById('pProcesso')?.value.trim() || '',
+      processo:         processoPasta,
       valorCausa:       document.getElementById('pValorCausa')?.value.trim() || 'R$ 0,00',
       area:             areaNome,
       descricao:        document.getElementById('pObs')?.value.trim() || '',
@@ -200,24 +303,38 @@ document.getElementById('novaPastaForm').addEventListener('submit', async e => {
     const { error } = await db.from('pastas').upsert(obj);
     if (error) { toast('Erro ao salvar: ' + error.message, 'error'); return; }
 
-    const intimacaoPendente = state.intimacaoParaVincularNovaPasta;
+    let avisoVinculoIntimacao = '';
+    let vinculouIntimacao = false;
+    let processoAplicado = false;
     if (intimacaoPendente?.id) {
       const { error: vinculoError } = await db.rpc('vincular_intimacao_pasta', {
         p_intimacao_id: intimacaoPendente.id,
         p_pasta_id: obj.id,
       });
       if (vinculoError) {
-        toast('Pasta criada, mas não foi possível vincular a intimação: ' + vinculoError.message, 'error');
+        avisoVinculoIntimacao = 'Pasta criada, mas não foi possível vincular a intimação: ' + vinculoError.message;
       } else {
-        const intim = state.intimacoes.find(i => i.id === intimacaoPendente.id);
+        vinculouIntimacao = true;
+        const intim = state.intimacoes.find(i => mesmoIdIntimacao(i.id, intimacaoPendente.id));
         if (intim) intim.pastaId = obj.id;
+        try {
+          processoAplicado = !!(await aplicarProcessoDaIntimacaoNaPasta(obj.id, { ...intim, ...intimacaoPendente }));
+        } catch (processoError) {
+          console.warn('[pastas] falha ao aplicar processo da intimação:', processoError);
+          avisoVinculoIntimacao = 'Pasta criada e intimação vinculada, mas não foi possível registrar o processo: ' + processoError.message;
+        }
       }
       state.intimacaoParaVincularNovaPasta = null;
     }
 
     logAuditoria(pastaId ? 'editar' : 'criar', 'pastas', obj.id, `Pasta ${pastaId ? 'editada' : 'criada'}: ${numero} — ${clienteNome || '—'}`);
     fecharModalNovaPasta();
-    toast(intimacaoPendente?.id ? 'Pasta criada e vinculada à intimação.' : 'Pasta salva com sucesso');
+    toast(
+      avisoVinculoIntimacao || (vinculouIntimacao
+        ? (processoAplicado ? 'Pasta criada, intimação vinculada e processo registrado.' : 'Pasta criada e vinculada à intimação.')
+        : 'Pasta salva com sucesso'),
+      avisoVinculoIntimacao ? 'error' : undefined
+    );
     await carregarDados();
   } catch (err) {
     toast('Erro inesperado: ' + err.message, 'error');

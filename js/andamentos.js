@@ -34,6 +34,7 @@ async function carregarAndamentosCNJ(pastaId) {
 }
 
 function grauDaIntimacao(intim) {
+  if (typeof grauProcessoIntimacao === 'function') return grauProcessoIntimacao(intim);
   if (intim?.grau) return intim.grau;
   const digits = (intim?.processo || '').replace(/\D/g, '');
   const foro = digits.length >= 20 ? digits.slice(16) : '';
@@ -105,10 +106,13 @@ function montarAndamentosComIntimacoesVinculadas(andamentos, pastaId) {
     }
   });
 
-  // Se o processo da pasta é o mesmo da intimação, grau deve ser G1
+  // O processo principal da pasta representa a 1ª instância. Se alguma pasta
+  // antiga tiver sido salva com CNJ recursal, não force a intimação para G1.
   const pasta = (state.pastas || []).find(p => p.id === pastaId);
   const processoPasta = normalizarNumeroProcesso(pasta?.processo);
-  if (processoPasta) grauPorProcesso.set(processoPasta, grauPorProcesso.get(processoPasta) || 'G1');
+  if (processoPasta && grauDaIntimacao({ processo: pasta?.processo }) === 'G1') {
+    grauPorProcesso.set(processoPasta, grauPorProcesso.get(processoPasta) || 'G1');
+  }
 
   const vinculadas = (state.intimacoes || [])
     .filter(i => i.pastaId === pastaId && (i.status || 'pendente') !== 'arquivada')
@@ -646,6 +650,12 @@ document.getElementById('formAndamentoManual').addEventListener('submit', async 
 
 // ── DETALHE DO ANDAMENTO ─────────────────────────────────────────────────────
 
+function podeExcluirAndamento(a) {
+  if (!a || a._virtualIntimacao) return false;
+  if (!(typeof podeEditarRegistro === 'function' ? podeEditarRegistro() : true)) return false;
+  return a.tribunal === 'manual' || a.nome === 'Processo recursal vinculado';
+}
+
 function abrirDetalheAndamento(andamentoId) {
   const a = state.andamentosCNJ.find(x => x.id === andamentoId);
   if (!a) { toast('Andamento não encontrado.', 'error'); return; }
@@ -688,14 +698,25 @@ function abrirDetalheAndamento(andamentoId) {
   const excluirBtn = document.getElementById('btnExcluirAndamento');
   const uploadBtn = document.getElementById('btnUploadDocAndamento');
   const lerIntimBtn = document.getElementById('btnLerIntimacaoAndamento');
+  const prazoIntimBtn = document.getElementById('btnCriarPrazoAndamento');
   if (editBtn)    editBtn.style.display    = isManual ? '' : 'none';
-  if (excluirBtn) excluirBtn.style.display = isManual ? '' : 'none';
+  if (excluirBtn) {
+    excluirBtn.style.display = podeExcluirAndamento(a) || isVirtual ? '' : 'none';
+    excluirBtn.textContent = isVirtual ? 'Remover vínculo' : '✕ Excluir';
+  }
   if (uploadBtn)  uploadBtn.style.display  = isVirtual ? 'none' : '';
   if (lerIntimBtn) {
     lerIntimBtn.style.display = intimacao ? '' : 'none';
     lerIntimBtn.onclick = () => {
       document.getElementById('modalDetalheAndamento').classList.remove('open');
       lerIntimacao(intimacao);
+    };
+  }
+  if (prazoIntimBtn) {
+    prazoIntimBtn.style.display = intimacao ? '' : 'none';
+    prazoIntimBtn.onclick = () => {
+      document.getElementById('modalDetalheAndamento').classList.remove('open');
+      criarPrazoDaIntimacao(intimacao);
     };
   }
 
@@ -710,7 +731,27 @@ function abrirDetalheAndamento(andamentoId) {
 
 async function excluirAndamentoAtual() {
   const a = state.currentAndamento;
-  if (!a || a.tribunal !== 'manual') return;
+  if (!a) return;
+
+  if (a._virtualIntimacao) {
+    const intimacaoId = a.intimacao_id || a._intimacao?.id;
+    if (!intimacaoId) return;
+    if (!confirm('Remover o vínculo desta intimação com a pasta?')) return;
+    const { error } = await db.rpc('vincular_intimacao_pasta', {
+      p_intimacao_id: String(intimacaoId),
+      p_pasta_id: null,
+    });
+    if (error) { toast('Erro ao remover vínculo: ' + error.message, 'error'); return; }
+    const intim = state.intimacoes.find(i => String(i.id) === String(intimacaoId));
+    if (intim) intim.pastaId = null;
+    document.getElementById('modalDetalheAndamento').classList.remove('open');
+    toast('Vínculo da intimação removido.');
+    if (state.currentPastaId && typeof carregarAndamentosCNJ === 'function') carregarAndamentosCNJ(state.currentPastaId);
+    if (typeof renderIntimacoesAba === 'function') renderIntimacoesAba();
+    return;
+  }
+
+  if (!podeExcluirAndamento(a)) return;
   if (!confirm('Excluir este andamento? Esta ação não pode ser desfeita.')) return;
   const { error } = await db.from('andamentos_processo')
     .delete()

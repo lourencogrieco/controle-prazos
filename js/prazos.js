@@ -68,6 +68,9 @@ function abrirModalNovoPrazo(id) {
   document.getElementById('prazoCliente').value      = p?.cliente || '';
   document.getElementById('prazoTipo').value         = p?.tipoPrazo || '';
   document.getElementById('prazoFatal').value        = p?.prazoFatal || '';
+  document.getElementById('prazoDiasUteis').value    = p?.prazoDiasUteis && [5, 10, 15].includes(Number(p.prazoDiasUteis))
+    ? String(p.prazoDiasUteis)
+    : '';
   document.getElementById('prazoStatus').value       = p?.status === 'Concluído' ? 'concluido'
     : p?.status === 'Em andamento' ? 'em_andamento' : 'pendente';
   document.getElementById('prazoDescricao').value    = p?.descricao || '';
@@ -86,9 +89,11 @@ function abrirModalNovoPrazo(id) {
 
   // Controle de permissão para data fatal
   const podData = podeAlterarDataPrazo();
-  document.getElementById('prazoFatal').disabled = !podData;
-  document.getElementById('prazoTipo').disabled  = !podData;
-  document.getElementById('prazoAvisoPermissao').style.display = (!podData && p) ? '' : 'none';
+  const podeAlterarCamposPrazo = podData || !p;
+  document.getElementById('prazoFatal').disabled = !podeAlterarCamposPrazo;
+  document.getElementById('prazoTipo').disabled  = !podeAlterarCamposPrazo;
+  document.getElementById('prazoDiasUteis').disabled = !podeAlterarCamposPrazo;
+  document.getElementById('prazoAvisoPermissao').style.display = (!podeAlterarCamposPrazo && p) ? '' : 'none';
 
   document.getElementById('modalNovoPrazo').classList.add('open');
 }
@@ -151,14 +156,17 @@ function prazoCalculoBadge(p) {
   return `<span class="calc-badge" title="${escAttr(title)}">Auto</span>`;
 }
 
-async function calcularPrazoAuditavel(tipo, dataBase) {
+async function calcularPrazoAuditavel(tipo, dataBase, diasUteisManual = null) {
   if (!tipo || !dataBase) return null;
+  const diasUteis = Number(diasUteisManual) || null;
   try {
     if (typeof db !== 'undefined' && db?.rpc) {
-      const { data, error } = await db.rpc('calcular_prazo_juridico', {
+      const params = {
         p_tipo: tipo,
         p_data_base: dataBase,
-      });
+      };
+      if (diasUteis) params.p_dias_uteis = diasUteis;
+      const { data, error } = await db.rpc('calcular_prazo_juridico', params);
       if (!error && data) return data;
       if (error) console.warn('[prazo] fallback cálculo local:', error.message);
     }
@@ -166,7 +174,12 @@ async function calcularPrazoAuditavel(tipo, dataBase) {
     console.warn('[prazo] fallback cálculo local:', err.message);
   }
 
-  const local = window.PrazoJuridico?.sugerirPrazo({ tipo, dataBase });
+  const local = diasUteis
+    ? (() => {
+        const dataFatal = window.PrazoJuridico?.calcularPrazo(dataBase, diasUteis);
+        return dataFatal ? { dataFatal, diasUteis, regra: `${diasUteis} dias úteis` } : null;
+      })()
+    : window.PrazoJuridico?.sugerirPrazo({ tipo, dataBase });
   return local ? {
     dataFatal: local.dataFatal,
     dataBase,
@@ -181,8 +194,9 @@ async function preencherPrazoSugerido() {
   const tipoEl  = document.getElementById('prazoTipo');
   const fatalEl = document.getElementById('prazoFatal');
   const descEl  = document.getElementById('prazoDescricao');
+  const diasEl  = document.getElementById('prazoDiasUteis');
   const dataBase = fatalEl?.dataset?.dataBase || '';
-  const sugestao = await calcularPrazoAuditavel(tipoEl?.value, dataBase);
+  const sugestao = await calcularPrazoAuditavel(tipoEl?.value, dataBase, diasEl?.value || null);
   if (!sugestao) return;
 
   fatalEl.value = sugestao.dataFatal;
@@ -193,12 +207,18 @@ async function preencherPrazoSugerido() {
   fatalEl.dataset.metadados = JSON.stringify(sugestao);
   renderPrazoCalculoInfo({ ...sugestao, calculado: true });
   const nota = `Prazo sugerido automaticamente: ${sugestao.regra} a partir da publicação/intimação.`;
-  if (descEl && !descEl.value.includes(nota)) {
-    descEl.value = [descEl.value.trim(), nota].filter(Boolean).join('\n');
+  if (descEl) {
+    const descricaoSemNotaAntiga = descEl.value
+      .split('\n')
+      .filter(l => !/^Prazo sugerido automaticamente:/.test(l.trim()))
+      .join('\n')
+      .trim();
+    descEl.value = [descricaoSemNotaAntiga, nota].filter(Boolean).join('\n');
   }
 }
 
 document.getElementById('prazoTipo').addEventListener('change', () => { preencherPrazoSugerido(); });
+document.getElementById('prazoDiasUteis')?.addEventListener('change', () => { preencherPrazoSugerido(); });
 document.getElementById('prazoFatal').addEventListener('change', e => {
   const el = e.target;
   if (el.dataset.sugerida && el.value !== el.dataset.sugerida) {
@@ -250,11 +270,23 @@ document.getElementById('novoPrazoForm').addEventListener('submit', async e => {
         : {},
     };
 
-    const saveReq  = prazoId
-      ? db.from('prazos_lhub').update(obj).eq('id', prazoId).eq('empresa_id', state.empresaId)
-      : db.from('prazos_lhub').insert(obj);
+    const salvarPrazo = row => prazoId
+      ? db.from('prazos_lhub').update(row).eq('id', prazoId).eq('empresa_id', state.empresaId)
+      : db.from('prazos_lhub').insert(row);
+    let saveReq = salvarPrazo(obj);
     const tOut     = new Promise((_, r) => setTimeout(() => r(new Error('Sem resposta do banco em 12s. Verifique as políticas RLS.')), 12000));
-    const { error } = await Promise.race([saveReq, tOut]);
+    let { error } = await Promise.race([saveReq, tOut]);
+    if (error && /intimacao_id|prazo_data_base|prazo_dias_uteis|prazo_regra|prazo_calculado|prazo_metadados/i.test(error.message || '')) {
+      const legacyObj = { ...obj };
+      delete legacyObj.intimacao_id;
+      delete legacyObj.prazo_data_base;
+      delete legacyObj.prazo_dias_uteis;
+      delete legacyObj.prazo_regra;
+      delete legacyObj.prazo_calculado;
+      delete legacyObj.prazo_metadados;
+      saveReq = salvarPrazo(legacyObj);
+      ({ error } = await Promise.race([saveReq, tOut]));
+    }
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
     const novo = dbParaPrazo(obj); _enrichPrazo(novo);
     _stateUpsert(state.prazos, novo);

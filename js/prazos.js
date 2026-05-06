@@ -276,7 +276,7 @@ document.getElementById('novoPrazoForm').addEventListener('submit', async e => {
     let saveReq = salvarPrazo(obj);
     const tOut     = new Promise((_, r) => setTimeout(() => r(new Error('Sem resposta do banco em 12s. Verifique as políticas RLS.')), 12000));
     let { error } = await Promise.race([saveReq, tOut]);
-    if (error && /intimacao_id|prazo_data_base|prazo_dias_uteis|prazo_regra|prazo_calculado|prazo_metadados/i.test(error.message || '')) {
+    if (error && /intimacao_id|prazo_data_base|prazo_dias_uteis|prazo_regra|prazo_calculado|prazo_metadados|invalid input syntax for type uuid/i.test(error.message || '')) {
       const legacyObj = { ...obj };
       delete legacyObj.intimacao_id;
       delete legacyObj.prazo_data_base;

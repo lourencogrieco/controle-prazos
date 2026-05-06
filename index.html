@@ -2955,6 +2955,15 @@
             <input type="date" id="prazoFatal" required>
           </div>
         </div>
+        <div class="field" id="prazoDiasUteisWrap">
+          <span class="field-label">Contagem automática</span>
+          <select id="prazoDiasUteis">
+            <option value="">Pelo tipo de prazo</option>
+            <option value="5">5 dias úteis</option>
+            <option value="10">10 dias úteis</option>
+            <option value="15">15 dias úteis</option>
+          </select>
+        </div>
         <div id="prazoCalculoInfo" class="prazo-calc-info hidden"></div>
         <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:14px">
           <div class="field">
@@ -3191,6 +3200,7 @@
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <span class="field-label">Documentos vinculados</span>
         <div style="display:flex;gap:8px">
+          <button class="btn-outline" id="btnCriarPrazoAndamento" style="font-size:.75rem;padding:4px 10px;display:none" type="button">+ Prazo</button>
           <button class="btn-outline" id="btnLerIntimacaoAndamento" style="font-size:.75rem;padding:4px 10px;display:none" type="button">Ler intimação</button>
           <button class="btn-outline" id="btnExcluirAndamento" style="font-size:.75rem;padding:4px 10px;display:none;border-color:var(--red);color:var(--red)" onclick="excluirAndamentoAtual()">✕ Excluir</button>
           <button class="btn-outline" id="btnEditarAndamento" style="font-size:.75rem;padding:4px 10px;display:none" onclick="editarAndamentoAtual()">✎ Editar</button>
@@ -3329,12 +3339,12 @@
 <script src="js/configuracoes.js?v=67"></script>
 <script src="js/agenda.js?v=57"></script>
 <script src="js/prazo-calculo.js?v=1"></script>
-<script src="js/intimacoes.js?v=73"></script>
-<script src="js/prazos.js?v=61"></script>
+<script src="js/intimacoes.js?v=75"></script>
+<script src="js/prazos.js?v=62"></script>
 <script src="js/tarefas.js?v=64"></script>
-<script src="js/pastas.js?v=63"></script>
+<script src="js/pastas.js?v=65"></script>
 <script src="js/relatorio.js?v=51"></script>
-<script src="js/andamentos.js?v=67"></script>
+<script src="js/andamentos.js?v=69"></script>
 <script src="js/documentos.js?v=59"></script>
 <script src="js/financeiro.js?v=60"></script>
 <script src="js/realtime.js?v=60"></script>

@@ -265,17 +265,11 @@ async function carregarDados() {
     db.from('pje_config').select('*').eq('empresa_id', eid).maybeSingle(),
     db.from('agenda_eventos').select('*').eq('empresa_id', eid).order('data'),
     db.from('usuarios_empresa').select('id,nome,perfil,area_id').eq('empresa_id', eid).order('nome'),
-    db.from('honorarios').select('*').eq('empresa_id', eid).order('vencimento'),
-    db.from('cobrancas').select('*').eq('empresa_id', eid).order('data_vencimento'),
-    db.from('contas_pagar').select('*').eq('empresa_id', eid).order('data_vencimento'),
-    db.from('despesas').select('*').eq('empresa_id', eid).order('data', { ascending: false }),
-    db.from('oportunidades_crm').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
-    db.from('modelos_documentos').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
     db.from('pje_sync_logs').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }).limit(20),
     db.from('andamentos_processo').select('numero_processo,pasta_id').eq('empresa_id', eid),
   ];
 
-  const [pr, pz, tf, tp, cl, ar, it, cfg, ev, us, hon, cob, ctp, dep, opo, mod, pjeLogs, andProc] = await Promise.all(queries);
+  const [pr, pz, tf, tp, cl, ar, it, cfg, ev, us, pjeLogs, andProc] = await Promise.all(queries);
 
   state.pastas     = (pr.data || []).map(dbParaPasta);
   if (andProc.error) console.warn('Erro ao carregar índice de processos recursais:', andProc.error.message);
@@ -311,12 +305,6 @@ async function carregarDados() {
   state.pjeConfig  = cfg.data || null;
   state.pjeSyncLogs = pjeLogs.data || [];
   state.usuarios   = (us.data || []);
-  state.honorarios  = (hon.data || []).map(dbParaHonorario);
-  state.cobrancas   = (cob.data || []).map(dbParaCobranca);
-  state.contasPagar = (ctp.data || []).map(dbParaContaPagar);
-  state.despesas    = (dep.data || []).map(dbParaDespesa);
-  state.oportunidades = (opo.data || []).map(dbParaOportunidade);
-  state.modelosDocumentos = (mod.data || []).map(dbParaModeloDocumento);
   // Carrega eventos da agenda no array local
   agendaEventos.length = 0;
   (ev.data || []).forEach(e => agendaEventos.push({
@@ -340,4 +328,33 @@ async function carregarDados() {
   renderCalendario();
   renderFinanceiro();
   popularSelectsPastas();
+  carregarDadosSecundarios(eid);
+}
+
+async function carregarDadosSecundarios(eid) {
+  if (!eid) return;
+  try {
+    const [hon, cob, ctp, dep, mod] = await Promise.all([
+      db.from('honorarios').select('*').eq('empresa_id', eid).order('vencimento'),
+      db.from('cobrancas').select('*').eq('empresa_id', eid).order('data_vencimento'),
+      db.from('contas_pagar').select('*').eq('empresa_id', eid).order('data_vencimento'),
+      db.from('despesas').select('*').eq('empresa_id', eid).order('data', { ascending: false }),
+      db.from('modelos_documentos').select('*').eq('empresa_id', eid).order('created_at', { ascending: false }),
+    ]);
+
+    const erros = [hon.error, cob.error, ctp.error, dep.error, mod.error].filter(Boolean);
+    if (erros.length) console.warn('Carga secundária incompleta:', erros.map(e => e.message).join(' | '));
+
+    state.honorarios = (hon.data || []).map(dbParaHonorario);
+    state.cobrancas = (cob.data || []).map(dbParaCobranca);
+    state.contasPagar = (ctp.data || []).map(dbParaContaPagar);
+    state.despesas = (dep.data || []).map(dbParaDespesa);
+    state.modelosDocumentos = (mod.data || []).map(dbParaModeloDocumento);
+
+    renderDashboard();
+    renderFinanceiro();
+    if (typeof renderModelosDocumentos === 'function') renderModelosDocumentos();
+  } catch (err) {
+    console.warn('Erro na carga secundária:', err.message);
+  }
 }

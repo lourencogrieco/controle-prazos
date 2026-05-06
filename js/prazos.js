@@ -286,38 +286,33 @@ document.getElementById('novoPrazoForm').addEventListener('submit', async e => {
         : {},
     };
 
-    const salvarPrazo = row => prazoId
-      ? db.from('prazos_lhub').update(row).eq('id', prazoId).eq('empresa_id', state.empresaId)
-      : db.from('prazos_lhub').insert(row);
-    let saveReq = salvarPrazo(obj);
-    const tOut     = new Promise((_, r) => setTimeout(() => r(new Error('Sem resposta do banco em 12s. Verifique as políticas RLS.')), 12000));
-    let { error } = await Promise.race([saveReq, tOut]);
-    if (error && /intimacao_id|prazo_data_base|prazo_dias_uteis|prazo_regra|prazo_calculado|prazo_metadados|invalid input syntax for type uuid/i.test(error.message || '')) {
-      const legacyObj = { ...obj };
-      delete legacyObj.intimacao_id;
-      delete legacyObj.prazo_data_base;
-      delete legacyObj.prazo_dias_uteis;
-      delete legacyObj.prazo_regra;
-      delete legacyObj.prazo_calculado;
-      delete legacyObj.prazo_metadados;
-      saveReq = salvarPrazo(legacyObj);
-      ({ error } = await Promise.race([saveReq, tOut]));
-    }
+    const saveReq = db.rpc('salvar_prazo_lhub', {
+      p_id: obj.id,
+      p_empresa_id: obj.empresa_id,
+      p_pasta_id: obj.pasta_id,
+      p_cliente: obj.cliente,
+      p_tipo: obj.tipo,
+      p_prazo: obj.prazo,
+      p_responsavel: obj.responsavel,
+      p_status: obj.status,
+      p_descricao: obj.descricao,
+      p_intimacao_id: obj.intimacao_id,
+      p_prazo_data_base: obj.prazo_data_base,
+      p_prazo_dias_uteis: obj.prazo_dias_uteis,
+      p_prazo_regra: obj.prazo_regra,
+      p_prazo_calculado: obj.prazo_calculado,
+      p_prazo_metadados: obj.prazo_metadados,
+    });
+    const tOut = new Promise((_, r) => setTimeout(() => r(new Error('Sem resposta do banco em 12s. Verifique as políticas RLS.')), 12000));
+    const { data, error } = await Promise.race([saveReq, tOut]);
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
-    const novo = dbParaPrazo(obj); _enrichPrazo(novo);
+    const rowSalva = Array.isArray(data) ? data[0] : data;
+    const novo = dbParaPrazo(rowSalva || obj); _enrichPrazo(novo);
     _stateUpsert(state.prazos, novo);
     if (obj.intimacao_id) {
-      const { error: intErro } = await db.from('intimacoes_pje')
-        .update({ status_lhub: 'prazo_agendado', lida: true })
-        .eq('id', obj.intimacao_id)
-        .eq('empresa_id', state.empresaId);
-      if (intErro) {
-        toast('Prazo salvo, mas não foi possível atualizar a intimação: ' + intErro.message, 'error');
-      } else {
-        const intim = state.intimacoes.find(i => i.id === obj.intimacao_id);
-        if (intim) intim.status = 'prazo_agendado';
-        if (typeof renderIntimacoesAba === 'function') renderIntimacoesAba();
-      }
+      const intim = state.intimacoes.find(i => String(i.id) === String(obj.intimacao_id));
+      if (intim) { intim.status = 'prazo_agendado'; intim.lida = true; }
+      if (typeof renderIntimacoesAba === 'function') renderIntimacoesAba();
     }
     logAuditoria(prazoId ? 'editar' : 'criar', 'prazos_lhub', obj.id, `Prazo ${prazoId ? 'editado' : 'criado'}: ${obj.tipo} — ${obj.cliente || '—'}`);
     fecharModalNovoPrazo();

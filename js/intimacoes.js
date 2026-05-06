@@ -585,6 +585,7 @@ async function removerVinculoIntimacao() {
   const { data, error } = await db.rpc('vincular_intimacao_pasta', {
     p_intimacao_id: id,
     p_pasta_id: null,
+    p_grau: null,
   });
   const row = Array.isArray(data) ? data[0] : data;
 

@@ -760,6 +760,7 @@ async function excluirAndamentoAtual() {
     const { error } = await db.rpc('vincular_intimacao_pasta', {
       p_intimacao_id: String(intimacaoId),
       p_pasta_id: null,
+      p_grau: null,
     });
     if (error) { toast('Erro ao remover vínculo: ' + error.message, 'error'); return; }
     const intim = state.intimacoes.find(i => String(i.id) === String(intimacaoId));

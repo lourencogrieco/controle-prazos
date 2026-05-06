@@ -135,6 +135,7 @@ function renderPrazoCalculoInfo(prazoOuSugestao) {
   const calculado = prazoOuSugestao?.prazoCalculado || prazoOuSugestao?.calculado;
   const regra = prazoOuSugestao?.prazoRegra || prazoOuSugestao?.regra || '';
   const dataBase = prazoOuSugestao?.prazoDataBase || prazoOuSugestao?.dataBase || '';
+  const dataFatalJuridica = prazoOuSugestao?.dataFatalJuridica || prazoOuSugestao?.prazoMetadados?.dataFatalJuridica || '';
   if (!calculado && !regra) {
     el.classList.add('hidden');
     el.innerHTML = '';
@@ -142,8 +143,8 @@ function renderPrazoCalculoInfo(prazoOuSugestao) {
   }
   el.classList.remove('hidden');
   el.innerHTML = `
-    <strong>Prazo calculado automaticamente</strong>
-    <span>${escHtml(`${regra || 'Regra não informada'}${dataBase ? ` · data-base ${formatDate(dataBase)}` : ''}`)}</span>
+    <strong>Prazo interno calculado automaticamente</strong>
+    <span>${escHtml(`${regra || 'Regra não informada'}${dataBase ? ` · data-base ${formatDate(dataBase)}` : ''}${dataFatalJuridica ? ` · fatal jurídico ${formatDate(dataFatalJuridica)}` : ''}`)}</span>
   `;
 }
 
@@ -152,8 +153,23 @@ function prazoCalculoBadge(p) {
   const title = [
     p.prazoRegra || 'Prazo calculado',
     p.prazoDataBase ? `Data-base: ${formatDate(p.prazoDataBase)}` : '',
+    p.prazoMetadados?.dataFatalJuridica ? `Fatal jurídico: ${formatDate(p.prazoMetadados.dataFatalJuridica)}` : '',
   ].filter(Boolean).join(' · ');
   return `<span class="calc-badge" title="${escAttr(title)}">Auto</span>`;
+}
+
+function aplicarControleInternoPrazo(sugestao) {
+  if (!sugestao?.dataFatal) return sugestao;
+  const dataFatalJuridica = sugestao.dataFatal;
+  const prazoInterno = window.PrazoJuridico?.diaUtilAnterior(dataFatalJuridica) || dataFatalJuridica;
+  return {
+    ...sugestao,
+    dataFatal: prazoInterno,
+    dataFatalJuridica,
+    prazoInterno: true,
+    antecipacaoDiasUteis: 1,
+    regra: `${sugestao.regra || 'Prazo calculado'} - controle interno D-1`,
+  };
 }
 
 async function calcularPrazoAuditavel(tipo, dataBase, diasUteisManual = null) {
@@ -167,7 +183,7 @@ async function calcularPrazoAuditavel(tipo, dataBase, diasUteisManual = null) {
       };
       if (diasUteis) params.p_dias_uteis = diasUteis;
       const { data, error } = await db.rpc('calcular_prazo_juridico', params);
-      if (!error && data) return data;
+      if (!error && data) return aplicarControleInternoPrazo(data);
       if (error) console.warn('[prazo] fallback cálculo local:', error.message);
     }
   } catch (err) {
@@ -180,14 +196,14 @@ async function calcularPrazoAuditavel(tipo, dataBase, diasUteisManual = null) {
         return dataFatal ? { dataFatal, diasUteis, regra: `${diasUteis} dias úteis` } : null;
       })()
     : window.PrazoJuridico?.sugerirPrazo({ tipo, dataBase });
-  return local ? {
+  return aplicarControleInternoPrazo(local ? {
     dataFatal: local.dataFatal,
     dataBase,
     diasUteis: local.diasUteis,
     regra: local.regra,
     metodo: 'frontend_fallback',
     excluiDiaBase: true,
-  } : null;
+  } : null);
 }
 
 async function preencherPrazoSugerido() {
@@ -206,11 +222,11 @@ async function preencherPrazoSugerido() {
   fatalEl.dataset.regra = sugestao.regra || '';
   fatalEl.dataset.metadados = JSON.stringify(sugestao);
   renderPrazoCalculoInfo({ ...sugestao, calculado: true });
-  const nota = `Prazo sugerido automaticamente: ${sugestao.regra} a partir da publicação/intimação.`;
+  const nota = `Prazo interno sugerido automaticamente: ${sugestao.regra} a partir da publicação/intimação${sugestao.dataFatalJuridica ? `; fatal jurídico em ${formatDate(sugestao.dataFatalJuridica)}` : ''}.`;
   if (descEl) {
     const descricaoSemNotaAntiga = descEl.value
       .split('\n')
-      .filter(l => !/^Prazo sugerido automaticamente:/.test(l.trim()))
+      .filter(l => !/^(Prazo sugerido automaticamente|Prazo interno sugerido automaticamente):/.test(l.trim()))
       .join('\n')
       .trim();
     descEl.value = [descricaoSemNotaAntiga, nota].filter(Boolean).join('\n');

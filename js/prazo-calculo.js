@@ -104,6 +104,14 @@
     return d;
   }
 
+  function diaUtilAnterior(dataISO) {
+    const data = parseISODate(dataISO);
+    if (!data) return null;
+    let cursor = addDays(data, -1);
+    while (!isDiaUtil(cursor)) cursor = addDays(cursor, -1);
+    return toISODate(cursor);
+  }
+
   function calcularPrazo(dataBaseISO, diasUteis) {
     const base = parseISODate(dataBaseISO);
     const dias = Number(diasUteis);
@@ -132,6 +140,7 @@
 
   global.PrazoJuridico = {
     calcularPrazo,
+    diaUtilAnterior,
     diasUteisPorTipo,
     feriadosNacionais,
     isDiaUtil,

@@ -300,7 +300,12 @@ document.getElementById('novaPastaForm').addEventListener('submit', async e => {
     obj.area_id     = areaId || null;
     obj.cliente_id  = clientePrinc?.id || null;
 
-    const { error } = await db.from('pastas').upsert(obj);
+    const { error } = await salvarRegistroEmpresa(
+      'pastas',
+      obj,
+      pastaId || null,
+      'Sem resposta do banco em 12s. Verifique a conexão e as políticas RLS da tabela pastas.'
+    );
     if (error) { toast('Erro ao salvar: ' + error.message, 'error'); return; }
 
     let avisoVinculoIntimacao = '';
@@ -338,6 +343,7 @@ document.getElementById('novaPastaForm').addEventListener('submit', async e => {
     );
     await carregarDados();
   } catch (err) {
+    console.error('[pastas] erro ao salvar pasta:', err);
     toast('Erro inesperado: ' + err.message, 'error');
   } finally {
     btn.disabled = false;

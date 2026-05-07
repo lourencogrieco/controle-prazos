@@ -241,10 +241,42 @@ async function aplicarProcessoDaIntimacaoNaPasta(pastaId, intimacao) {
   return { numero_processo: processo, grau: 'G1' };
 }
 
+function getAccessTokenLocal() {
+  try {
+    const projectRef = new URL(SUPA_URL).hostname.split('.')[0];
+    const keys = [
+      `sb-${projectRef}-auth-token`,
+      ...Object.keys(localStorage).filter(k => k.startsWith('sb-') && k.endsWith('-auth-token')),
+    ];
+    for (const key of keys) {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      const token = parsed?.access_token || parsed?.currentSession?.access_token;
+      if (token) return token;
+    }
+  } catch (err) {
+    console.warn('[pastas] não foi possível ler token local:', err);
+  }
+  return '';
+}
+
+async function getAccessTokenComTimeout() {
+  const tokenLocal = getAccessTokenLocal();
+  if (tokenLocal) return tokenLocal;
+
+  const tOut = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Sessão indisponível. Recarregue a página e faça login novamente.')), 3000)
+  );
+  const sessionReq = db.auth.getSession().then(({ data, error }) => {
+    if (error) throw error;
+    return data?.session?.access_token || '';
+  });
+  return Promise.race([sessionReq, tOut]);
+}
+
 async function salvarPastaRest(obj, pastaId) {
-  const { data: { session }, error: sessionError } = await db.auth.getSession();
-  if (sessionError) throw sessionError;
-  const token = session?.access_token;
+  const token = await getAccessTokenComTimeout();
   if (!token) throw new Error('Sessão expirada. Faça login novamente.');
 
   const controller = new AbortController();
@@ -348,6 +380,11 @@ document.getElementById('novaPastaForm').addEventListener('submit', async e => {
     obj.area_id     = areaId || null;
     obj.cliente_id  = clientePrinc?.id || null;
 
+    console.info('[pastas] iniciando salvamento', {
+      pastaId: pastaId || obj.id,
+      empresaId: obj.empresa_id,
+      numero: obj.numero,
+    });
     const { error } = await salvarPastaRest(obj, pastaId || null);
     if (error) { toast('Erro ao salvar: ' + error.message, 'error'); return; }
 

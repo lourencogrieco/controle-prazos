@@ -241,6 +241,54 @@ async function aplicarProcessoDaIntimacaoNaPasta(pastaId, intimacao) {
   return { numero_processo: processo, grau: 'G1' };
 }
 
+async function salvarPastaRest(obj, pastaId) {
+  const { data: { session }, error: sessionError } = await db.auth.getSession();
+  if (sessionError) throw sessionError;
+  const token = session?.access_token;
+  if (!token) throw new Error('Sessão expirada. Faça login novamente.');
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
+  const url = pastaId
+    ? `${SUPA_URL}/rest/v1/pastas?id=eq.${encodeURIComponent(pastaId)}&empresa_id=eq.${encodeURIComponent(state.empresaId)}`
+    : `${SUPA_URL}/rest/v1/pastas`;
+  const method = pastaId ? 'PATCH' : 'POST';
+
+  try {
+    const resp = await fetch(url, {
+      method,
+      signal: controller.signal,
+      headers: {
+        apikey: SUPA_KEY,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify(obj),
+    });
+    if (!resp.ok) {
+      let detail = '';
+      try {
+        const body = await resp.json();
+        detail = body.message || body.details || body.hint || JSON.stringify(body);
+        console.error('[pastas] resposta REST ao salvar pasta:', resp.status, body);
+      } catch {
+        detail = await resp.text();
+        console.error('[pastas] resposta REST ao salvar pasta:', resp.status, detail);
+      }
+      throw new Error(detail || `HTTP ${resp.status}`);
+    }
+    return { error: null };
+  } catch (err) {
+    if (err?.name === 'AbortError') {
+      throw new Error('Sem resposta do banco em 12s ao salvar pasta.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 document.getElementById('novaPastaForm').addEventListener('submit', async e => {
   e.preventDefault();
   const btn = document.getElementById('btnSalvarPasta');
@@ -300,12 +348,7 @@ document.getElementById('novaPastaForm').addEventListener('submit', async e => {
     obj.area_id     = areaId || null;
     obj.cliente_id  = clientePrinc?.id || null;
 
-    const { error } = await salvarRegistroEmpresa(
-      'pastas',
-      obj,
-      pastaId || null,
-      'Sem resposta do banco em 12s. Verifique a conexão e as políticas RLS da tabela pastas.'
-    );
+    const { error } = await salvarPastaRest(obj, pastaId || null);
     if (error) { toast('Erro ao salvar: ' + error.message, 'error'); return; }
 
     let avisoVinculoIntimacao = '';

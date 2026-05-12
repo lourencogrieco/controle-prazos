@@ -45,7 +45,6 @@ function detectarGrauPorProcesso(processo, tribunal) {
   const trib = (tribunal || '').toUpperCase();
   if (trib.includes('STF') || trib === 'STF') return 'STF';
   if (trib.includes('STJ') || trib === 'STJ') return 'STJ';
-  if (trib.startsWith('TRF') || trib.includes('TRIBUNAL REGIONAL FEDERAL')) return 'G2';
 
   const digits = (processo || '').replace(/\D/g, '');
   if (digits.length < 20) return 'G1';

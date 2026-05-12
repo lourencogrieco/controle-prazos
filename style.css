@@ -2783,6 +2783,17 @@ tbody td {
   border-color: #00c896;
 }
 
+.fin-icon-btn--paid {
+  background: rgba(0,200,150,.08);
+  border-color: rgba(0,200,150,.28);
+}
+
+.fin-icon-btn--paid:hover {
+  background: rgba(235,87,87,.08);
+  color: var(--red);
+  border-color: rgba(235,87,87,.4);
+}
+
 .fin-icon-btn--del:hover {
   background: rgba(235,87,87,.08);
   color: var(--red);

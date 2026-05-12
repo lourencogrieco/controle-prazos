@@ -325,7 +325,8 @@ function renderFinCobrancas() {
       <td class="fin-actions"><div class="fin-actions-inner">
         ${st !== 'pago'
           ? `<button class="fin-icon-btn fin-icon-btn--pay" title="Dar baixa" onclick="abrirDarBaixa('${id}','cob')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>`
-          : `<button class="fin-icon-btn" title="Gerar recibo" onclick="gerarReciboPorId('${id}','cob')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>`}
+          : `<button class="fin-icon-btn fin-icon-btn--pay fin-icon-btn--paid" title="Desfazer pagamento" onclick="desfazerBaixa('${id}','cob')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+             <button class="fin-icon-btn" title="Gerar recibo" onclick="gerarReciboPorId('${id}','cob')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>`}
         <button class="fin-icon-btn" title="Editar" onclick="abrirModalCobranca('${id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
         <button class="fin-icon-btn fin-icon-btn--del" title="Excluir" onclick="excluirCobranca('${id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
       </div></td>
@@ -398,7 +399,8 @@ function renderFinContasPagar() {
       <td class="fin-actions"><div class="fin-actions-inner">
         ${st !== 'pago'
           ? `<button class="fin-icon-btn fin-icon-btn--pay" title="Dar baixa" onclick="abrirDarBaixa('${id}','cont')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>`
-          : `<button class="fin-icon-btn" title="Gerar recibo" onclick="gerarReciboPorId('${id}','cont')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>`}
+          : `<button class="fin-icon-btn fin-icon-btn--pay fin-icon-btn--paid" title="Desfazer pagamento" onclick="desfazerBaixa('${id}','cont')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+             <button class="fin-icon-btn" title="Gerar recibo" onclick="gerarReciboPorId('${id}','cont')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>`}
         <button class="fin-icon-btn" title="Editar" onclick="abrirModalContaPagar('${id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
         <button class="fin-icon-btn fin-icon-btn--del" title="Excluir" onclick="excluirContaPagar('${id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
       </div></td>
@@ -785,8 +787,7 @@ document.getElementById('formDarBaixa').addEventListener('submit', async e => {
     if (tipo === 'desp') { renderFinDespesas(); }
     renderFinVisaoGeral();
 
-    // Ask to generate recibo
-    if (tipo !== 'cont' && confirm('Deseja gerar o recibo?')) {
+    if (tipo === 'desp' && confirm('Deseja gerar o recibo?')) {
       if (item) gerarRecibo(item, tipo);
     }
   } catch (err) {
@@ -795,6 +796,35 @@ document.getElementById('formDarBaixa').addEventListener('submit', async e => {
     btn.disabled = false; btn.textContent = 'Confirmar baixa';
   }
 });
+
+async function desfazerBaixa(id, tipo) {
+  if (!confirm('Desfazer este pagamento?')) return;
+
+  let tabela;
+  if (tipo === 'cob') tabela = 'cobrancas';
+  if (tipo === 'cont') tabela = 'contas_pagar';
+  if (!tabela) return;
+
+  const { error } = await db.from(tabela)
+    .update({ status: 'pendente', data_pagamento: null, valor_pago: null })
+    .eq('id', id)
+    .eq('empresa_id', state.empresaId);
+  if (error) { toast('Erro: ' + error.message, 'error'); return; }
+
+  let item = null;
+  if (tipo === 'cob') item = (state.cobrancas || []).find(x => x.id === id);
+  if (tipo === 'cont') item = (state.contasPagar || []).find(x => x.id === id);
+  if (item) {
+    item.status = 'pendente';
+    item.dataPagamento = null;
+    item.valorPago = 0;
+  }
+
+  toast(tipo === 'cob' ? 'Pagamento desmarcado.' : 'Pagamento desfeito.');
+  if (tipo === 'cob') renderFinCobrancas();
+  if (tipo === 'cont') renderFinContasPagar();
+  renderFinVisaoGeral();
+}
 
 // ── Recibo ────────────────────────────────────────────────────────────
 

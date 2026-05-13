@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=60">
+  <link rel="stylesheet" href="style.css?v=61">
 </head>
 <body>
 <div class="app">
@@ -962,10 +962,10 @@
           </div>
         </div>
 
-        <p class="fin-section-label" style="margin-top:24px">CONSOLIDADO</p>
+        <p class="fin-section-label" style="margin-top:24px">CONSOLIDADO EM ABERTO</p>
         <div class="fin-cards fin-cards--3">
           <div class="fin-card">
-            <span class="fin-card-label">Total a receber</span>
+            <span class="fin-card-label">A receber em aberto</span>
             <span class="fin-card-value" id="finConsolidadoReceber">R$ 0,00</span>
             <span class="fin-card-sub" id="finConsolidadoReceberSub">0 cobranças</span>
           </div>
@@ -981,23 +981,24 @@
           </div>
         </div>
 
-        <div class="fin-equation">
+        <p class="fin-section-label" id="finEqAnoLabel" style="margin-top:24px">CONSOLIDADO ANUAL</p>
+        <div class="fin-equation fin-equation--annual">
           <div class="fin-eq-block">
-            <span class="fin-eq-label">A RECEBER (BRUTO)</span>
+            <span class="fin-eq-label">RECEITAS DO ANO</span>
             <span class="fin-eq-value" id="finEqReceber">R$ 0,00</span>
-            <span class="fin-eq-sub" id="finEqReceberSub">cobranças pendentes</span>
+            <span class="fin-eq-sub" id="finEqReceberSub">recebidas + a receber</span>
           </div>
           <span class="fin-eq-op">−</span>
           <div class="fin-eq-block">
-            <span class="fin-eq-label">A PAGAR</span>
+            <span class="fin-eq-label">DESPESAS DO ANO</span>
             <span class="fin-eq-value fin-eq-value--red" id="finEqPagar">R$ 0,00</span>
-            <span class="fin-eq-sub" id="finEqPagarSub">contas pendentes</span>
+            <span class="fin-eq-sub" id="finEqPagarSub">pagas + a pagar</span>
           </div>
           <span class="fin-eq-op">=</span>
           <div class="fin-eq-block fin-eq-block--result">
-            <span class="fin-eq-label">RESULTADO LÍQUIDO</span>
+            <span class="fin-eq-label">RESULTADO ATÉ DEZEMBRO</span>
             <span class="fin-eq-value" id="finEqResultado">R$ 0,00</span>
-            <span class="fin-eq-sub" id="finEqResultadoSub">resultado do período</span>
+            <span class="fin-eq-sub" id="finEqResultadoSub">panorama anual</span>
           </div>
         </div>
 
@@ -3346,7 +3347,7 @@
 <script src="js/relatorio.js?v=51"></script>
 <script src="js/andamentos.js?v=72"></script>
 <script src="js/documentos.js?v=59"></script>
-<script src="js/financeiro.js?v=61"></script>
+<script src="js/financeiro.js?v=63"></script>
 <script src="js/realtime.js?v=60"></script>
 </body>
 </html>

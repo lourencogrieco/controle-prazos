@@ -44,6 +44,66 @@ function _badgeRecorrencia(rec, parcelaNum, parcelaTotal) {
   return `<span class="badge-recorr">${label}</span>`;
 }
 
+const _RECORRENCIA_DIAS = { semanal: 7, quinzenal: 15 };
+const _RECORRENCIA_MESES = { mensal: 1, bimestral: 2, trimestral: 3, semestral: 6, anual: 12 };
+
+function _isoLocal(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function _parseISODate(iso) {
+  const [y, m, d] = String(iso || '').slice(0, 10).split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
+
+function _addDaysISO(iso, dias) {
+  const date = _parseISODate(iso);
+  if (!date) return iso || null;
+  date.setDate(date.getDate() + dias);
+  return _isoLocal(date);
+}
+
+function _addMonthsISO(iso, meses) {
+  const [y, m, d] = String(iso || '').slice(0, 10).split('-').map(Number);
+  if (!y || !m || !d) return iso || null;
+  const target = new Date(y, m - 1 + meses, 1);
+  const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+  target.setDate(Math.min(d, lastDay));
+  return _isoLocal(target);
+}
+
+function _vencimentoParcela(dataBase, recorrencia, indice) {
+  if (!dataBase || !indice) return dataBase || null;
+  if (_RECORRENCIA_DIAS[recorrencia]) return _addDaysISO(dataBase, _RECORRENCIA_DIAS[recorrencia] * indice);
+  if (_RECORRENCIA_MESES[recorrencia]) return _addMonthsISO(dataBase, _RECORRENCIA_MESES[recorrencia] * indice);
+  return dataBase || null;
+}
+
+function _totalParcelas(recorrencia, valor) {
+  const total = parseInt(valor, 10);
+  if (!recorrencia || recorrencia === 'nenhuma' || !Number.isFinite(total) || total < 2) return null;
+  return Math.min(total, 120);
+}
+
+function _parcelasFinanceiras(base) {
+  const total = base.parcela_total || null;
+  if (!total || total < 2) return [base];
+
+  const grupoId = base.grupo_id || base.id;
+  return Array.from({ length: total }, (_, i) => ({
+    ...base,
+    id: i === 0 ? base.id : uid(),
+    grupo_id: grupoId,
+    data_vencimento: _vencimentoParcela(base.data_vencimento, base.recorrencia, i),
+    parcela_num: i + 1,
+    parcela_total: total,
+  }));
+}
+
 // ── Período de recorrência (show/hide) ───────────────────────────────
 
 function togglePeriodoRecorrencia(prefix) {
@@ -79,6 +139,7 @@ function finMudarAba(tab) {
 // ── Entry point ───────────────────────────────────────────────────────
 
 function renderFinanceiro() {
+  sincronizarParcelasFinanceirasExistentes();
   renderFinVisaoGeral();
   // Re-render active tab if not visaogeral
   const active = document.querySelector('[data-fin-tab].is-active')?.dataset?.finTab;
@@ -92,6 +153,7 @@ function renderFinanceiro() {
 function renderFinVisaoGeral() {
   const hoje     = new Date().toISOString().slice(0, 10);
   const mesAtual = hoje.slice(0, 7);
+  const anoAtual = hoje.slice(0, 4);
   const em7dias  = new Date(); em7dias.setDate(em7dias.getDate() + 7);
   const em7iso   = em7dias.toISOString().slice(0, 10);
 
@@ -127,7 +189,22 @@ function renderFinVisaoGeral() {
   const contsPend    = conts.filter(c => _statusCont(c) !== 'pago');
   const contsPendVal = contsPend.reduce((s, c) => s + c.valor, 0);
 
-  const eqResultado = cobsPendVal - contsPendVal;
+  // ── Consolidado anual: tudo com vencimento no ano corrente ─────────
+  const cobsAno = cobs.filter(c => (c.vencimento || '').startsWith(anoAtual));
+  const cobsAnoPago = cobsAno.filter(c => c.status === 'pago');
+  const cobsAnoPend = cobsAno.filter(c => _statusCob(c) !== 'pago');
+  const cobsAnoPagoVal = cobsAnoPago.reduce((s, c) => s + (c.valorPago || c.valor), 0);
+  const cobsAnoPendVal = cobsAnoPend.reduce((s, c) => s + c.valor, 0);
+  const cobsAnoTotalVal = cobsAnoPagoVal + cobsAnoPendVal;
+
+  const contsAno = conts.filter(c => (c.vencimento || '').startsWith(anoAtual));
+  const contsAnoPago = contsAno.filter(c => c.status === 'pago');
+  const contsAnoPend = contsAno.filter(c => _statusCont(c) !== 'pago');
+  const contsAnoPagoVal = contsAnoPago.reduce((s, c) => s + (c.valorPago || c.valor), 0);
+  const contsAnoPendVal = contsAnoPend.reduce((s, c) => s + c.valor, 0);
+  const contsAnoTotalVal = contsAnoPagoVal + contsAnoPendVal;
+
+  const eqResultado = cobsAnoTotalVal - contsAnoTotalVal;
 
   // ── Fill cards ─────────────────────────────────────────────────────
   _setText('finMesValorBruto',       formatCurrency(cobsMesBruto));
@@ -149,22 +226,23 @@ function renderFinVisaoGeral() {
   _setText('finMesResultadoSub', resultadoMes >= 0 ? 'positivo' : 'negativo');
 
   _setText('finConsolidadoReceber',     formatCurrency(cobsPendVal));
-  _setText('finConsolidadoReceberSub',  `${cobsPend.length} cobranças`);
+  _setText('finConsolidadoReceberSub',  `${cobsPend.length} cobrança${cobsPend.length !== 1 ? 's' : ''} pendente${cobsPend.length !== 1 ? 's' : ''}`);
   _setText('finConsolidadoVencidas',    formatCurrency(cobsVencidasVal));
   _setText('finConsolidadoVencidasSub', `${cobsVencidas.length} cobranças`);
   _setText('finConsolidadoAVencer',     formatCurrency(cobsAVencerVal));
   _setText('finConsolidadoAVencerSub',  `${cobsAVencer.length} cobranças`);
 
-  _setText('finEqReceber',    formatCurrency(cobsPendVal));
-  _setText('finEqReceberSub', `${cobsPend.length} cobranças pendentes`);
-  _setText('finEqPagar',      formatCurrency(contsPendVal));
-  _setText('finEqPagarSub',   `${contsPend.length} contas pendentes`);
+  _setText('finEqAnoLabel', `CONSOLIDADO ANUAL (${anoAtual})`);
+  _setText('finEqReceber',    formatCurrency(cobsAnoTotalVal));
+  _setText('finEqReceberSub', `${cobsAno.length} cobrança${cobsAno.length !== 1 ? 's' : ''}: ${formatCurrency(cobsAnoPagoVal)} recebido + ${formatCurrency(cobsAnoPendVal)} a receber`);
+  _setText('finEqPagar',      formatCurrency(contsAnoTotalVal));
+  _setText('finEqPagarSub',   `${contsAno.length} conta${contsAno.length !== 1 ? 's' : ''}: ${formatCurrency(contsAnoPagoVal)} pago + ${formatCurrency(contsAnoPendVal)} a pagar`);
   const eqEl = document.getElementById('finEqResultado');
   if (eqEl) {
     eqEl.textContent = formatCurrency(eqResultado);
     eqEl.style.color = eqResultado >= 0 ? '#00c896' : 'var(--red)';
   }
-  _setText('finEqResultadoSub', eqResultado >= 0 ? 'resultado positivo' : 'resultado negativo');
+  _setText('finEqResultadoSub', `${eqResultado >= 0 ? 'positivo' : 'negativo'} até Dez/${anoAtual}`);
 
   // ── Próximos vencimentos — cobranças (7 dias) ─────────────────────
   const proximos = cobs
@@ -484,6 +562,139 @@ function _formatMes(ym) {
   return `${meses[m - 1]}/${y}`;
 }
 
+let _syncParcelasFinanceirasRodou = false;
+let _syncParcelasFinanceirasEmAndamento = false;
+
+function _mesmaSerieFinanceira(a, b) {
+  return (a.clienteNome || '') === (b.clienteNome || '')
+    && (a.descricao || '') === (b.descricao || '')
+    && Number(a.valor || 0) === Number(b.valor || 0)
+    && (a.recorrencia || 'nenhuma') === (b.recorrencia || 'nenhuma')
+    && Number(a.parcelaTotal || 0) === Number(b.parcelaTotal || 0);
+}
+
+function _parcelasAusentes(lista, base) {
+  const total = Number(base.parcelaTotal || 0);
+  if (!base.id || !base.vencimento || total < 2 || Number(base.parcelaNum || 0) !== 1) return [];
+
+  const grupoId = base.grupoId || base.id;
+  const ausentes = [];
+  for (let num = 2; num <= total; num += 1) {
+    const vencimento = _vencimentoParcela(base.vencimento, base.recorrencia, num - 1);
+    const existe = lista.some(item => {
+      if (item.id === base.id) return false;
+      if (item.grupoId && item.grupoId === grupoId && Number(item.parcelaNum) === num) return true;
+      if (!_mesmaSerieFinanceira(base, item)) return false;
+      if (item.vencimento !== vencimento) return false;
+      return !item.parcelaNum || Number(item.parcelaNum) === num;
+    });
+    if (!existe) ausentes.push({ num, vencimento });
+  }
+  return ausentes;
+}
+
+function _rowCobrancaParcela(base, info, grupoId) {
+  return {
+    id:              uid(),
+    empresa_id:      state.empresaId,
+    cliente_nome:    base.clienteNome || null,
+    descricao:       base.descricao || '',
+    valor:           Number(base.valor || 0),
+    data_vencimento: info.vencimento,
+    categoria:       base.categoria || null,
+    recorrencia:     base.recorrencia || 'nenhuma',
+    parcela_total:   base.parcelaTotal || null,
+    parcela_num:     info.num,
+    grupo_id:        grupoId,
+    observacoes:     base.observacoes || null,
+    status:          'pendente',
+    data_pagamento:  null,
+    valor_pago:      null,
+  };
+}
+
+function _rowContaParcela(base, info, grupoId) {
+  return {
+    id:              uid(),
+    empresa_id:      state.empresaId,
+    descricao:       base.descricao || '',
+    tipo:            base.tipo || null,
+    valor:           Number(base.valor || 0),
+    data_vencimento: info.vencimento,
+    recorrencia:     base.recorrencia || 'nenhuma',
+    parcela_total:   base.parcelaTotal || null,
+    parcela_num:     info.num,
+    grupo_id:        grupoId,
+    observacoes:     base.observacoes || null,
+    status:          'pendente',
+    data_pagamento:  null,
+    valor_pago:      null,
+  };
+}
+
+async function _completarParcelasTabela(tabela, lista, mapper, rowFactory) {
+  const novos = [];
+  const atualizacoesGrupo = [];
+
+  lista.forEach(base => {
+    const ausentes = _parcelasAusentes(lista.concat(novos.map(mapper)), base);
+    if (!ausentes.length) return;
+
+    const grupoId = base.grupoId || base.id;
+    if (!base.grupoId) atualizacoesGrupo.push({ id: base.id, grupo_id: grupoId });
+    ausentes.forEach(info => novos.push(rowFactory(base, info, grupoId)));
+  });
+
+  if (!novos.length && !atualizacoesGrupo.length) return 0;
+
+  for (const row of atualizacoesGrupo) {
+    const { error } = await db.from(tabela)
+      .update({ grupo_id: row.grupo_id })
+      .eq('id', row.id)
+      .eq('empresa_id', state.empresaId);
+    if (error) throw error;
+  }
+
+  if (novos.length) {
+    const { error } = await db.from(tabela).insert(novos);
+    if (error) throw error;
+    novos.map(mapper).forEach(item => _stateUpsert(lista, item));
+  }
+
+  lista.forEach(item => {
+    const upd = atualizacoesGrupo.find(row => row.id === item.id);
+    if (upd) item.grupoId = upd.grupo_id;
+  });
+
+  return novos.length;
+}
+
+async function sincronizarParcelasFinanceirasExistentes() {
+  if (_syncParcelasFinanceirasRodou || _syncParcelasFinanceirasEmAndamento || !state.empresaId) return;
+  if (![...(state.cobrancas || []), ...(state.contasPagar || [])].some(item => Number(item.parcelaTotal || 0) > 1)) {
+    return;
+  }
+
+  _syncParcelasFinanceirasEmAndamento = true;
+  try {
+    const criadasCobrancas = await _completarParcelasTabela('cobrancas', state.cobrancas || [], dbParaCobranca, _rowCobrancaParcela);
+    const criadasContas = await _completarParcelasTabela('contas_pagar', state.contasPagar || [], dbParaContaPagar, _rowContaParcela);
+    const total = criadasCobrancas + criadasContas;
+    if (total) {
+      renderFinVisaoGeral();
+      renderFinCobrancas();
+      renderFinContasPagar();
+      toast(`${total} parcela${total !== 1 ? 's' : ''} financeira${total !== 1 ? 's' : ''} completada${total !== 1 ? 's' : ''}.`);
+    }
+  } catch (err) {
+    console.warn('Falha ao completar parcelas financeiras:', err.message);
+    toast('Não consegui completar parcelas antigas: ' + err.message, 'error');
+  } finally {
+    _syncParcelasFinanceirasRodou = true;
+    _syncParcelasFinanceirasEmAndamento = false;
+  }
+}
+
 // ── Modal Cobrança ────────────────────────────────────────────────────
 
 function abrirModalCobranca(id) {
@@ -520,6 +731,8 @@ document.getElementById('formCobranca').addEventListener('submit', async e => {
   try {
     const id = document.getElementById('cobId').value;
     const existente = id ? (state.cobrancas || []).find(x => x.id === id) : null;
+    const recorrencia = document.getElementById('cobRecorrencia').value || 'nenhuma';
+    const parcelaTotal = _totalParcelas(recorrencia, document.getElementById('cobParcelas').value);
     const obj = {
       id:              id || uid(),
       empresa_id:      state.empresaId,
@@ -528,9 +741,10 @@ document.getElementById('formCobranca').addEventListener('submit', async e => {
       valor:           lerValorMoeda(document.getElementById('cobValor')) || 0,
       data_vencimento: document.getElementById('cobVencimento').value || null,
       categoria:       document.getElementById('cobCategoria').value || null,
-      recorrencia:     document.getElementById('cobRecorrencia').value || 'nenhuma',
-      parcela_total:   parseInt(document.getElementById('cobParcelas').value) || null,
-      parcela_num:     existente?.parcelaNum || (parseInt(document.getElementById('cobParcelas').value) ? 1 : null),
+      recorrencia,
+      parcela_total:   parcelaTotal,
+      parcela_num:     existente?.parcelaNum || (parcelaTotal ? 1 : null),
+      grupo_id:        existente?.grupoId || null,
       observacoes:     document.getElementById('cobObservacoes').value.trim() || null,
       status:          existente?.status || 'pendente',
       data_pagamento:  existente?.dataPagamento || null,
@@ -542,13 +756,13 @@ document.getElementById('formCobranca').addEventListener('submit', async e => {
       delete obj.valor_pago;
     }
 
-    const { error } = await salvarRegistroEmpresa('cobrancas', obj, id, 'Sem resposta ao salvar cobrança em 12s');
+    const registros = id ? [obj] : _parcelasFinanceiras(obj);
+    const { error } = await salvarRegistroEmpresa('cobrancas', id ? obj : registros, id, 'Sem resposta ao salvar cobrança em 12s');
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
 
-    const nova = dbParaCobranca(obj);
-    _stateUpsert(state.cobrancas, nova);
+    registros.map(dbParaCobranca).forEach(nova => _stateUpsert(state.cobrancas, nova));
     fecharModalCobranca();
-    toast(id ? 'Cobrança atualizada!' : 'Cobrança criada!');
+    toast(id ? 'Cobrança atualizada!' : (registros.length > 1 ? `${registros.length} parcelas criadas!` : 'Cobrança criada!'));
     renderFinCobrancas(); renderFinVisaoGeral();
   } catch (err) {
     toast('Erro inesperado: ' + err.message, 'error');
@@ -600,6 +814,8 @@ document.getElementById('formContaPagar').addEventListener('submit', async e => 
   try {
     const id = document.getElementById('contId').value;
     const existente = id ? (state.contasPagar || []).find(x => x.id === id) : null;
+    const recorrencia = document.getElementById('contRecorrencia').value || 'nenhuma';
+    const parcelaTotal = _totalParcelas(recorrencia, document.getElementById('contParcelas').value);
     const obj = {
       id:              id || uid(),
       empresa_id:      state.empresaId,
@@ -607,9 +823,10 @@ document.getElementById('formContaPagar').addEventListener('submit', async e => 
       tipo:            document.getElementById('contTipo').value || null,
       valor:           lerValorMoeda(document.getElementById('contValor')) || 0,
       data_vencimento: document.getElementById('contVencimento').value || null,
-      recorrencia:     document.getElementById('contRecorrencia').value || 'nenhuma',
-      parcela_total:   parseInt(document.getElementById('contParcelas').value) || null,
-      parcela_num:     existente?.parcelaNum || (parseInt(document.getElementById('contParcelas').value) ? 1 : null),
+      recorrencia,
+      parcela_total:   parcelaTotal,
+      parcela_num:     existente?.parcelaNum || (parcelaTotal ? 1 : null),
+      grupo_id:        existente?.grupoId || null,
       observacoes:     document.getElementById('contObservacoes').value.trim() || null,
       status:          existente?.status || 'pendente',
       data_pagamento:  existente?.dataPagamento || null,
@@ -621,13 +838,13 @@ document.getElementById('formContaPagar').addEventListener('submit', async e => 
       delete obj.valor_pago;
     }
 
-    const { error } = await salvarRegistroEmpresa('contas_pagar', obj, id, 'Sem resposta ao salvar conta em 12s');
+    const registros = id ? [obj] : _parcelasFinanceiras(obj);
+    const { error } = await salvarRegistroEmpresa('contas_pagar', id ? obj : registros, id, 'Sem resposta ao salvar conta em 12s');
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
 
-    const nova = dbParaContaPagar(obj);
-    _stateUpsert(state.contasPagar, nova);
+    registros.map(dbParaContaPagar).forEach(nova => _stateUpsert(state.contasPagar, nova));
     fecharModalContaPagar();
-    toast(id ? 'Conta atualizada!' : 'Conta criada!');
+    toast(id ? 'Conta atualizada!' : (registros.length > 1 ? `${registros.length} parcelas criadas!` : 'Conta criada!'));
     renderFinContasPagar(); renderFinVisaoGeral();
   } catch (err) {
     toast('Erro inesperado: ' + err.message, 'error');

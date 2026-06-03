@@ -141,6 +141,7 @@ function _cobrancaTemSerie(cobranca) {
   if (!cobranca) return false;
   return (cobranca.recorrencia || 'nenhuma') !== 'nenhuma'
     || Number(cobranca.parcelaTotal || 0) > 1
+    || Number(cobranca.parcelaNum || 0) > 1
     || !!cobranca.grupoId;
 }
 
@@ -427,6 +428,7 @@ function renderFinCobrancas() {
     const st = _statusCob(c);
     const parc = c.parcelaNum ? ` ${c.parcelaNum}/${c.parcelaTotal}` : '';
     const id = escAttr(c.id);
+    const forceSerie = _cobrancaTemSerie(c) ? 'true' : 'false';
     return `<tr>
       <td>
         <span class="fin-row-title">${escHtml(c.clienteNome || '—')}</span>
@@ -446,7 +448,7 @@ function renderFinCobrancas() {
           : `<button class="fin-icon-btn fin-icon-btn--pay fin-icon-btn--paid" title="Desfazer pagamento" onclick="desfazerBaixa('${id}','cob')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
              <button class="fin-icon-btn" title="Gerar recibo" onclick="gerarReciboPorId('${id}','cob')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>`}
         <button class="fin-icon-btn" title="Editar" onclick="abrirModalCobranca('${id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-        <button class="fin-icon-btn fin-icon-btn--del" title="Excluir" onclick="excluirCobranca('${id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+        <button class="fin-icon-btn fin-icon-btn--del" title="Excluir" onclick="excluirCobranca('${id}', ${forceSerie})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
       </div></td>
     </tr>`;
   }).join('');
@@ -811,14 +813,14 @@ document.getElementById('formCobranca').addEventListener('submit', async e => {
   }
 });
 
-async function excluirCobranca(id) {
+async function excluirCobranca(id, forceSerie = false) {
   const cobranca = (state.cobrancas || []).find(x => x.id === id);
   if (!cobranca) {
     toast('Cobrança não encontrada.', 'error');
     return;
   }
 
-  if (_cobrancaTemSerie(cobranca)) {
+  if (forceSerie || _cobrancaTemSerie(cobranca)) {
     abrirModalExcluirCobranca(id);
     return;
   }

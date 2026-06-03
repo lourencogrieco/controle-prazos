@@ -1331,6 +1331,28 @@
       </div>
     </div>
 
+    <!-- Modal Excluir Conta a Pagar Recorrente -->
+    <div class="modal-overlay" id="modalExcluirContaPagar">
+      <div class="modal" style="max-width:460px">
+        <div class="modal-head">
+          <h3>Excluir Conta a Pagar</h3>
+          <button type="button" class="modal-close" onclick="fecharModalExcluirContaPagar()">×</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-note">Esta conta faz parte de uma recorrência.</p>
+          <div class="delete-summary">
+            <strong id="excluirContaResumo">Conta selecionada</strong>
+            <span id="excluirContaSerieInfo">Contas vinculadas a esta recorrência.</span>
+          </div>
+          <div class="form-foot">
+            <button type="button" class="btn-outline" onclick="fecharModalExcluirContaPagar()">Cancelar</button>
+            <button type="button" class="btn-outline btn-outline-danger" id="btnExcluirContaEsta" onclick="confirmarExcluirContaPagar('unica')">Somente esta</button>
+            <button type="button" class="btn-danger" id="btnExcluirContaSerie" onclick="confirmarExcluirContaPagar('serie')">Toda a recorrência</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal Nova Conta a Pagar -->
     <div class="modal-overlay" id="modalContaPagar">
       <div class="modal" style="max-width:560px">
@@ -3369,7 +3391,7 @@
 <script src="js/relatorio.js?v=51"></script>
 <script src="js/andamentos.js?v=72"></script>
 <script src="js/documentos.js?v=59"></script>
-<script src="js/financeiro.js?v=67"></script>
+<script src="js/financeiro.js?v=68"></script>
 <script src="js/realtime.js?v=60"></script>
 </body>
 </html>

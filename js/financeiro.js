@@ -145,6 +145,55 @@ function _cobrancaTemSerie(cobranca) {
     || !!cobranca.grupoId;
 }
 
+function _mesmaSerieContaPagar(base, item) {
+  return (base.descricao || '') === (item.descricao || '')
+    && (base.tipo || '') === (item.tipo || '')
+    && Number(base.valor || 0) === Number(item.valor || 0)
+    && (base.recorrencia || 'nenhuma') === (item.recorrencia || 'nenhuma')
+    && Number(base.parcelaTotal || 0) === Number(item.parcelaTotal || 0);
+}
+
+function _contaSemGrupoDaMesmaSerie(base, item) {
+  if (Number(base.parcelaTotal || 0) < 2 || !_mesmaSerieContaPagar(base, item)) return false;
+
+  const baseNum = Number(base.parcelaNum || 0);
+  const itemNum = Number(item.parcelaNum || 0);
+  if (baseNum && itemNum && base.vencimento && item.vencimento) {
+    return item.vencimento === _vencimentoParcela(base.vencimento, base.recorrencia, itemNum - baseNum);
+  }
+
+  return true;
+}
+
+function _idsContasDaSerie(conta) {
+  if (!conta) return [];
+  const lista = state.contasPagar || [];
+  const grupoId = conta.grupoId || (Number(conta.parcelaTotal || 0) > 1 ? conta.id : null);
+
+  const idsGrupo = lista.filter(item => {
+    if (item.id === conta.id) return true;
+    if (grupoId && (item.grupoId === grupoId || item.id === grupoId)) return true;
+    return false;
+  }).map(item => item.id);
+  if (idsGrupo.length > 1) return [...new Set(idsGrupo)];
+
+  const ids = lista.filter(item => {
+    if (item.id === conta.id) return true;
+    if (_contaSemGrupoDaMesmaSerie(conta, item)) return true;
+    return false;
+  }).map(item => item.id);
+
+  return [...new Set(ids)];
+}
+
+function _contaTemSerie(conta) {
+  if (!conta) return false;
+  return (conta.recorrencia || 'nenhuma') !== 'nenhuma'
+    || Number(conta.parcelaTotal || 0) > 1
+    || Number(conta.parcelaNum || 0) > 1
+    || !!conta.grupoId;
+}
+
 // ── Período de recorrência (show/hide) ───────────────────────────────
 
 function togglePeriodoRecorrencia(prefix) {
@@ -503,6 +552,7 @@ function renderFinContasPagar() {
   tbody.innerHTML = lista.map(c => {
     const st = _statusCont(c);
     const id = escAttr(c.id);
+    const forceSerie = _contaTemSerie(c) ? 'true' : 'false';
     return `<tr>
       <td>
         <span class="fin-row-title">${escHtml(c.descricao || '—')}</span>
@@ -522,7 +572,7 @@ function renderFinContasPagar() {
           : `<button class="fin-icon-btn fin-icon-btn--pay fin-icon-btn--paid" title="Desfazer pagamento" onclick="desfazerBaixa('${id}','cont')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
              <button class="fin-icon-btn" title="Gerar recibo" onclick="gerarReciboPorId('${id}','cont')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>`}
         <button class="fin-icon-btn" title="Editar" onclick="abrirModalContaPagar('${id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-        <button class="fin-icon-btn fin-icon-btn--del" title="Excluir" onclick="excluirContaPagar('${id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+        <button class="fin-icon-btn fin-icon-btn--del" title="Excluir" onclick="excluirContaPagar('${id}', ${forceSerie})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
       </div></td>
     </tr>`;
   }).join('');
@@ -1013,16 +1063,134 @@ document.getElementById('formContaPagar').addEventListener('submit', async e => 
   }
 });
 
-async function excluirContaPagar(id) {
+async function excluirContaPagar(id, forceSerie = false) {
+  const conta = (state.contasPagar || []).find(x => x.id === id);
+  if (!conta) {
+    toast('Conta não encontrada.', 'error');
+    return;
+  }
+
+  if (forceSerie || _contaTemSerie(conta)) {
+    abrirModalExcluirContaPagar(id);
+    return;
+  }
+
   if (!confirm('Excluir esta conta a pagar?')) return;
-  const { error } = await db.from('contas_pagar')
-    .delete()
-    .eq('id', id)
-    .eq('empresa_id', state.empresaId);
-  if (error) { toast('Erro: ' + error.message, 'error'); return; }
-  _stateRemove(state.contasPagar, id);
-  toast('Conta excluída.');
-  renderFinContasPagar(); renderFinVisaoGeral();
+  await _excluirContasPorIds([id]);
+}
+
+let _excluirContaId = null;
+
+function abrirModalExcluirContaPagar(id) {
+  const conta = (state.contasPagar || []).find(x => x.id === id);
+  if (!conta) {
+    toast('Conta não encontrada.', 'error');
+    return;
+  }
+
+  _excluirContaId = id;
+  const totalSerie = _idsContasDaSerie(conta).length;
+  const resumo = document.getElementById('excluirContaResumo');
+  const serie = document.getElementById('excluirContaSerieInfo');
+  if (resumo) resumo.textContent = `${conta.descricao || 'Conta'} · ${formatCurrency(conta.valor)} · ${conta.vencimento ? formatDate(conta.vencimento) : 'sem vencimento'}`;
+  if (serie) {
+    serie.textContent = totalSerie > 1
+      ? `${totalSerie} conta${totalSerie !== 1 ? 's' : ''} vinculada${totalSerie !== 1 ? 's' : ''} a esta recorrência.`
+      : 'Vou buscar a recorrência pelo vínculo desta conta.';
+  }
+  document.getElementById('modalExcluirContaPagar').classList.add('open');
+}
+
+function fecharModalExcluirContaPagar() {
+  document.getElementById('modalExcluirContaPagar').classList.remove('open');
+  _excluirContaId = null;
+  ['btnExcluirContaEsta', 'btnExcluirContaSerie'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.disabled = false;
+  });
+}
+
+async function confirmarExcluirContaPagar(escopo) {
+  const conta = (state.contasPagar || []).find(x => x.id === _excluirContaId);
+  if (!conta) {
+    toast('Conta não encontrada.', 'error');
+    fecharModalExcluirContaPagar();
+    return;
+  }
+
+  const btnEsta = document.getElementById('btnExcluirContaEsta');
+  const btnSerie = document.getElementById('btnExcluirContaSerie');
+  if (btnEsta) btnEsta.disabled = true;
+  if (btnSerie) btnSerie.disabled = true;
+
+  const ok = escopo === 'serie'
+    ? await _excluirSerieContaPagar(conta)
+    : await _excluirContasPorIds([conta.id]);
+  if (ok) fecharModalExcluirContaPagar();
+  else {
+    if (btnEsta) btnEsta.disabled = false;
+    if (btnSerie) btnSerie.disabled = false;
+  }
+}
+
+async function _excluirSerieContaPagar(conta) {
+  const ids = _idsContasDaSerie(conta);
+  if (ids.length > 1) return _excluirContasPorIds(ids);
+
+  try {
+    let req = db.from('contas_pagar')
+      .delete()
+      .eq('empresa_id', state.empresaId)
+      .eq('descricao', conta.descricao || '')
+      .eq('valor', Number(conta.valor || 0))
+      .eq('recorrencia', conta.recorrencia || 'nenhuma');
+    req = conta.tipo ? req.eq('tipo', conta.tipo) : req.is('tipo', null);
+    req = conta.parcelaTotal ? req.eq('parcela_total', conta.parcelaTotal) : req.is('parcela_total', null);
+    const tOut = new Promise((_, reject) => setTimeout(() => reject(new Error('Sem resposta ao excluir recorrência em 12s')), 12000));
+    const { error } = await Promise.race([req, tOut]);
+    if (error) {
+      toast('Erro: ' + error.message, 'error');
+      return false;
+    }
+
+    const remover = (state.contasPagar || []).filter(item => _contaSemGrupoDaMesmaSerie(conta, item) || item.id === conta.id).map(item => item.id);
+    remover.forEach(id => _stateRemove(state.contasPagar, id));
+    toast('Recorrência excluída.');
+    renderFinContasPagar(); renderFinVisaoGeral();
+    return true;
+  } catch (err) {
+    toast('Erro inesperado: ' + err.message, 'error');
+    return false;
+  }
+}
+
+async function _excluirContasPorIds(ids) {
+  const idsUnicos = [...new Set((ids || []).filter(Boolean))];
+  if (!idsUnicos.length) {
+    toast('Nenhuma conta selecionada para excluir.', 'error');
+    return false;
+  }
+
+  try {
+    const req = db.from('contas_pagar')
+      .delete()
+      .eq('empresa_id', state.empresaId)
+      .in('id', idsUnicos);
+    const tOut = new Promise((_, reject) => setTimeout(() => reject(new Error('Sem resposta ao excluir conta em 12s')), 12000));
+    const { error } = await Promise.race([req, tOut]);
+    if (error) {
+      toast('Erro: ' + error.message, 'error');
+      return false;
+    }
+
+    idsUnicos.forEach(id => _stateRemove(state.contasPagar, id));
+    toast(idsUnicos.length > 1 ? `${idsUnicos.length} contas excluídas.` : 'Conta excluída.');
+    renderFinContasPagar(); renderFinVisaoGeral();
+    return true;
+  } catch (err) {
+    toast('Erro inesperado: ' + err.message, 'error');
+    return false;
+  }
 }
 
 // ── Modal Despesa ─────────────────────────────────────────────────────

@@ -2772,27 +2772,26 @@ tbody td {
 /* ── Icon action buttons ─── */
 .fin-actions {
   white-space: nowrap;
-  min-width: 104px;
+  width: 88px;
+  min-width: 88px;
+  padding-left: 6px !important;
+  padding-right: 8px !important;
 }
 .fin-actions-inner {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   align-items: center;
   justify-content: flex-end;
-  min-width: max-content;
-}
-
-.fin-table tbody td.fin-actions {
-  overflow: visible;
+  width: 100%;
 }
 
 .fin-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 25px;
+  height: 25px;
+  border-radius: 5px;
   border: 1px solid transparent;
   background: transparent;
   color: var(--mu);

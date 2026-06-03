@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=61">
+  <link rel="stylesheet" href="style.css?v=62">
 </head>
 <body>
 <div class="app">
@@ -1305,6 +1305,28 @@
               <button type="submit" class="btn-primary" id="btnSalvarCobranca">Salvar</button>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Excluir Cobrança Recorrente -->
+    <div class="modal-overlay" id="modalExcluirCobranca">
+      <div class="modal" style="max-width:460px">
+        <div class="modal-head">
+          <h3>Excluir Cobrança</h3>
+          <button type="button" class="modal-close" onclick="fecharModalExcluirCobranca()">×</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-note">Esta cobrança faz parte de uma recorrência.</p>
+          <div class="delete-summary">
+            <strong id="excluirCobResumo">Cobrança selecionada</strong>
+            <span id="excluirCobSerieInfo">Cobranças vinculadas a esta recorrência.</span>
+          </div>
+          <div class="form-foot">
+            <button type="button" class="btn-outline" onclick="fecharModalExcluirCobranca()">Cancelar</button>
+            <button type="button" class="btn-outline btn-outline-danger" id="btnExcluirCobEsta" onclick="confirmarExcluirCobranca('unica')">Somente esta</button>
+            <button type="button" class="btn-danger" id="btnExcluirCobSerie" onclick="confirmarExcluirCobranca('serie')">Toda a recorrência</button>
+          </div>
         </div>
       </div>
     </div>
@@ -3347,7 +3369,7 @@
 <script src="js/relatorio.js?v=51"></script>
 <script src="js/andamentos.js?v=72"></script>
 <script src="js/documentos.js?v=59"></script>
-<script src="js/financeiro.js?v=64"></script>
+<script src="js/financeiro.js?v=65"></script>
 <script src="js/realtime.js?v=60"></script>
 </body>
 </html>

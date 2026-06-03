@@ -104,6 +104,47 @@ function _parcelasFinanceiras(base) {
   }));
 }
 
+function _cobrancaSemGrupoDaMesmaSerie(base, item) {
+  if (Number(base.parcelaTotal || 0) < 2 || !_mesmaSerieFinanceira(base, item)) return false;
+
+  const baseNum = Number(base.parcelaNum || 0);
+  const itemNum = Number(item.parcelaNum || 0);
+  if (baseNum && itemNum && base.vencimento && item.vencimento) {
+    return item.vencimento === _vencimentoParcela(base.vencimento, base.recorrencia, itemNum - baseNum);
+  }
+
+  return true;
+}
+
+function _idsCobrancasDaSerie(cobranca) {
+  if (!cobranca) return [];
+  const lista = state.cobrancas || [];
+  const grupoId = cobranca.grupoId || (Number(cobranca.parcelaTotal || 0) > 1 ? cobranca.id : null);
+
+  const idsGrupo = lista.filter(item => {
+    if (item.id === cobranca.id) return true;
+    if (grupoId && (item.grupoId === grupoId || item.id === grupoId)) return true;
+    return false;
+  }).map(item => item.id);
+  if (idsGrupo.length > 1) return [...new Set(idsGrupo)];
+
+  const ids = lista.filter(item => {
+    if (item.id === cobranca.id) return true;
+    if (_cobrancaSemGrupoDaMesmaSerie(cobranca, item)) return true;
+    return false;
+  }).map(item => item.id);
+
+  return [...new Set(ids)];
+}
+
+function _cobrancaTemSerie(cobranca) {
+  if (!cobranca) return false;
+  const recorrente = (cobranca.recorrencia || 'nenhuma') !== 'nenhuma'
+    || Number(cobranca.parcelaTotal || 0) > 1
+    || !!cobranca.grupoId;
+  return recorrente && _idsCobrancasDaSerie(cobranca).length > 1;
+}
+
 // ── Período de recorrência (show/hide) ───────────────────────────────
 
 function togglePeriodoRecorrencia(prefix) {
@@ -772,15 +813,97 @@ document.getElementById('formCobranca').addEventListener('submit', async e => {
 });
 
 async function excluirCobranca(id) {
+  const cobranca = (state.cobrancas || []).find(x => x.id === id);
+  if (!cobranca) {
+    toast('Cobrança não encontrada.', 'error');
+    return;
+  }
+
+  if (_cobrancaTemSerie(cobranca)) {
+    abrirModalExcluirCobranca(id);
+    return;
+  }
+
   if (!confirm('Excluir esta cobrança?')) return;
-  const { error } = await db.from('cobrancas')
+  await _excluirCobrancasPorIds([id]);
+}
+
+let _excluirCobrancaId = null;
+
+function abrirModalExcluirCobranca(id) {
+  const cobranca = (state.cobrancas || []).find(x => x.id === id);
+  if (!cobranca) {
+    toast('Cobrança não encontrada.', 'error');
+    return;
+  }
+
+  _excluirCobrancaId = id;
+  const totalSerie = _idsCobrancasDaSerie(cobranca).length;
+  const resumo = document.getElementById('excluirCobResumo');
+  const serie = document.getElementById('excluirCobSerieInfo');
+  if (resumo) resumo.textContent = `${cobranca.descricao || 'Cobrança'} · ${formatCurrency(cobranca.valor)} · ${cobranca.vencimento ? formatDate(cobranca.vencimento) : 'sem vencimento'}`;
+  if (serie) serie.textContent = `${totalSerie} cobrança${totalSerie !== 1 ? 's' : ''} vinculada${totalSerie !== 1 ? 's' : ''} a esta recorrência.`;
+  document.getElementById('modalExcluirCobranca').classList.add('open');
+}
+
+function fecharModalExcluirCobranca() {
+  document.getElementById('modalExcluirCobranca').classList.remove('open');
+  _excluirCobrancaId = null;
+  ['btnExcluirCobEsta', 'btnExcluirCobSerie'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.disabled = false;
+  });
+}
+
+async function confirmarExcluirCobranca(escopo) {
+  const cobranca = (state.cobrancas || []).find(x => x.id === _excluirCobrancaId);
+  if (!cobranca) {
+    toast('Cobrança não encontrada.', 'error');
+    fecharModalExcluirCobranca();
+    return;
+  }
+
+  const btnEsta = document.getElementById('btnExcluirCobEsta');
+  const btnSerie = document.getElementById('btnExcluirCobSerie');
+  if (btnEsta) btnEsta.disabled = true;
+  if (btnSerie) btnSerie.disabled = true;
+
+  const ids = escopo === 'serie' ? _idsCobrancasDaSerie(cobranca) : [cobranca.id];
+  const ok = await _excluirCobrancasPorIds(ids);
+  if (ok) fecharModalExcluirCobranca();
+  else {
+    if (btnEsta) btnEsta.disabled = false;
+    if (btnSerie) btnSerie.disabled = false;
+  }
+}
+
+async function _excluirCobrancasPorIds(ids) {
+  const idsUnicos = [...new Set((ids || []).filter(Boolean))];
+  if (!idsUnicos.length) {
+    toast('Nenhuma cobrança selecionada para excluir.', 'error');
+    return false;
+  }
+
+  try {
+    const req = db.from('cobrancas')
     .delete()
-    .eq('id', id)
-    .eq('empresa_id', state.empresaId);
-  if (error) { toast('Erro: ' + error.message, 'error'); return; }
-  _stateRemove(state.cobrancas, id);
-  toast('Cobrança excluída.');
-  renderFinCobrancas(); renderFinVisaoGeral();
+      .eq('empresa_id', state.empresaId)
+      .in('id', idsUnicos);
+    const tOut = new Promise((_, reject) => setTimeout(() => reject(new Error('Sem resposta ao excluir cobrança em 12s')), 12000));
+    const { error } = await Promise.race([req, tOut]);
+    if (error) {
+      toast('Erro: ' + error.message, 'error');
+      return false;
+    }
+
+    idsUnicos.forEach(id => _stateRemove(state.cobrancas, id));
+    toast(idsUnicos.length > 1 ? `${idsUnicos.length} cobranças excluídas.` : 'Cobrança excluída.');
+    renderFinCobrancas(); renderFinVisaoGeral();
+    return true;
+  } catch (err) {
+    toast('Erro inesperado: ' + err.message, 'error');
+    return false;
+  }
 }
 
 // ── Modal Conta a Pagar ───────────────────────────────────────────────

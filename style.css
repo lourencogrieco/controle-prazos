@@ -392,6 +392,22 @@ h2 {
 
 .btn-primary:hover { background: #137bbf; }
 
+.btn-danger {
+  padding: 8px 16px;
+  background: var(--red);
+  color: #fff;
+  border-radius: var(--r-sm);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.btn-danger:hover { background: #b93c2a; }
+
 .btn-outline {
   padding: 8px 14px;
   border: 1px solid var(--br-strong);
@@ -408,6 +424,15 @@ h2 {
 }
 
 .btn-outline:hover { border-color: var(--ac); color: var(--ac); }
+.btn-outline-danger {
+  color: var(--red);
+  border-color: rgba(217,79,58,.35);
+}
+.btn-outline-danger:hover {
+  color: var(--red);
+  border-color: var(--red);
+  background: var(--red-soft);
+}
 .btn-outline.is-active {
   background: var(--ac);
   border-color: var(--ac);
@@ -3306,6 +3331,31 @@ tbody td {
   flex: 1 1 auto;
 }
 
+.modal-note {
+  color: var(--mu);
+  font-size: var(--text-sm);
+  margin-bottom: 14px;
+}
+
+.delete-summary {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--br);
+  border-radius: var(--r-sm);
+  background: var(--s1);
+}
+
+.delete-summary strong {
+  color: var(--tx-strong);
+  font-size: var(--text-sm);
+}
+
+.delete-summary span {
+  color: var(--mu);
+  font-size: .78rem;
+}
+
 /* ─── PICKER DE TIPO DE SOLICITAÇÃO ────────────────────────────── */
 .sol-option {
   display: flex;
@@ -3364,6 +3414,8 @@ tbody td {
   background: var(--s0);
   border-top: 1px solid var(--br);
   border-radius: 0 0 var(--r-lg) var(--r-lg);
+  flex-wrap: wrap;
+  justify-content: flex-end;
   z-index: 1;
 }
 

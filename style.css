@@ -2772,11 +2772,18 @@ tbody td {
 /* ── Icon action buttons ─── */
 .fin-actions {
   white-space: nowrap;
+  min-width: 104px;
 }
 .fin-actions-inner {
   display: flex;
   gap: 4px;
   align-items: center;
+  justify-content: flex-end;
+  min-width: max-content;
+}
+
+.fin-table tbody td.fin-actions {
+  overflow: visible;
 }
 
 .fin-icon-btn {
@@ -2819,6 +2826,12 @@ tbody td {
   background: rgba(235,87,87,.08);
   color: var(--red);
   border-color: rgba(235,87,87,.4);
+}
+
+.fin-icon-btn--del {
+  background: var(--red-soft);
+  color: var(--red);
+  border-color: rgba(217,79,58,.28);
 }
 
 .fin-icon-btn--del:hover {

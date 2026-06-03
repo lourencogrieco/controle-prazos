@@ -971,17 +971,23 @@ document.getElementById('formDarBaixa').addEventListener('submit', async e => {
     if (tipo === 'cob')  { tabela = 'cobrancas';    novoStatus = 'pago'; }
     if (tipo === 'cont') { tabela = 'contas_pagar';  novoStatus = 'pago'; }
     if (tipo === 'desp') { tabela = 'despesas';       novoStatus = 'reembolsado'; }
+    if (!id || !tabela || !data) {
+      toast('Preencha os dados do pagamento antes de salvar.', 'error');
+      return;
+    }
+
+    let item = null;
+    if (tipo === 'cob')  item = (state.cobrancas || []).find(x => x.id === id);
+    if (tipo === 'cont') item = (state.contasPagar || []).find(x => x.id === id);
+    if (tipo === 'desp') item = (state.despesas || []).find(x => x.id === id);
 
     const upd = { status: novoStatus };
     if (tipo !== 'desp') {
       upd.data_pagamento = data;
-      if (valor) upd.valor_pago = valor;
+      upd.valor_pago = valor || item?.valor || null;
     }
 
-    const { error } = await db.from(tabela)
-      .update(upd)
-      .eq('id', id)
-      .eq('empresa_id', state.empresaId);
+    const { error } = await salvarRegistroEmpresa(tabela, upd, id, 'Sem resposta ao registrar pagamento em 12s');
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
 
     document.getElementById('modalDarBaixa').classList.remove('open');
@@ -989,14 +995,10 @@ document.getElementById('formDarBaixa').addEventListener('submit', async e => {
     toast('Baixa registrada!');
 
     // Update state locally
-    let item = null;
-    if (tipo === 'cob')  item = (state.cobrancas || []).find(x => x.id === id);
-    if (tipo === 'cont') item = (state.contasPagar || []).find(x => x.id === id);
-    if (tipo === 'desp') item = (state.despesas || []).find(x => x.id === id);
     if (item) {
       item.status = novoStatus;
       item.dataPagamento = data;
-      if (valor) item.valorPago = valor;
+      if (tipo !== 'desp') item.valorPago = upd.valor_pago || 0;
     }
 
     if (tipo === 'cob')  { renderFinCobrancas(); }

@@ -262,10 +262,10 @@ async function sincronizarClientesDerivados(fontes = {}) {
     await processar(pasta, 'pastas', 'cliente');
   }
   for (const cobranca of fontes.cobrancas || []) {
-    await processar(cobranca, 'cobrancas', 'clienteNome');
+    await garantirClientesCadastro(cobranca.clienteNome);
   }
   for (const despesa of fontes.despesas || []) {
-    await processar(despesa, 'despesas', 'clienteNome');
+    await garantirClientesCadastro(despesa.clienteNome);
   }
 }
 

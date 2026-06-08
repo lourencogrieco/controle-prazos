@@ -826,11 +826,10 @@ document.getElementById('formCobranca').addEventListener('submit', async e => {
     const recorrencia = document.getElementById('cobRecorrencia').value || 'nenhuma';
     const parcelaTotal = _totalParcelas(recorrencia, document.getElementById('cobParcelas').value);
     const clienteNome = normalizarNomeCliente(document.getElementById('cobClienteNome').value);
-    const clienteCadastro = clienteNome ? await garantirClienteCadastro(clienteNome) : null;
+    if (clienteNome) await garantirClienteCadastro(clienteNome);
     const obj = {
       id:              id || uid(),
       empresa_id:      state.empresaId,
-      cliente_id:      clienteCadastro?.id || null,
       cliente_nome:    clienteNome || null,
       descricao:       document.getElementById('cobDescricao').value.trim(),
       valor:           lerValorMoeda(document.getElementById('cobValor')) || 0,
@@ -1229,11 +1228,10 @@ document.getElementById('formDespesa').addEventListener('submit', async e => {
     const id = document.getElementById('despId').value;
     const existente = id ? (state.despesas || []).find(x => x.id === id) : null;
     const clienteNome = normalizarNomeCliente(document.getElementById('despClienteNome').value);
-    const clienteCadastro = clienteNome ? await garantirClienteCadastro(clienteNome) : null;
+    if (clienteNome) await garantirClienteCadastro(clienteNome);
     const obj = {
       id:          id || uid(),
       empresa_id:  state.empresaId,
-      cliente_id:  clienteCadastro?.id || null,
       cliente_nome: clienteNome || null,
       descricao:   document.getElementById('despDescricao').value.trim(),
       valor:       lerValorMoeda(document.getElementById('despValor')) || 0,

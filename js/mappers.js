@@ -294,6 +294,7 @@ async function carregarDados() {
   }
 
   state.clientes   = (cl.data || []).map(dbParaCliente);
+  await sincronizarClientesDerivados({ pastas: state.pastas });
 
   if (cachedAreas) {
     state.areas = cachedAreas;
@@ -350,6 +351,10 @@ async function carregarDadosSecundarios(eid) {
     state.contasPagar = (ctp.data || []).map(dbParaContaPagar);
     state.despesas = (dep.data || []).map(dbParaDespesa);
     state.modelosDocumentos = (mod.data || []).map(dbParaModeloDocumento);
+    await sincronizarClientesDerivados({
+      cobrancas: state.cobrancas,
+      despesas: state.despesas,
+    });
 
     renderDashboard();
     renderFinanceiro();

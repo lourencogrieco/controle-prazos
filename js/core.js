@@ -151,6 +151,124 @@ async function salvarRegistroEmpresa(tabela, obj, existingId, timeoutMsg = 'Sem 
   return Promise.race([req, tOut]);
 }
 
+function normalizarNomeCliente(nome) {
+  return String(nome || '').trim().replace(/\s+/g, ' ').toUpperCase();
+}
+
+function separarNomesClientes(valor) {
+  return [...new Set(String(valor || '')
+    .split(';')
+    .map(normalizarNomeCliente)
+    .filter(Boolean))];
+}
+
+function inferirTipoCliente(nome) {
+  const texto = normalizarNomeCliente(nome);
+  const marcadoresPJ = [
+    ' LTDA', ' LTDA.', ' S/A', ' S.A', ' EIRELI', ' EPP', ' ME ',
+    'ASSOCIACAO', 'ASSOCIAÇÃO', 'EMPRESA', 'COMERCIO', 'COMÉRCIO',
+    'INDUSTRIA', 'INDÚSTRIA', 'SERVICOS', 'SERVIÇOS', 'SOCIEDADE',
+    'INSTITUTO', 'FUNDACAO', 'FUNDAÇÃO', 'COOPERATIVA', 'MUNICIPIO',
+    'MUNICÍPIO', 'ESTADO DE ', 'UNIÃO', 'UNIAO',
+  ];
+  const padded = ` ${texto} `;
+  return marcadoresPJ.some(m => padded.includes(m)) ? 'PJ' : 'PF';
+}
+
+function encontrarClientePorNome(nome) {
+  const alvo = normalizarNomeCliente(nome);
+  if (!alvo) return null;
+  return (state.clientes || []).find(c => normalizarNomeCliente(c.nome) === alvo) || null;
+}
+
+async function garantirClienteCadastro(nome, opcoes = {}) {
+  const nomeNormalizado = normalizarNomeCliente(nome);
+  if (!nomeNormalizado || !state.empresaId) return null;
+
+  const existenteLocal = encontrarClientePorNome(nomeNormalizado);
+  if (existenteLocal) return existenteLocal;
+
+  const { data: encontrados, error: buscaError } = await db
+    .from('clientes_lhub')
+    .select('*')
+    .eq('empresa_id', state.empresaId)
+    .ilike('nome', nomeNormalizado)
+    .limit(1);
+  if (buscaError) throw buscaError;
+
+  if (encontrados?.length) {
+    const cliente = dbParaCliente(encontrados[0]);
+    _stateUpsert(state.clientes, cliente);
+    state.clientes.sort((a, b) => a.nome.localeCompare(b.nome));
+    return cliente;
+  }
+
+  const row = {
+    id: uid(),
+    empresa_id: state.empresaId,
+    nome: nomeNormalizado,
+    tipo: opcoes.tipo || inferirTipoCliente(nomeNormalizado),
+  };
+  const { data, error } = await db
+    .from('clientes_lhub')
+    .insert(row)
+    .select('*')
+    .single();
+  if (error) throw error;
+
+  const cliente = dbParaCliente(data || row);
+  _stateUpsert(state.clientes, cliente);
+  state.clientes.sort((a, b) => a.nome.localeCompare(b.nome));
+  if (typeof popularDropdownClientes === 'function') popularDropdownClientes();
+  if (typeof popularDatalistVinculos === 'function') popularDatalistVinculos();
+  return cliente;
+}
+
+async function garantirClientesCadastro(valor, opcoes = {}) {
+  const nomes = separarNomesClientes(valor);
+  const clientes = [];
+  for (const nome of nomes) {
+    clientes.push(await garantirClienteCadastro(nome, opcoes));
+  }
+  return clientes.filter(Boolean);
+}
+
+async function sincronizarClientesDerivados(fontes = {}) {
+  if (!state.empresaId) return;
+
+  const processar = async (item, tabela, campoNome) => {
+    try {
+      const nomes = separarNomesClientes(item?.[campoNome]);
+      if (!nomes.length) return;
+      const clientes = [];
+      for (const nome of nomes) {
+        clientes.push(await garantirClienteCadastro(nome));
+      }
+      const principal = clientes.find(Boolean);
+      if (!principal || item.clienteId) return;
+      const { error } = await db
+        .from(tabela)
+        .update({ cliente_id: principal.id })
+        .eq('id', item.id)
+        .eq('empresa_id', state.empresaId);
+      if (error) throw error;
+      item.clienteId = principal.id;
+    } catch (err) {
+      console.warn('[clientes] não foi possível vincular cliente derivado:', tabela, item.id, err.message);
+    }
+  };
+
+  for (const pasta of fontes.pastas || []) {
+    await processar(pasta, 'pastas', 'cliente');
+  }
+  for (const cobranca of fontes.cobrancas || []) {
+    await processar(cobranca, 'cobrancas', 'clienteNome');
+  }
+  for (const despesa of fontes.despesas || []) {
+    await processar(despesa, 'despesas', 'clienteNome');
+  }
+}
+
 function formatDate(iso) {
   if (!iso) return '—';
   const [y, m, d] = String(iso).slice(0, 10).split('-').map(Number);

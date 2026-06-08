@@ -340,15 +340,17 @@ document.getElementById('novaPastaForm').addEventListener('submit', async e => {
     // Coleta clientes: chips do picker + nome digitado manualmente
     const chipsNomes  = getSelectedResps('pastaClientePicker');
     const manualNome  = (document.getElementById('pClienteManual')?.value || '').trim().toUpperCase();
-    const clienteNome = [chipsNomes, manualNome].filter(Boolean).join(';') || null;
+    const clienteNome = separarNomesClientes([chipsNomes, manualNome].filter(Boolean).join(';')).join(';') || null;
     if (!clienteNome) { toast('Informe ao menos um cliente.', 'error'); return; }
+    const clientesCadastro = await garantirClientesCadastro(clienteNome);
 
     const advogado = getSelectedResps('pastaAdvPicker');
     if (!advogado) { toast('Selecione ao menos um advogado responsável.', 'error'); return; }
 
-    // ID do cliente principal (primeiro chip que estiver no cadastro)
-    const primeiroNome  = chipsNomes.split(';')[0]?.trim();
-    const clientePrinc  = state.clientes.find(c => c.nome === primeiroNome);
+    // ID do cliente principal (primeiro nome informado para a pasta)
+    const primeiroNome  = separarNomesClientes(clienteNome)[0];
+    const clientePrinc  = clientesCadastro.find(c => normalizarNomeCliente(c.nome) === primeiroNome)
+      || encontrarClientePorNome(primeiroNome);
 
     const uc = v => (v || '').trim().toUpperCase();
     const intimacaoPendente = state.intimacaoParaVincularNovaPasta;

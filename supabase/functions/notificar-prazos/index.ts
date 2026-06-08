@@ -19,6 +19,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // ── Env ──────────────────────────────────────────────────────────────────
 const SUPA_URL   = Deno.env.get("SUPABASE_URL")!;
 const SUPA_KEY   = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 const RESEND_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 const APP_URL    = (Deno.env.get("APP_URL") ?? "https://legal-hub-seven.vercel.app").replace(/\/$/, "");
 const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "prazos@legal-hub.app";
@@ -191,6 +192,14 @@ serve(async (req) => {
   }
 
   try {
+    const jobSecret = req.headers.get("X-Job-Secret") ?? "";
+    if (!CRON_SECRET || jobSecret !== CRON_SECRET) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
     const db  = createClient(SUPA_URL, SUPA_KEY);
     const hoje = hojeStr();
     const ate  = addDays(hoje, 5);

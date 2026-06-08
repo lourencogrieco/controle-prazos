@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPA_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPA_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -57,6 +58,14 @@ serve(async (req) => {
   }
 
   try {
+    const jobSecret = req.headers.get("X-Job-Secret") ?? "";
+    if (!CRON_SECRET || jobSecret !== CRON_SECRET) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Unauthorized" }),
+        { status: 401, headers: { ...CORS, "Content-Type": "application/json" } },
+      );
+    }
+
     const db = createClient(SUPA_URL, SUPA_KEY);
     const hoje = new Date().toISOString().slice(0, 10);
     let dataInicio = hoje, dataFim = hoje;

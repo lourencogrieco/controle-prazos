@@ -72,7 +72,10 @@ function abrirModalNovoPrazo(id) {
     ? String(p.prazoDiasUteis)
     : '';
   document.getElementById('prazoStatus').value       = p?.status === 'Concluído' ? 'concluido'
-    : p?.status === 'Em andamento' ? 'em_andamento' : 'pendente';
+    : p?.status === 'Em andamento' ? 'em_andamento'
+    : p?.status === 'Atrasado' ? 'atrasado'
+    : p?.status === 'Cancelado' ? 'cancelado'
+    : 'pendente';
   document.getElementById('prazoDescricao').value    = p?.descricao || '';
   const fatalEl = document.getElementById('prazoFatal');
   limparPrazoCalculoDataset(fatalEl);

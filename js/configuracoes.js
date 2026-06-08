@@ -588,7 +588,7 @@ async function renderConfiguracoes() {
   // Usuários
   const { data: usuarios } = await db
     .from('usuarios_empresa')
-    .select('id, nome, perfil')
+    .select('id, nome, perfil, area_id')
     .eq('empresa_id', state.empresaId)
     .order('nome');
 

@@ -11,11 +11,15 @@
 export default async function handler(req, res) {
   // ── Proteção: só aceita chamadas autorizadas ──────────────────────
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret) {
-    const auth = req.headers['authorization'] ?? '';
-    if (auth !== `Bearer ${cronSecret}`) {
-      return res.status(401).json({ ok: false, error: 'Unauthorized' });
-    }
+  if (!cronSecret) {
+    return res.status(500).json({ ok: false, error: 'CRON_SECRET não configurado' });
+  }
+  if (req.method && req.method !== 'GET' && req.method !== 'POST') {
+    return res.status(405).json({ ok: false, error: 'Method not allowed' });
+  }
+  const auth = req.headers['authorization'] ?? '';
+  if (auth !== `Bearer ${cronSecret}`) {
+    return res.status(401).json({ ok: false, error: 'Unauthorized' });
   }
 
   const supaUrl     = (process.env.SUPABASE_URL      ?? 'https://gcucadlnxttlxckravui.supabase.co').trim();
@@ -36,6 +40,7 @@ export default async function handler(req, res) {
         headers: {
           'Authorization': `Bearer ${supaAnonKey}`,
           'Content-Type':  'application/json',
+          'X-Job-Secret':  cronSecret,
         },
         body,
       }

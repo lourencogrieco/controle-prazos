@@ -325,5 +325,3 @@ renderCalendario();
 const _h   = new Date();
 const _iso = `${_h.getFullYear()}-${String(_h.getMonth()+1).padStart(2,'0')}-${String(_h.getDate()).padStart(2,'0')}`;
 selecionarDia(_iso);
-
-inicializar();

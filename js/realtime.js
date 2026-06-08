@@ -77,6 +77,136 @@ function _iniciarRealtime() {
       _rtRender('pastas', () => { renderPastaList(); renderDashboard(); popularSelectsPastas(); });
     })
 
+    // ── Clientes ──────────────────────────────────────────────────────
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: 'clientes_lhub',
+      filter: `empresa_id=eq.${eid}`,
+    }, ({ eventType, new: novo, old: antigo }) => {
+      if (eventType === 'INSERT' || eventType === 'UPDATE') {
+        _stateUpsert(state.clientes, dbParaCliente(novo));
+        state.clientes.sort((a, b) => a.nome.localeCompare(b.nome));
+      } else if (eventType === 'DELETE') {
+        _stateRemove(state.clientes, antigo.id);
+      }
+      _rtRender('clientes', () => {
+        if (typeof renderClientesLista === 'function') renderClientesLista();
+        if (typeof popularDropdownClientes === 'function') popularDropdownClientes();
+        if (typeof popularSelectsPastas === 'function') popularSelectsPastas();
+      });
+    })
+
+    // ── Financeiro ────────────────────────────────────────────────────
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: 'cobrancas',
+      filter: `empresa_id=eq.${eid}`,
+    }, ({ eventType, new: novo, old: antigo }) => {
+      if (eventType === 'INSERT' || eventType === 'UPDATE') {
+        _stateUpsert(state.cobrancas, dbParaCobranca(novo));
+        if (novo?.cliente_nome) garantirClienteCadastro(novo.cliente_nome).catch(err => console.warn('[clientes] cobrança realtime:', err.message));
+      } else if (eventType === 'DELETE') {
+        _stateRemove(state.cobrancas, antigo.id);
+      }
+      _rtRender('financeiro', () => { renderFinanceiro(); renderDashboard(); });
+    })
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: 'contas_pagar',
+      filter: `empresa_id=eq.${eid}`,
+    }, ({ eventType, new: novo, old: antigo }) => {
+      if (eventType === 'INSERT' || eventType === 'UPDATE') {
+        _stateUpsert(state.contasPagar, dbParaContaPagar(novo));
+      } else if (eventType === 'DELETE') {
+        _stateRemove(state.contasPagar, antigo.id);
+      }
+      _rtRender('financeiro', () => { renderFinanceiro(); renderDashboard(); });
+    })
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: 'despesas',
+      filter: `empresa_id=eq.${eid}`,
+    }, ({ eventType, new: novo, old: antigo }) => {
+      if (eventType === 'INSERT' || eventType === 'UPDATE') {
+        _stateUpsert(state.despesas, dbParaDespesa(novo));
+        if (novo?.cliente_nome) garantirClienteCadastro(novo.cliente_nome).catch(err => console.warn('[clientes] despesa realtime:', err.message));
+      } else if (eventType === 'DELETE') {
+        _stateRemove(state.despesas, antigo.id);
+      }
+      _rtRender('financeiro', () => { renderFinanceiro(); renderDashboard(); });
+    })
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: 'honorarios',
+      filter: `empresa_id=eq.${eid}`,
+    }, ({ eventType, new: novo, old: antigo }) => {
+      if (eventType === 'INSERT' || eventType === 'UPDATE') {
+        _stateUpsert(state.honorarios, dbParaHonorario(novo));
+      } else if (eventType === 'DELETE') {
+        _stateRemove(state.honorarios, antigo.id);
+      }
+      _rtRender('financeiro', () => { renderFinanceiro(); renderDashboard(); });
+    })
+
+    // ── Intimações / PJe ──────────────────────────────────────────────
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: 'intimacoes_pje',
+      filter: `empresa_id=eq.${eid}`,
+    }, ({ eventType, new: novo, old: antigo }) => {
+      if (eventType === 'INSERT' || eventType === 'UPDATE') {
+        _stateUpsert(state.intimacoes, dbParaIntimacao(novo));
+      } else if (eventType === 'DELETE') {
+        _stateRemove(state.intimacoes, antigo.id);
+      }
+      _rtRender('intimacoes', () => { renderIntimacoesAba(); renderNavBadges(); renderDashboard(); });
+    })
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: 'pje_sync_logs',
+      filter: `empresa_id=eq.${eid}`,
+    }, ({ eventType, new: novo, old: antigo }) => {
+      if (eventType === 'INSERT' || eventType === 'UPDATE') {
+        _stateUpsert(state.pjeSyncLogs, novo);
+        state.pjeSyncLogs = state.pjeSyncLogs
+          .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+          .slice(0, 20);
+      } else if (eventType === 'DELETE') {
+        _stateRemove(state.pjeSyncLogs, antigo.id);
+      }
+      _rtRender('pjeLogs', () => { if (typeof renderIntimacoesAba === 'function') renderIntimacoesAba(); });
+    })
+
+    // ── Agenda e usuários ─────────────────────────────────────────────
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: 'agenda_eventos',
+      filter: `empresa_id=eq.${eid}`,
+    }, ({ eventType, new: novo, old: antigo }) => {
+      if (eventType === 'INSERT' || eventType === 'UPDATE') {
+        _stateUpsert(agendaEventos, {
+          id: novo.id,
+          data: novo.data,
+          titulo: novo.titulo,
+          tipo: novo.tipo,
+          hora: novo.hora || '',
+          responsavel: novo.responsavel || '',
+          local: novo.local || '',
+          participantes: novo.participantes || '',
+        });
+      } else if (eventType === 'DELETE') {
+        _stateRemove(agendaEventos, antigo.id);
+      }
+      _rtRender('agenda', () => { renderCalendario(); renderDashboard(); });
+    })
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: 'usuarios_empresa',
+      filter: `empresa_id=eq.${eid}`,
+    }, ({ eventType, new: novo, old: antigo }) => {
+      if (eventType === 'INSERT' || eventType === 'UPDATE') {
+        _stateUpsert(state.usuarios, novo);
+        state.usuarios.sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || '')));
+      } else if (eventType === 'DELETE') {
+        _stateRemove(state.usuarios, antigo.id);
+      }
+      _rtRender('usuarios', () => {
+        if (typeof renderConfiguracoes === 'function') renderConfiguracoes();
+        if (typeof popularSelectsPastas === 'function') popularSelectsPastas();
+      });
+    })
+
     // ── Andamentos ───────────────────────────────────────────────────
     .on('postgres_changes', {
       event: '*', schema: 'public', table: 'andamentos_processo',

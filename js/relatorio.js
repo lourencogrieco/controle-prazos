@@ -39,7 +39,7 @@ async function gerarRelatorio() {
     // ── Busca no banco ───────────────────────────────────────────────
     let query = db
       .from('andamentos_processo')
-      .select('*, pastas(numero, cliente, area, advogado, codigo_lhub, processo)')
+      .select('*, pastas(numero, cliente, area, responsavel, codigo_lhub, numero_processo)')
       .eq('empresa_id', state.empresaId)
       .order('data_hora', { ascending: false });
 
@@ -65,8 +65,8 @@ async function gerarRelatorio() {
         cliente:   clienteNome,
         vinculo:   _vinculoPorCliente[clienteNome.toLowerCase()] || '',
         area:      p.area      || '—',
-        advogado:  p.advogado  || '—',
-        processo:  p.processo  || '',
+        advogado:  p.responsavel || '—',
+        processo:  p.numero_processo || '',
         data,
         andamento: a.nome      || '—',
         complemento: a.complemento || '',

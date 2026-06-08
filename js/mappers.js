@@ -6,6 +6,7 @@ function dbParaPasta(row) {
     id:               row.id,
     areaId:           row.area_id || null,
     numero:           row.numero,
+    codigoTipo:       row.codigo_tipo ?? null,
     codigoSIA:        row.codigo_lhub || '-',
     clienteId:        row.cliente_id || null,
     cliente:          row.cliente,
@@ -235,8 +236,11 @@ function dbParaModeloDocumento(row) {
 // ──────────────────────────────────────────────────────────────────────
 // CARREGAR DADOS
 // ──────────────────────────────────────────────────────────────────────
+let _carregarDadosSeq = 0;
+
 async function carregarDados() {
   const eid = state.empresaId;
+  const seq = ++_carregarDadosSeq;
 
   if (eid) {
     await db.rpc('limpar_intimacoes_arquivadas', { p_dias: 14 })
@@ -270,6 +274,7 @@ async function carregarDados() {
   ];
 
   const [pr, pz, tf, tp, cl, ar, it, cfg, ev, us, pjeLogs, andProc] = await Promise.all(queries);
+  if (seq !== _carregarDadosSeq || eid !== state.empresaId) return;
 
   state.pastas     = (pr.data || []).map(dbParaPasta);
   if (andProc.error) console.warn('Erro ao carregar índice de processos recursais:', andProc.error.message);
@@ -329,10 +334,10 @@ async function carregarDados() {
   renderCalendario();
   renderFinanceiro();
   popularSelectsPastas();
-  carregarDadosSecundarios(eid);
+  carregarDadosSecundarios(eid, seq);
 }
 
-async function carregarDadosSecundarios(eid) {
+async function carregarDadosSecundarios(eid, seq = _carregarDadosSeq) {
   if (!eid) return;
   try {
     const [hon, cob, ctp, dep, mod] = await Promise.all([
@@ -345,6 +350,7 @@ async function carregarDadosSecundarios(eid) {
 
     const erros = [hon.error, cob.error, ctp.error, dep.error, mod.error].filter(Boolean);
     if (erros.length) console.warn('Carga secundária incompleta:', erros.map(e => e.message).join(' | '));
+    if (seq !== _carregarDadosSeq || eid !== state.empresaId) return;
 
     state.honorarios = (hon.data || []).map(dbParaHonorario);
     state.cobrancas = (cob.data || []).map(dbParaCobranca);

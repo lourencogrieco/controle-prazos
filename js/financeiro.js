@@ -670,8 +670,10 @@ function _parcelasAusentes(lista, base) {
   if (!base.id || !base.vencimento || total < 2 || Number(base.parcelaNum || 0) !== 1) return [];
 
   const grupoId = base.grupoId || base.id;
+  const ignoradas = new Set((base.parcelasExcluidas || []).map(Number));
   const ausentes = [];
   for (let num = 2; num <= total; num += 1) {
+    if (ignoradas.has(num)) continue;
     const vencimento = _vencimentoParcela(base.vencimento, base.recorrencia, num - 1);
     const existe = lista.some(item => {
       if (item.id === base.id) return false;
@@ -761,6 +763,54 @@ async function _completarParcelasTabela(tabela, lista, mapper, rowFactory) {
   return novos.length;
 }
 
+function _baseDaParcelaFinanceira(lista, item, mesmaSerieFn) {
+  if (!item || Number(item.parcelaTotal || 0) < 2) return null;
+  if (Number(item.parcelaNum || 0) === 1) return item;
+
+  const grupoId = item.grupoId || null;
+  if (grupoId) {
+    const porGrupo = (lista || []).find(base =>
+      base.id === grupoId || (base.grupoId === grupoId && Number(base.parcelaNum || 0) === 1)
+    );
+    if (porGrupo) return porGrupo;
+  }
+
+  const num = Number(item.parcelaNum || 0);
+  const vencBase = num > 1 ? _vencimentoParcela(item.vencimento, item.recorrencia, -(num - 1)) : null;
+  return (lista || []).find(base =>
+    base.id !== item.id
+    && Number(base.parcelaNum || 0) === 1
+    && mesmaSerieFn(base, item)
+    && (!vencBase || base.vencimento === vencBase)
+  ) || null;
+}
+
+async function _registrarParcelasExcluidasFinanceiro(tabela, lista, itens, mesmaSerieFn) {
+  const porBase = new Map();
+
+  (itens || []).forEach(item => {
+    const num = Number(item?.parcelaNum || 0);
+    if (!item || num <= 1 || Number(item.parcelaTotal || 0) < 2) return;
+    const base = _baseDaParcelaFinanceira(lista, item, mesmaSerieFn);
+    if (!base || base.id === item.id) return;
+    if (!porBase.has(base.id)) porBase.set(base.id, { base, nums: new Set() });
+    porBase.get(base.id).nums.add(num);
+  });
+
+  for (const { base, nums } of porBase.values()) {
+    const atualizadas = [...new Set([...(base.parcelasExcluidas || []), ...nums])]
+      .filter(num => num <= Number(base.parcelaTotal || 0));
+    const observacoes = juntarObservacoesParcelasExcluidasFinanceiro(base.observacoes, atualizadas);
+    const { error } = await db.from(tabela)
+      .update({ observacoes })
+      .eq('id', base.id)
+      .eq('empresa_id', state.empresaId);
+    if (error) throw error;
+    base.observacoes = limparMarcadorParcelasExcluidasFinanceiro(observacoes);
+    base.parcelasExcluidas = atualizadas;
+  }
+}
+
 async function sincronizarParcelasFinanceirasExistentes() {
   if (_syncParcelasFinanceirasRodou || _syncParcelasFinanceirasEmAndamento || !state.empresaId) return;
   if (![...(state.cobrancas || []), ...(state.contasPagar || [])].some(item => Number(item.parcelaTotal || 0) > 1)) {
@@ -827,6 +877,8 @@ document.getElementById('formCobranca').addEventListener('submit', async e => {
     const parcelaTotal = _totalParcelas(recorrencia, document.getElementById('cobParcelas').value);
     const clienteNome = normalizarNomeCliente(document.getElementById('cobClienteNome').value);
     if (clienteNome) await garantirClienteCadastro(clienteNome);
+    const parcelasExcluidas = (existente?.parcelasExcluidas || [])
+      .filter(num => parcelaTotal && num <= parcelaTotal);
     const obj = {
       id:              id || uid(),
       empresa_id:      state.empresaId,
@@ -839,7 +891,10 @@ document.getElementById('formCobranca').addEventListener('submit', async e => {
       parcela_total:   parcelaTotal,
       parcela_num:     existente?.parcelaNum || (parcelaTotal ? 1 : null),
       grupo_id:        existente?.grupoId || null,
-      observacoes:     document.getElementById('cobObservacoes').value.trim() || null,
+      observacoes:     juntarObservacoesParcelasExcluidasFinanceiro(
+        document.getElementById('cobObservacoes').value.trim(),
+        parcelasExcluidas
+      ),
       status:          existente?.status || 'pendente',
       data_pagamento:  existente?.dataPagamento || null,
       valor_pago:      existente?.valorPago || null,
@@ -927,7 +982,7 @@ async function confirmarExcluirCobranca(escopo) {
 
   const ok = escopo === 'serie'
     ? await _excluirSerieCobranca(cobranca)
-    : await _excluirCobrancasPorIds([cobranca.id]);
+    : await _excluirCobrancasPorIds([cobranca.id], { registrarParcelaExcluida: true });
   if (ok) fecharModalExcluirCobranca();
   else {
     if (btnEsta) btnEsta.disabled = false;
@@ -966,7 +1021,7 @@ async function _excluirSerieCobranca(cobranca) {
   }
 }
 
-async function _excluirCobrancasPorIds(ids) {
+async function _excluirCobrancasPorIds(ids, opts = {}) {
   const idsUnicos = [...new Set((ids || []).filter(Boolean))];
   if (!idsUnicos.length) {
     toast('Nenhuma cobrança selecionada para excluir.', 'error');
@@ -974,6 +1029,11 @@ async function _excluirCobrancasPorIds(ids) {
   }
 
   try {
+    const selecionadas = (state.cobrancas || []).filter(item => idsUnicos.includes(item.id));
+    if (opts.registrarParcelaExcluida) {
+      await _registrarParcelasExcluidasFinanceiro('cobrancas', state.cobrancas || [], selecionadas, _mesmaSerieFinanceira);
+    }
+
     const req = db.from('cobrancas')
     .delete()
       .eq('empresa_id', state.empresaId)
@@ -1028,6 +1088,8 @@ document.getElementById('formContaPagar').addEventListener('submit', async e => 
     const existente = id ? (state.contasPagar || []).find(x => x.id === id) : null;
     const recorrencia = document.getElementById('contRecorrencia').value || 'nenhuma';
     const parcelaTotal = _totalParcelas(recorrencia, document.getElementById('contParcelas').value);
+    const parcelasExcluidas = (existente?.parcelasExcluidas || [])
+      .filter(num => parcelaTotal && num <= parcelaTotal);
     const obj = {
       id:              id || uid(),
       empresa_id:      state.empresaId,
@@ -1039,7 +1101,10 @@ document.getElementById('formContaPagar').addEventListener('submit', async e => 
       parcela_total:   parcelaTotal,
       parcela_num:     existente?.parcelaNum || (parcelaTotal ? 1 : null),
       grupo_id:        existente?.grupoId || null,
-      observacoes:     document.getElementById('contObservacoes').value.trim() || null,
+      observacoes:     juntarObservacoesParcelasExcluidasFinanceiro(
+        document.getElementById('contObservacoes').value.trim(),
+        parcelasExcluidas
+      ),
       status:          existente?.status || 'pendente',
       data_pagamento:  existente?.dataPagamento || null,
       valor_pago:      existente?.valorPago || null,
@@ -1127,7 +1192,7 @@ async function confirmarExcluirContaPagar(escopo) {
 
   const ok = escopo === 'serie'
     ? await _excluirSerieContaPagar(conta)
-    : await _excluirContasPorIds([conta.id]);
+    : await _excluirContasPorIds([conta.id], { registrarParcelaExcluida: true });
   if (ok) fecharModalExcluirContaPagar();
   else {
     if (btnEsta) btnEsta.disabled = false;
@@ -1166,7 +1231,7 @@ async function _excluirSerieContaPagar(conta) {
   }
 }
 
-async function _excluirContasPorIds(ids) {
+async function _excluirContasPorIds(ids, opts = {}) {
   const idsUnicos = [...new Set((ids || []).filter(Boolean))];
   if (!idsUnicos.length) {
     toast('Nenhuma conta selecionada para excluir.', 'error');
@@ -1174,6 +1239,11 @@ async function _excluirContasPorIds(ids) {
   }
 
   try {
+    const selecionadas = (state.contasPagar || []).filter(item => idsUnicos.includes(item.id));
+    if (opts.registrarParcelaExcluida) {
+      await _registrarParcelasExcluidasFinanceiro('contas_pagar', state.contasPagar || [], selecionadas, _mesmaSerieContaPagar);
+    }
+
     const req = db.from('contas_pagar')
       .delete()
       .eq('empresa_id', state.empresaId)

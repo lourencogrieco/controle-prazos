@@ -1,6 +1,34 @@
 // ──────────────────────────────────────────────────────────────────────
 // MAPPERS
 // ──────────────────────────────────────────────────────────────────────
+const FIN_PARCELAS_EXCLUIDAS_RE = /\s*\[\[lhub:parcelas_excluidas=([\d,\s]+)\]\]\s*/g;
+
+function extrairParcelasExcluidasFinanceiro(observacoes) {
+  const nums = [];
+  String(observacoes || '').replace(FIN_PARCELAS_EXCLUIDAS_RE, (_, lista) => {
+    String(lista || '').split(',').forEach(num => {
+      const n = parseInt(num.trim(), 10);
+      if (Number.isFinite(n) && n > 1) nums.push(n);
+    });
+    return '';
+  });
+  return [...new Set(nums)].sort((a, b) => a - b);
+}
+
+function limparMarcadorParcelasExcluidasFinanceiro(observacoes) {
+  return String(observacoes || '').replace(FIN_PARCELAS_EXCLUIDAS_RE, '').trim();
+}
+
+function juntarObservacoesParcelasExcluidasFinanceiro(observacoes, parcelas) {
+  const obs = limparMarcadorParcelasExcluidasFinanceiro(observacoes);
+  const nums = [...new Set((parcelas || [])
+    .map(n => parseInt(n, 10))
+    .filter(n => Number.isFinite(n) && n > 1))]
+    .sort((a, b) => a - b);
+  const marcador = nums.length ? `[[lhub:parcelas_excluidas=${nums.join(',')}]]` : '';
+  return [obs, marcador].filter(Boolean).join('\n') || null;
+}
+
 function dbParaPasta(row) {
   return {
     id:               row.id,
@@ -141,6 +169,7 @@ function dbParaTarefa(row) {
 }
 
 function dbParaCobranca(row) {
+  const observacoes = row.observacoes || '';
   return {
     id:            row.id,
     clienteId:     row.cliente_id || null,
@@ -150,17 +179,19 @@ function dbParaCobranca(row) {
     vencimento:    row.data_vencimento || null,
     categoria:     row.categoria || '',
     recorrencia:   row.recorrencia || 'nenhuma',
-    observacoes:   row.observacoes || '',
+    observacoes:   limparMarcadorParcelasExcluidasFinanceiro(observacoes),
     status:        row.status || 'pendente',
     dataPagamento: row.data_pagamento || null,
     valorPago:     Number(row.valor_pago) || 0,
     grupoId:       row.grupo_id || null,
     parcelaNum:    row.parcela_num || null,
     parcelaTotal:  row.parcela_total || null,
+    parcelasExcluidas: extrairParcelasExcluidasFinanceiro(observacoes),
   };
 }
 
 function dbParaContaPagar(row) {
+  const observacoes = row.observacoes || '';
   return {
     id:            row.id,
     descricao:     row.descricao || '',
@@ -168,13 +199,14 @@ function dbParaContaPagar(row) {
     valor:         Number(row.valor) || 0,
     vencimento:    row.data_vencimento || null,
     recorrencia:   row.recorrencia || 'nenhuma',
-    observacoes:   row.observacoes || '',
+    observacoes:   limparMarcadorParcelasExcluidasFinanceiro(observacoes),
     status:        row.status || 'pendente',
     dataPagamento: row.data_pagamento || null,
     valorPago:     Number(row.valor_pago) || 0,
     grupoId:       row.grupo_id || null,
     parcelaNum:    row.parcela_num || null,
     parcelaTotal:  row.parcela_total || null,
+    parcelasExcluidas: extrairParcelasExcluidasFinanceiro(observacoes),
   };
 }
 

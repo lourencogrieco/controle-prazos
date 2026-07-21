@@ -124,7 +124,7 @@ function aplicarPermissoes() {
 
 async function onLogin(user) {
   state.user = user;
-  const { data, error } = await db
+  let { data, error } = await db
     .from('usuarios_empresa')
     .select('empresa_id, nome, perfil, area_id')
     .eq('user_id', user.id)
@@ -132,6 +132,35 @@ async function onLogin(user) {
 
   if (error) {
     toast('Erro ao carregar perfil: ' + error.message, 'error');
+    await db.auth.signOut({ scope: 'local' });
+    mostrarLogin();
+    return;
+  }
+
+  // Recupera cadastros que criaram o usuário no Auth, mas foram interrompidos
+  // antes de criar empresa/vínculo (por exemplo, por limite de e-mail).
+  const cadastro = user.user_metadata || {};
+  if (!data && cadastro.empresa) {
+    const { error: rpcError } = await db.rpc('criar_empresa_e_usuario', {
+      p_nome_usuario: cadastro.nome || user.email,
+      p_nome_empresa: cadastro.empresa,
+    });
+
+    if (!rpcError) {
+      const perfilCriado = await db
+        .from('usuarios_empresa')
+        .select('empresa_id, nome, perfil, area_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      data = perfilCriado.data;
+      error = perfilCriado.error;
+    } else {
+      error = rpcError;
+    }
+  }
+
+  if (error) {
+    toast('Erro ao concluir cadastro: ' + error.message, 'error');
     await db.auth.signOut({ scope: 'local' });
     mostrarLogin();
     return;

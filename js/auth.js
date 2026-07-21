@@ -2,6 +2,48 @@
 // AUTH
 // ──────────────────────────────────────────────────────────────────────
 let _criandoConta = false;
+let _signupCooldownTimer = null;
+
+function mensagemErroAuth(error, contexto = 'login') {
+  const mensagem = String(error?.message || error || '');
+  const status = Number(error?.status || error?.statusCode || 0);
+
+  if (status === 429 || /rate limit|too many requests|over_email_send_rate_limit/i.test(mensagem)) {
+    return 'O envio de e-mails está temporariamente indisponível por excesso de tentativas. Aguarde alguns minutos e tente novamente. Se a conta já foi criada, use “Já tenho conta”.';
+  }
+  if (/invalid login credentials|invalid.*credentials/i.test(mensagem)) {
+    return 'E-mail ou senha incorretos.';
+  }
+  if (/email not confirmed/i.test(mensagem)) {
+    return 'Confirme o e-mail recebido antes de entrar.';
+  }
+  if (contexto === 'signup' && /already|registered|exists|user/i.test(mensagem)) {
+    return 'Este e-mail já está cadastrado. Use “Já tenho conta”.';
+  }
+  return mensagem || 'Não foi possível concluir a solicitação. Tente novamente.';
+}
+
+function iniciarCooldownCadastro(segundos = 60) {
+  const btn = document.getElementById('btnCriarConta');
+  if (!btn) return;
+
+  clearInterval(_signupCooldownTimer);
+  let restante = segundos;
+  btn.disabled = true;
+  btn.textContent = `Tente novamente em ${restante}s`;
+
+  _signupCooldownTimer = setInterval(() => {
+    restante -= 1;
+    if (restante <= 0) {
+      clearInterval(_signupCooldownTimer);
+      _signupCooldownTimer = null;
+      btn.disabled = false;
+      btn.textContent = 'Criar conta';
+      return;
+    }
+    btn.textContent = `Tente novamente em ${restante}s`;
+  }, 1000);
+}
 
 async function inicializar() {
   const { data: { session } } = await db.auth.getSession();
@@ -231,7 +273,7 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
     });
     if (error) throw error;
   } catch (er) {
-    err.textContent = er.message.includes('Invalid') ? 'E-mail ou senha incorretos.' : er.message;
+    err.textContent = mensagemErroAuth(er, 'login');
     err.classList.remove('hidden');
     btn.disabled = false;
     btn.textContent = 'Entrar';
@@ -308,12 +350,17 @@ document.getElementById('signupForm')?.addEventListener('submit', async e => {
     setAuthMode('login');
     document.getElementById('loginEmail').value = email;
   } catch (er) {
-    err.textContent = er.message;
+    const limiteAtingido = Number(er?.status || er?.statusCode || 0) === 429
+      || /rate limit|too many requests|over_email_send_rate_limit/i.test(String(er?.message || ''));
+    err.textContent = mensagemErroAuth(er, 'signup');
     err.classList.remove('hidden');
+    if (limiteAtingido) iniciarCooldownCadastro();
   } finally {
     _criandoConta = false;
-    btn.disabled = false;
-    btn.textContent = 'Criar conta';
+    if (!_signupCooldownTimer) {
+      btn.disabled = false;
+      btn.textContent = 'Criar conta';
+    }
   }
 });
 

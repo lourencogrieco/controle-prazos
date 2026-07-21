@@ -1,4 +1,19 @@
 
+[auth]
+site_url = "https://financeiro-ng.onrender.com"
+additional_redirect_urls = ["https://legal-hub-seven.vercel.app"]
+
+[auth.email]
+# O cadastro do Legal Hub cria a sessão, a empresa e o vínculo em uma única etapa.
+# A verificação por e-mail pode ser reativada quando houver SMTP próprio.
+enable_confirmations = false
+max_frequency = "1m"
+otp_length = 8
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
 [functions.sync-intimacoes]
 enabled = true
 verify_jwt = true

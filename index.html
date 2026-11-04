@@ -2620,6 +2620,18 @@
       </div>
       <button type="submit" class="btn-primary" id="btnCriarConta" style="width:100%;margin-top:8px">Criar conta</button>
     </form>
+    <form id="recoveryForm" class="hidden">
+      <p style="color:rgba(255,255,255,.82);font-size:.85rem;line-height:1.45;margin:0 0 14px">Defina uma nova senha para concluir a recuperação da conta.</p>
+      <div class="field">
+        <span class="field-label">Nova senha</span>
+        <input type="password" id="recoverySenha" placeholder="mínimo 8 caracteres" autocomplete="new-password" minlength="8" required>
+      </div>
+      <div class="field">
+        <span class="field-label">Confirmar nova senha</span>
+        <input type="password" id="recoverySenhaConfirmar" placeholder="repita a nova senha" autocomplete="new-password" minlength="8" required>
+      </div>
+      <button type="submit" class="btn-primary" id="btnSalvarNovaSenha" style="width:100%;margin-top:8px">Definir nova senha</button>
+    </form>
     <button type="button" class="btn-outline" id="btnAuthToggle" style="width:100%;margin-top:12px">Criar nova conta</button>
   </div>
 </div>

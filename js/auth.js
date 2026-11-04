@@ -201,6 +201,8 @@ async function onLogin(user) {
   const perfilLabel = (PERFIS_LABEL[data.perfil] || data.perfil || '').toUpperCase();
   document.querySelector('.user-info strong').textContent = nome;
   document.querySelector('.user-info span').textContent   = perfilLabel;
+  const sysTag = document.querySelector('.sys-tag');
+  if (sysTag) sysTag.textContent = `Login: ${nome}  |  Perfil: ${perfilLabel}`;
 
   // Avatar com iniciais do usuário no header
   const partes = nome.trim().split(/\s+/);

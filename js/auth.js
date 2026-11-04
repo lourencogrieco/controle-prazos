@@ -3,6 +3,9 @@
 // ──────────────────────────────────────────────────────────────────────
 let _criandoConta = false;
 let _signupCooldownTimer = null;
+const _urlRecuperacaoSenha = new URLSearchParams(location.hash.slice(1)).get('type') === 'recovery'
+  || new URLSearchParams(location.search).get('type') === 'recovery';
+let _recuperandoSenha = _urlRecuperacaoSenha;
 
 function mensagemErroAuth(error, contexto = 'login') {
   const mensagem = String(error?.message || error || '');
@@ -46,16 +49,35 @@ function iniciarCooldownCadastro(segundos = 60) {
 }
 
 async function inicializar() {
+  db.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      _recuperandoSenha = true;
+      exibirRecuperacaoSenha();
+      return;
+    }
+    if (event === 'SIGNED_IN' && session && !_criandoConta && !_recuperandoSenha) {
+      await onLogin(session.user);
+    }
+    if (event === 'SIGNED_OUT') mostrarLogin();
+  });
+
   const { data: { session } } = await db.auth.getSession();
   if (session?.user) {
-    await onLogin(session.user);
+    if (_recuperandoSenha) exibirRecuperacaoSenha();
+    else await onLogin(session.user);
   } else {
     mostrarLogin();
   }
-  db.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN'  && session && !_criandoConta) await onLogin(session.user);
-    if (event === 'SIGNED_OUT') mostrarLogin();
-  });
+}
+
+function exibirRecuperacaoSenha() {
+  document.getElementById('loginOverlay')?.classList.remove('hidden');
+  document.getElementById('loginForm')?.classList.add('hidden');
+  document.getElementById('signupForm')?.classList.add('hidden');
+  document.getElementById('recoveryForm')?.classList.remove('hidden');
+  document.getElementById('btnAuthToggle')?.classList.add('hidden');
+  document.getElementById('loginError')?.classList.add('hidden');
+  setTimeout(() => document.getElementById('recoverySenha')?.focus(), 0);
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -311,10 +333,14 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
 
 function setAuthMode(modo) {
   const isSignup = modo === 'signup';
+  document.getElementById('recoveryForm')?.classList.add('hidden');
   document.getElementById('loginForm')?.classList.toggle('hidden', isSignup);
   document.getElementById('signupForm')?.classList.toggle('hidden', !isSignup);
   const btn = document.getElementById('btnAuthToggle');
-  if (btn) btn.textContent = isSignup ? 'Já tenho conta' : 'Criar nova conta';
+  if (btn) {
+    btn.classList.remove('hidden');
+    btn.textContent = isSignup ? 'Já tenho conta' : 'Criar nova conta';
+  }
   const err = document.getElementById('loginError');
   if (err) err.classList.add('hidden');
 }
@@ -322,6 +348,46 @@ function setAuthMode(modo) {
 document.getElementById('btnAuthToggle')?.addEventListener('click', () => {
   const signupAberto = !document.getElementById('signupForm')?.classList.contains('hidden');
   setAuthMode(signupAberto ? 'login' : 'signup');
+});
+
+document.getElementById('recoveryForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const senha = document.getElementById('recoverySenha').value;
+  const confirmar = document.getElementById('recoverySenhaConfirmar').value;
+  const btn = document.getElementById('btnSalvarNovaSenha');
+  const erro = document.getElementById('loginError');
+  erro.classList.add('hidden');
+
+  if (senha.length < 8) {
+    erro.textContent = 'A nova senha deve ter ao menos 8 caracteres.';
+    erro.classList.remove('hidden');
+    return;
+  }
+  if (senha !== confirmar) {
+    erro.textContent = 'As senhas informadas não coincidem.';
+    erro.classList.remove('hidden');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Salvando…';
+  const email = (await db.auth.getUser()).data.user?.email || '';
+  const { error } = await db.auth.updateUser({ password: senha });
+  if (error) {
+    erro.textContent = 'Não foi possível definir a senha: ' + mensagemErroAuth(error);
+    erro.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = 'Definir nova senha';
+    return;
+  }
+
+  _recuperandoSenha = false;
+  history.replaceState(null, '', location.pathname);
+  await db.auth.signOut({ scope: 'local' });
+  document.getElementById('recoveryForm').reset();
+  setAuthMode('login');
+  document.getElementById('loginEmail').value = email;
+  toast('Senha definida com sucesso. Entre novamente com a nova senha.');
 });
 
 document.getElementById('signupForm')?.addEventListener('submit', async e => {

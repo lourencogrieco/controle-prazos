@@ -586,19 +586,30 @@ async function renderConfiguracoes() {
   if (taOabs) taOabs.value = termosPje.filter(pareceOabBuscaPJe).join('\n');
 
   // Usuários
-  const { data: usuarios } = await db
-    .from('usuarios_empresa')
-    .select('id, nome, perfil, area_id')
-    .eq('empresa_id', state.empresaId)
-    .order('nome');
+  const [{ data: usuarios, error: usuariosError }, { data: convites, error: convitesError }] = await Promise.all([
+    db.from('usuarios_empresa')
+      .select('id, nome, perfil, area_id')
+      .eq('empresa_id', state.empresaId)
+      .order('nome'),
+    db.from('convites_empresa')
+      .select('id, nome, email, perfil, area_id, usado_em')
+      .eq('empresa_id', state.empresaId)
+      .is('usado_em', null)
+      .not('email', 'is', null)
+      .order('created_at'),
+  ]);
+
+  if (usuariosError || convitesError) {
+    toast('Erro ao carregar usuários e convites: ' + (usuariosError || convitesError).message, 'error');
+  }
 
   const tbody = document.getElementById('tbodyUsuarios');
   if (!tbody) return;
-  if (!usuarios?.length) {
+  if (!usuarios?.length && !convites?.length) {
     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--mu);padding:20px">Nenhum usuário</td></tr>`;
     return;
   }
-  tbody.innerHTML = usuarios.map(u => {
+  const linhasUsuarios = (usuarios || []).map(u => {
     const perfil    = PERFIS_LABEL[u.perfil] || u.perfil || '—';
     const areaNome  = state.areas.find(a => a.id === u.area_id)?.nome || '—';
     const id = escAttr(u.id);
@@ -608,7 +619,18 @@ async function renderConfiguracoes() {
       <td style="font-size:.78rem;color:var(--mu)">${escHtml(areaNome)}</td>
       <td><button class="btn-icon-sm" onclick="editarPerfil('${id}')">✎</button></td>
     </tr>`;
-  }).join('');
+  });
+  const linhasConvites = (convites || []).map(c => {
+    const perfil = PERFIS_LABEL[c.perfil] || c.perfil || '—';
+    const areaNome = state.areas.find(a => a.id === c.area_id)?.nome || '—';
+    return `<tr>
+      <td>${escHtml(c.nome || c.email)} <span class="status-pill status-pill--warn">Convite pendente</span><br><small>${escHtml(c.email)}</small></td>
+      <td><span class="badge-perfil badge-perfil--${escAttr(c.perfil || '')}">${escHtml(perfil)}</span></td>
+      <td style="font-size:.78rem;color:var(--mu)">${escHtml(areaNome)}</td>
+      <td></td>
+    </tr>`;
+  });
+  tbody.innerHTML = [...linhasUsuarios, ...linhasConvites].join('');
 
   // Carrega audit log (admins/socios apenas)
   renderModelosDocumentos();
@@ -665,16 +687,15 @@ async function convidarUsuario() {
   const areaId = document.getElementById('convArea').value || null;
   if (!nome || !email) { toast('Preencha nome e e-mail.', 'error'); return; }
 
-  // Cria registro na usuarios_empresa (sem auth — admin vincula depois)
-  const { error } = await db.from('usuarios_empresa').insert({
-    empresa_id: state.empresaId,
-    nome,
-    email,
-    perfil,
-    area_id: areaId,
+  const { error } = await db.rpc('convidar_usuario_empresa', {
+    p_empresa_id: state.empresaId,
+    p_nome: nome,
+    p_email: email,
+    p_perfil: perfil,
+    p_area_id: areaId,
   });
   if (error) { toast('Erro ao convidar: ' + error.message, 'error'); return; }
-  toast(`${nome} adicionado! Peça para ele criar conta com o e-mail ${email}.`);
+  toast(`Convite salvo para ${email}. Ao criar a conta com esse e-mail, ${nome} será vinculado automaticamente.`);
   fecharModalConvidarUsuario();
   renderConfiguracoes();
 }

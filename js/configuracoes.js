@@ -687,15 +687,24 @@ async function convidarUsuario() {
   const areaId = document.getElementById('convArea').value || null;
   if (!nome || !email) { toast('Preencha nome e e-mail.', 'error'); return; }
 
-  const { error } = await db.rpc('convidar_usuario_empresa', {
-    p_empresa_id: state.empresaId,
-    p_nome: nome,
-    p_email: email,
-    p_perfil: perfil,
-    p_area_id: areaId,
+  const { data, error } = await db.functions.invoke('convidar-usuario', {
+    body: {
+      empresa_id: state.empresaId,
+      nome,
+      email,
+      perfil,
+      area_id: areaId,
+    },
   });
-  if (error) { toast('Erro ao convidar: ' + error.message, 'error'); return; }
-  toast(`Convite salvo para ${email}. Ao criar a conta com esse e-mail, ${nome} será vinculado automaticamente.`);
+  if (error || !data?.ok) {
+    let mensagem = data?.error || error?.message || 'Não foi possível enviar o convite.';
+    if (error?.context && typeof error.context.json === 'function') {
+      try { mensagem = (await error.context.json())?.error || mensagem; } catch { /* resposta sem JSON */ }
+    }
+    toast('Erro ao convidar: ' + mensagem, 'error');
+    return;
+  }
+  toast(data.message || `Convite enviado para ${email}.`);
   fecharModalConvidarUsuario();
   renderConfiguracoes();
 }

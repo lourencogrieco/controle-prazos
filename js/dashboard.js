@@ -1,8 +1,40 @@
 // ──────────────────────────────────────────────────────────────────────
 // NAV BADGES
 // ──────────────────────────────────────────────────────────────────────
+function _dashboardVisaoEmpresa() {
+  return state.meuPerfil?.perfil === 'socio_fundador';
+}
+
+function _dashboardNomeNormalizado(valor) {
+  return String(valor || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+function _dashboardResponsavelEhUsuario(responsaveis) {
+  if (_dashboardVisaoEmpresa()) return true;
+  const meuNome = _dashboardNomeNormalizado(state.meuPerfil?.nome);
+  if (!meuNome) return false;
+  return String(responsaveis || '').split(/[;,]/)
+    .map(_dashboardNomeNormalizado)
+    .filter(Boolean)
+    .includes(meuNome);
+}
+
+function _dashboardEventoDoUsuario(evento) {
+  if (_dashboardVisaoEmpresa()) return true;
+  return _dashboardResponsavelEhUsuario(evento?.responsavel)
+    || _dashboardResponsavelEhUsuario(evento?.participantes);
+}
+
+function _dashboardIntimacaoDoUsuario(intimacao) {
+  if (_dashboardVisaoEmpresa()) return true;
+  const pasta = state.pastas.find(p => p.id === intimacao?.pastaId);
+  return !!pasta && _dashboardResponsavelEhUsuario(pasta.advogado);
+}
+
 function renderNavBadges() {
-  const urgentes = state.prazos.filter(p => {
+  const urgentes = state.prazos.filter(p => _dashboardResponsavelEhUsuario(p.responsavel)).filter(p => {
     if (p.status === 'Concluído') return false;
     return daysUntil(p.prazoFatal) <= 3;
   }).length;
@@ -116,17 +148,19 @@ function abrirRisco(tipo) {
 // DASHBOARD
 // ──────────────────────────────────────────────────────────────────────
 function renderDashboard() {
-  const tarefasPendentes = state.tarefas.filter(t => t.status === 'Pendente').length;
-  const prazosSemana     = state.prazos.filter(p => {
+  const tarefasPainel = state.tarefas.filter(t => _dashboardResponsavelEhUsuario(t.responsavel));
+  const prazosPainel = state.prazos.filter(p => _dashboardResponsavelEhUsuario(p.responsavel));
+  const eventosPainel = agendaEventos.filter(_dashboardEventoDoUsuario);
+
+  const tarefasPendentes = tarefasPainel.filter(t => t.status === 'Pendente').length;
+  const prazosSemana     = prazosPainel.filter(p => {
     if (p.status === 'Concluído') return false;
     const d = daysUntil(p.prazoFatal);
     return d >= 0 && d <= 7;
   }).length;
-  const prazosVencidos = state.prazos.filter(p =>
+  const prazosVencidos = prazosPainel.filter(p =>
     p.status !== 'Concluído' && daysUntil(p.prazoFatal) < 0
   ).length;
-  const pastasAtivas = state.pastas.filter(p => p.status === 'ativo').length;
-
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   set('dashTarefasPendentes', tarefasPendentes);
   set('dashTarefasLabel',     `Tarefa${tarefasPendentes !== 1 ? 's' : ''} a fazer`);
@@ -136,7 +170,7 @@ function renderDashboard() {
   renderDashboardRiscos();
 
   // ── Alertas de prazos urgentes ─────────────────────────────────────
-  const alertas = state.prazos.filter(p => {
+  const alertas = prazosPainel.filter(p => {
     if (p.status === 'Concluído') return false;
     return daysUntil(p.prazoFatal) <= 3;
   }).sort((a, b) => (a.prazoFatal || '').localeCompare(b.prazoFatal || ''));
@@ -161,7 +195,7 @@ function renderDashboard() {
   }
 
   // ── Próximos prazos ────────────────────────────────────────────────
-  const proximos = state.prazos
+  const proximos = prazosPainel
     .filter(p => p.status !== 'Concluído' && daysUntil(p.prazoFatal) >= 0)
     .sort((a, b) => (a.prazoFatal || '').localeCompare(b.prazoFatal || ''))
     .slice(0, 6);
@@ -188,7 +222,7 @@ function renderDashboard() {
   const PRIOR_COR = { Urgente:'var(--red)', Alta:'#e07a17', Normal:'var(--ac)', Baixa:'var(--mu)' };
   const PRIOR_ORD = { Urgente:0, Alta:1, Normal:2, Baixa:3 };
 
-  const tarefasLista = state.tarefas
+  const tarefasLista = tarefasPainel
     .filter(t => t.status === 'Pendente')
     .sort((a, b) => (PRIOR_ORD[a.prioridade] ?? 2) - (PRIOR_ORD[b.prioridade] ?? 2))
     .slice(0, 6);
@@ -227,7 +261,7 @@ function renderDashboard() {
     'Lembrete':   'var(--mu)',
   };
 
-  const eventosSemana = agendaEventos
+  const eventosSemana = eventosPainel
     .filter(e => { const d = new Date(e.data + 'T00:00:00'); return d >= base && d <= fim; })
     .sort((a, b) => a.data.localeCompare(b.data))
     .slice(0, 6);
@@ -253,15 +287,17 @@ function renderDashboard() {
 function renderDashboardRiscos() {
   const hoje = new Date().toISOString().slice(0, 10);
   const prazosVencidos = state.prazos
+    .filter(p => _dashboardResponsavelEhUsuario(p.responsavel))
     .filter(p => p.status !== 'Concluído' && daysUntil(p.prazoFatal) < 0)
     .sort((a, b) => (a.prazoFatal || '').localeCompare(b.prazoFatal || ''));
   const intimacoesPendentes = state.intimacoes
+    .filter(_dashboardIntimacaoDoUsuario)
     .filter(i => (i.status || 'pendente') === 'pendente')
     .sort((a, b) => (b.dataPublicacao || '').localeCompare(a.dataPublicacao || ''));
   const tarefasSemResp = state.tarefas
-    .filter(t => t.status !== 'Concluída' && !(t.responsavel || '').trim());
+    .filter(t => _dashboardVisaoEmpresa() && t.status !== 'Concluída' && !(t.responsavel || '').trim());
   const cobrancasVencidas = state.cobrancas
-    .filter(c => c.status !== 'pago' && c.vencimento && c.vencimento < hoje)
+    .filter(c => _dashboardVisaoEmpresa() && c.status !== 'pago' && c.vencimento && c.vencimento < hoje)
     .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
 
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
@@ -317,7 +353,7 @@ function renderDashProdutividade() {
   const secEl = document.getElementById('dashProdutividade');
   if (!secEl) return;
 
-  if (!PERFIS_GESTAO.includes(state.meuPerfil?.perfil || '')) {
+  if (!_dashboardVisaoEmpresa()) {
     secEl.style.display = 'none';
     return;
   }

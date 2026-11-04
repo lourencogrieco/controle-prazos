@@ -29,3 +29,8 @@ entrypoint = "./functions/sync-intimacoes/index.ts"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/notificar-prazos/index.ts"
+
+[functions.convidar-usuario]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/convidar-usuario/index.ts"
